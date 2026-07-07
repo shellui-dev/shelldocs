@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageId>ShellDocs.Components</PackageId>
+    <Description>Blazor RCL — DocsLayout, DocsSidebar, DocsHeader, CodeBlock, SearchDialog, TableOfContents, and every other primitive that makes a ShellDocs site look sleek.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <SupportedPlatform Include="browser" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ShellDocs.Core\ShellDocs.Core.csproj" />
+    <ProjectReference Include="..\ShellDocs.Markdown\ShellDocs.Markdown.csproj" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <!-- ShellUI.Components ref lands in feat/components-shell once shellui is published to NuGet. -->
+    <!-- <PackageReference Include="ShellUI.Components" /> -->
+  </ItemGroup>
+
+</Project>

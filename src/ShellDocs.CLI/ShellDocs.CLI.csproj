@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>true</IsPackable>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>shelldocs</ToolCommandName>
+    <PackageId>ShellDocs.CLI</PackageId>
+    <Description>Global tool for ShellDocs — the docs framework for .NET. Commands: init, new, dev, build, preview.</Description>
+    <RootNamespace>ShellDocs.CLI</RootNamespace>
+    <AssemblyName>shelldocs</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ShellDocs.Core\ShellDocs.Core.csproj" />
+    <ProjectReference Include="..\ShellDocs.Templates\ShellDocs.Templates.csproj" />
+    <PackageReference Include="System.CommandLine" />
+    <PackageReference Include="Spectre.Console" />
+  </ItemGroup>
+
+</Project>

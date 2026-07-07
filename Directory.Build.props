@@ -1,0 +1,46 @@
+<Project>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <WarningsAsErrors>Nullable</WarningsAsErrors>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn> <!-- suppress "missing XML comment" until we backfill -->
+  </PropertyGroup>
+
+  <!-- Central package version pinning via Directory.Packages.props -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+  <!-- Package metadata (applies to any project with IsPackable=true) -->
+  <PropertyGroup>
+    <Authors>ShellUI</Authors>
+    <Company>ShellUI</Company>
+    <Copyright>Copyright © 2026 ShellUI</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/shellui-dev/shelldocs</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/shellui-dev/shelldocs</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>blazor;docs;documentation;framework;shellui;shadcn;fumadocs;tailwind</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+  </PropertyGroup>
+
+  <!-- Default: nothing is packable unless the project opts in -->
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <!-- Include README in packages that opt in -->
+  <ItemGroup Condition="'$(IsPackable)' == 'true'">
+    <None Include="$(MSBuildThisFileDirectory)README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+</Project>

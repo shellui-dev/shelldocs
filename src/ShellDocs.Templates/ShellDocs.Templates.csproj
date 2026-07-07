@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageId>ShellDocs.Templates</PackageId>
+    <Description>Templates used by the ShellDocs CLI to scaffold new doc projects and pages. Not intended for direct consumption.</Description>
+  </PropertyGroup>
+
+</Project>

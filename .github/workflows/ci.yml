@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore shelldocs.slnx
+
+      - name: Build
+        run: dotnet build shelldocs.slnx --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test shelldocs.slnx --configuration Release --no-build --verbosity normal
+
+      # Smoke test: verify the CLI packs cleanly as a global tool
+      - name: Pack CLI
+        run: dotnet pack src/ShellDocs.CLI --configuration Release --output nupkgs
+
+      - name: Verify CLI installs + runs
+        run: |
+          dotnet tool install --global --add-source ./nupkgs ShellDocs.CLI --prerelease
+          shelldocs --help
