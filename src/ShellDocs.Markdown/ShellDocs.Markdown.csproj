@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageId>ShellDocs.Markdown</PackageId>
+    <Description>Markdig pipeline for ShellDocs — frontmatter parsing, razor:preview fenced blocks, inline Razor component tags.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ShellDocs.Core\ShellDocs.Core.csproj" />
+    <PackageReference Include="Markdig" />
+    <PackageReference Include="YamlDotNet" />
+  </ItemGroup>
+
+</Project>
