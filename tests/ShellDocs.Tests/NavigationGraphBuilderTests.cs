@@ -1,0 +1,203 @@
+using ShellDocs.Core;
+using Xunit;
+
+namespace ShellDocs.Tests;
+
+public class NavigationGraphBuilderTests : IDisposable
+{
+    private readonly string _root;
+
+    public NavigationGraphBuilderTests()
+    {
+        _root = Path.Combine(Path.GetTempPath(), "shelldocs-test-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(_root);
+    }
+
+    public void Dispose()
+    {
+        try { Directory.Delete(_root, recursive: true); } catch { }
+    }
+
+    private void WriteMd(string relativePath, string title, int order = 0)
+    {
+        var full = Path.Combine(_root, relativePath);
+        Directory.CreateDirectory(Path.GetDirectoryName(full)!);
+        File.WriteAllText(full, $"---\ntitle: {title}\norder: {order}\n---\n# {title}\n");
+    }
+
+    private void WriteMeta(string folder, string json)
+    {
+        var full = Path.Combine(_root, folder, "meta.json");
+        Directory.CreateDirectory(Path.GetDirectoryName(full)!);
+        File.WriteAllText(full, json);
+    }
+
+    [Fact]
+    public void Build_SingleFile_ResolvesByUrl()
+    {
+        WriteMd("intro.md", "Introduction");
+
+        var graph = NavigationGraphBuilder.Build(_root);
+        var node = graph.ResolveByUrl("/intro");
+
+        Assert.NotNull(node);
+        Assert.Equal("Introduction", node!.Title);
+        Assert.Equal(NodeKind.Page, node.Kind);
+    }
+
+    [Fact]
+    public void Build_UsesFrontmatterTitle_FallsBackToSlug()
+    {
+        WriteMd("with-title.md", "Explicit");
+        var noFrontmatter = Path.Combine(_root, "no-title.md");
+        File.WriteAllText(noFrontmatter, "# Just markdown");
+
+        var graph = NavigationGraphBuilder.Build(_root);
+
+        Assert.Equal("Explicit", graph.ResolveByUrl("/with-title")!.Title);
+        Assert.Equal("No Title", graph.ResolveByUrl("/no-title")!.Title);
+    }
+
+    [Fact]
+    public void Build_NestedFolders_AreSections()
+    {
+        WriteMd("docs/introduction.md", "Introduction");
+        WriteMd("docs/installation.md", "Installation");
+        WriteMd("components/button.md", "Button");
+
+        var graph = NavigationGraphBuilder.Build(_root);
+
+        Assert.NotNull(graph.ResolveByUrl("/docs/introduction"));
+        Assert.NotNull(graph.ResolveByUrl("/docs/installation"));
+        Assert.NotNull(graph.ResolveByUrl("/components/button"));
+
+        var sections = graph.Root.Children.Where(c => c.Kind == NodeKind.Section).ToList();
+        Assert.Contains(sections, s => s.Title == "Components");
+        Assert.Contains(sections, s => s.Title == "Docs");
+    }
+
+    [Fact]
+    public void Build_UsesMetaJsonOrdering()
+    {
+        WriteMd("alpha.md", "Alpha");
+        WriteMd("bravo.md", "Bravo");
+        WriteMd("charlie.md", "Charlie");
+        WriteMeta("", """{ "pages": ["charlie", "alpha", "bravo"] }""");
+
+        var graph = NavigationGraphBuilder.Build(_root);
+        var titles = graph.Root.Children.Select(c => c.Title).ToList();
+
+        Assert.Equal(new[] { "Charlie", "Alpha", "Bravo" }, titles);
+    }
+
+    [Fact]
+    public void Build_MetaJsonDivider_ProducesDividerNode()
+    {
+        WriteMd("a.md", "A");
+        WriteMd("b.md", "B");
+        WriteMeta("", """{ "pages": ["a", "---", "b"] }""");
+
+        var graph = NavigationGraphBuilder.Build(_root);
+
+        var kinds = graph.Root.Children.Select(c => c.Kind).ToList();
+        Assert.Equal(new[] { NodeKind.Page, NodeKind.Divider, NodeKind.Page }, kinds);
+    }
+
+    [Fact]
+    public void Build_MetaJsonSubsection_CreatesNamedSection()
+    {
+        WriteMd("table.md", "Table");
+        WriteMd("card.md", "Card");
+        WriteMeta("", """
+        {
+          "pages": [
+            {
+              "title": "Data Display",
+              "pages": ["table", "card"]
+            }
+          ]
+        }
+        """);
+
+        var graph = NavigationGraphBuilder.Build(_root);
+        var section = Assert.Single(graph.Root.Children);
+
+        Assert.Equal("Data Display", section.Title);
+        Assert.Equal(NodeKind.Section, section.Kind);
+        Assert.Equal(new[] { "Table", "Card" }, section.Children.Select(c => c.Title));
+    }
+
+    [Fact]
+    public void Build_UnknownSlugInMetaJson_IsSilentlySkipped()
+    {
+        WriteMd("real.md", "Real");
+        WriteMeta("", """{ "pages": ["real", "does-not-exist"] }""");
+
+        var graph = NavigationGraphBuilder.Build(_root);
+        var titles = graph.Root.Children.Select(c => c.Title).ToList();
+
+        Assert.Equal(new[] { "Real" }, titles);
+    }
+
+    [Fact]
+    public void Build_ThrowsOnMissingContentRoot()
+    {
+        Assert.Throws<DirectoryNotFoundException>(
+            () => NavigationGraphBuilder.Build(Path.Combine(_root, "does-not-exist")));
+    }
+
+    [Fact]
+    public void GetPrevNext_ReturnsAdjacentPages()
+    {
+        WriteMd("first.md", "First", order: 1);
+        WriteMd("second.md", "Second", order: 2);
+        WriteMd("third.md", "Third", order: 3);
+
+        var graph = NavigationGraphBuilder.Build(_root);
+        var second = graph.ResolveByUrl("/second")!;
+
+        var (prev, next) = graph.GetPrevNext(second);
+
+        Assert.Equal("First", prev?.Title);
+        Assert.Equal("Third", next?.Title);
+    }
+
+    [Fact]
+    public void GetPrevNext_HandlesBoundaries()
+    {
+        WriteMd("only.md", "Only");
+
+        var graph = NavigationGraphBuilder.Build(_root);
+        var only = graph.ResolveByUrl("/only")!;
+
+        var (prev, next) = graph.GetPrevNext(only);
+
+        Assert.Null(prev);
+        Assert.Null(next);
+    }
+
+    [Fact]
+    public void GetBreadcrumb_WalksUpFromLeafToTopLevel()
+    {
+        WriteMd("docs/theming/tokens.md", "Tokens");
+
+        var graph = NavigationGraphBuilder.Build(_root);
+        var leaf = graph.ResolveByUrl("/docs/theming/tokens")!;
+        var trail = graph.GetBreadcrumb(leaf);
+
+        Assert.Equal(new[] { "Docs", "Theming", "Tokens" }, trail.Select(n => n.Title));
+    }
+
+    [Fact]
+    public void ResolveByUrl_IsCaseInsensitiveAndTrailingSlashTolerant()
+    {
+        WriteMd("Button.md", "Button");
+
+        var graph = NavigationGraphBuilder.Build(_root);
+
+        Assert.NotNull(graph.ResolveByUrl("/button"));
+        Assert.NotNull(graph.ResolveByUrl("/BUTTON"));
+        Assert.NotNull(graph.ResolveByUrl("/button/"));
+        Assert.NotNull(graph.ResolveByUrl("button"));
+    }
+}
