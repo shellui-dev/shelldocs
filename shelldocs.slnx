@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ShellDocs.CLI/ShellDocs.CLI.csproj" />
+    <Project Path="src/ShellDocs.Components/ShellDocs.Components.csproj" />
+    <Project Path="src/ShellDocs.Core/ShellDocs.Core.csproj" />
+    <Project Path="src/ShellDocs.Markdown/ShellDocs.Markdown.csproj" />
+    <Project Path="src/ShellDocs.Templates/ShellDocs.Templates.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ShellDocs.Tests/ShellDocs.Tests.csproj" />
+  </Folder>
+</Solution>

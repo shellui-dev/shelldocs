@@ -1,0 +1,63 @@
+# .NET build output
+[Bb]in/
+[Oo]bj/
+[Rr]elease/
+[Dd]ebug/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.dll
+*.pdb
+*.exe
+*.cache
+
+# NuGet
+*.nupkg
+*.snupkg
+project.lock.json
+project.assets.json
+packages/
+!.nuget/packages/
+.nuget/
+
+# Test results
+[Tt]est[Rr]esult*/
+[Cc]overage*/
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# JetBrains Rider
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node (for Tailwind CLI + Shiki)
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# ShellDocs — local build artifacts
+publish/
+dist/
+.shelldocs/
+*.shellui-classes-generated
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+logs/
