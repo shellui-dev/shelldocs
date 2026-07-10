@@ -3,11 +3,10 @@ using Spectre.Console;
 
 namespace ShellDocs.CLI;
 
-/* CLI entry point. Real command handlers land in feat/cli-init and feat/cli-dev-build.
+/* CLI entry point.
    This scaffolding wires up the command tree so `shelldocs --help` produces the right shape. */
 internal class Program
 {
-    // ANSI Shadow figlet — same font ShellUI uses so the family reads as one thing.
     private const string Logo = @"
  ███████╗██╗  ██╗███████╗██╗     ██╗     ██████╗  ██████╗  ██████╗███████╗
  ██╔════╝██║  ██║██╔════╝██║     ██║     ██╔══██╗██╔═══██╗██╔════╝██╔════╝
