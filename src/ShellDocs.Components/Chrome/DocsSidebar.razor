@@ -1,0 +1,44 @@
+@inject NavigationGraph Graph
+@inject NavigationManager Nav
+@inject ShellDocsOptions Options
+
+<nav class="docs-sidebar" aria-label="Docs">
+    <PackageSelector />
+
+    <div class="sidebar-tree">
+        @foreach (var child in Graph.Root.Children)
+        {
+            <DocsSidebarNode Node="child" Depth="0" CurrentPath="@_currentPath" />
+        }
+    </div>
+
+    <div class="sidebar-footer">
+        @if (!string.IsNullOrEmpty(Options.GitHubRepo))
+        {
+            <a class="sidebar-footer-link" href="https://github.com/@Options.GitHubRepo" target="_blank" rel="noopener" aria-label="GitHub">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .3a12 12 0 0 0-3.8 23.38c.6.12.83-.26.83-.58v-2.02c-3.34.72-4.04-1.6-4.04-1.6-.55-1.4-1.35-1.78-1.35-1.78-1.1-.75.08-.74.08-.74 1.22.09 1.86 1.26 1.86 1.26 1.08 1.85 2.84 1.32 3.53 1 .11-.79.42-1.32.77-1.62-2.66-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.13-.3-.54-1.53.12-3.19 0 0 1-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.28-1.55 3.29-1.23 3.29-1.23.66 1.66.24 2.89.12 3.19.77.84 1.24 1.91 1.24 3.22 0 4.61-2.81 5.62-5.48 5.92.42.36.81 1.1.81 2.22v3.29c0 .32.22.7.83.58A12 12 0 0 0 12 .3"/></svg>
+            </a>
+        }
+        <ThemeToggle />
+    </div>
+</nav>
+
+@code {
+    private string _currentPath = "/";
+
+    protected override void OnInitialized()
+    {
+        _currentPath = Nav.ToBaseRelativePath(Nav.Uri).TrimEnd('/');
+        if (!_currentPath.StartsWith('/')) _currentPath = "/" + _currentPath;
+        Nav.LocationChanged += OnLocationChanged;
+    }
+
+    private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    {
+        _currentPath = Nav.ToBaseRelativePath(e.Location).TrimEnd('/');
+        if (!_currentPath.StartsWith('/')) _currentPath = "/" + _currentPath;
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose() => Nav.LocationChanged -= OnLocationChanged;
+}

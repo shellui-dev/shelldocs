@@ -1,0 +1,59 @@
+.toc {
+    font-size: 0.8125rem;
+}
+
+.toc-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--muted-foreground);
+    margin: 0 0 1rem 0.75rem;
+}
+.toc-title svg { width: 0.9rem; height: 0.9rem; }
+
+/* Grey rail = left border on the list. The coloured highlight rides on top of it. */
+.toc-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    position: relative;
+    border-left: 1px solid color-mix(in oklch, var(--foreground) 12%, transparent);
+}
+
+/* The moving highlight — 1px vertical bar sitting on the border. JS drives its
+   transform + height as the active heading changes. */
+::deep .toc-bar {
+    position: absolute;
+    left: -1px;
+    top: 0;
+    width: 1px;
+    height: 0;
+    background: var(--primary);
+    transform: translateY(0);
+    transition: transform 220ms cubic-bezier(0.4, 0, 0.2, 1), height 220ms cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+}
+
+::deep .toc-item {
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+::deep .toc-item[data-level="3"] .toc-link { padding-left: 1.75rem; }
+
+::deep .toc-link {
+    display: block;
+    padding: 0.35rem 0.5rem 0.35rem 0.75rem;
+    color: var(--muted-foreground);
+    text-decoration: none;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    transition: color 150ms;
+}
+::deep .toc-link:hover { color: var(--foreground); }
+::deep .toc-link.active {
+    color: var(--foreground);
+    font-weight: 500;
+}
