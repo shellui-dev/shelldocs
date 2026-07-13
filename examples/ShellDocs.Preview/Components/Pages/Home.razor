@@ -1,0 +1,467 @@
+@page "/"
+@layout HomeLayout
+
+<PageTitle>ShellDocs — the docs framework for .NET</PageTitle>
+
+<section class="hero">
+    <div class="hero-bg" aria-hidden="true"></div>
+    <div class="hero-inner">
+        <a class="hero-badge" href="https://github.com/shellui-dev/shelldocs" target="_blank" rel="noopener">
+            <span class="hero-badge-tag">New</span>
+            <span>0.1.0-alpha in progress</span>
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 3l5 5-5 5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <h1>The docs framework <span class="hero-grad">for .NET</span></h1>
+        <p>Beautiful, animated, Cmd+K-searchable documentation sites — powered by Blazor.<br/>Compose with ShellUI, or any Blazor component library.</p>
+        <div class="hero-actions">
+            <a class="btn primary" href="/docs/introduction">Get started <span>→</span></a>
+            <a class="btn ghost" href="https://github.com/shellui-dev/shelldocs" target="_blank" rel="noopener">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M12 .3a12 12 0 0 0-3.8 23.38c.6.12.83-.26.83-.58v-2.02c-3.34.72-4.04-1.6-4.04-1.6-.55-1.4-1.35-1.78-1.35-1.78-1.1-.75.08-.74.08-.74 1.22.09 1.86 1.26 1.86 1.26 1.08 1.85 2.84 1.32 3.53 1 .11-.79.42-1.32.77-1.62-2.66-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.13-.3-.54-1.53.12-3.19 0 0 1-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.28-1.55 3.29-1.23 3.29-1.23.66 1.66.24 2.89.12 3.19.77.84 1.24 1.91 1.24 3.22 0 4.61-2.81 5.62-5.48 5.92.42.36.81 1.1.81 2.22v3.29c0 .32.22.7.83.58A12 12 0 0 0 12 .3"/></svg>
+                Star on GitHub
+            </a>
+        </div>
+    </div>
+</section>
+
+<section class="features">
+    <div class="section-heading">
+        <span class="eyebrow">Why ShellDocs</span>
+        <h2>Everything a docs site needs, out of the box</h2>
+        <p>Batteries included, but nothing you can't rip out. Every layer is a NuGet package you can swap.</p>
+    </div>
+    <div class="features-inner">
+        <div class="feature">
+            <div class="feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </div>
+            <h3>Markdown-first</h3>
+            <p>Author in familiar .md files with YAML frontmatter. File-based routing over <code>content/</code>.</p>
+        </div>
+        <div class="feature">
+            <div class="feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 3v18M3 9h18"/></svg>
+            </div>
+            <h3>Live Razor components</h3>
+            <p>Drop <code>&lt;Button /&gt;</code> mid-markdown. Registered components render as real Blazor — no iframes.</p>
+        </div>
+        <div class="feature">
+            <div class="feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+            </div>
+            <h3>⌘K search</h3>
+            <p>Build-time client-side search index. Zero backend, works offline, sub-millisecond queries.</p>
+        </div>
+        <div class="feature">
+            <div class="feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+            </div>
+            <h3>Themeable</h3>
+            <p>Ships shadcn / fuma / nextra presets. Every token is a CSS variable — override any of them, live.</p>
+        </div>
+        <div class="feature">
+            <div class="feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            </div>
+            <h3>Static or server</h3>
+            <p><code>shelldocs build</code> emits Blazor WASM static output for GitHub Pages, Cloudflare Pages, S3. Or run Server mode on Azure, Fly.io, or a container host.</p>
+        </div>
+        <div class="feature">
+            <div class="feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M7 11l5 5 5-5M12 4v12"/></svg>
+            </div>
+            <h3>CLI-driven</h3>
+            <p><code>shelldocs init</code>, <code>new</code>, <code>dev</code>, <code>build</code>. Same feel as <code>shellui</code>, same install-and-go DX.</p>
+        </div>
+    </div>
+</section>
+
+<section class="showcase">
+    <div class="section-heading">
+        <span class="eyebrow">Zero-config</span>
+        <h2>Write markdown. Ship docs.</h2>
+        <p>Frontmatter for metadata. Blazor components inline. A CLI that scaffolds everything.</p>
+    </div>
+    <div class="showcase-grid">
+        <div class="code-window">
+            <div class="code-chrome">
+                <span class="dot d-r"></span><span class="dot d-y"></span><span class="dot d-g"></span>
+                <span class="code-file">content/docs/introduction.md</span>
+            </div>
+<pre class="code-body"><span class="tk-punc">---</span>
+<span class="tk-key">title</span><span class="tk-punc">:</span> <span class="tk-str">Introduction</span>
+<span class="tk-key">description</span><span class="tk-punc">:</span> <span class="tk-str">Get up and running with ShellDocs.</span>
+<span class="tk-key">order</span><span class="tk-punc">:</span> <span class="tk-num">1</span>
+<span class="tk-punc">---</span>
+
+<span class="tk-hash"># Introduction</span>
+
+ShellDocs is a Blazor-native docs framework in the
+tradition of fumadocs and Nextra.
+
+<span class="tk-tag">&lt;Callout Variant=<span class="tk-str">"info"</span>&gt;</span>
+Works in Server, WASM, and static output.
+<span class="tk-tag">&lt;/Callout&gt;</span>
+
+<span class="tk-punc">```</span><span class="tk-key">razor:preview</span>
+<span class="tk-tag">&lt;Button Variant=<span class="tk-str">"outline"</span>&gt;</span>Click me<span class="tk-tag">&lt;/Button&gt;</span>
+<span class="tk-punc">```</span></pre>
+        </div>
+        <div class="showcase-notes">
+            <div class="showcase-item">
+                <span class="showcase-num">1</span>
+                <div>
+                    <h4>Frontmatter for metadata</h4>
+                    <p>Order pages in the sidebar, set descriptions for search results, tag with a category. All the metadata lives at the top of the file.</p>
+                </div>
+            </div>
+            <div class="showcase-item">
+                <span class="showcase-num">2</span>
+                <div>
+                    <h4>Components inline</h4>
+                    <p>Reference any registered Blazor component with a self-closing tag mid-markdown. Renders live — no iframes, no MDX preprocessor.</p>
+                </div>
+            </div>
+            <div class="showcase-item">
+                <span class="showcase-num">3</span>
+                <div>
+                    <h4>Live previews from code fences</h4>
+                    <p>Fence with <code>razor:preview</code> and readers get a rendered demo plus the source, tabbed and copyable.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="install">
+    <div class="section-heading">
+        <span class="eyebrow">Get started</span>
+        <h2>One command to scaffold, one to serve</h2>
+        <p>No config, no build step, no lock file. Just a Blazor project with docs.</p>
+    </div>
+    <div class="install-steps">
+        <div class="install-step">
+            <div class="install-num">1</div>
+            <div class="install-body">
+                <h4>Install the CLI</h4>
+                <div class="mini-code"><span class="mini-prompt">$</span><span>dotnet tool install -g ShellDocs.CLI</span></div>
+            </div>
+        </div>
+        <div class="install-step">
+            <div class="install-num">2</div>
+            <div class="install-body">
+                <h4>Scaffold a docs project</h4>
+                <div class="mini-code"><span class="mini-prompt">$</span><span>shelldocs init my-docs &amp;&amp; cd my-docs</span></div>
+            </div>
+        </div>
+        <div class="install-step">
+            <div class="install-num">3</div>
+            <div class="install-body">
+                <h4>Start the dev server</h4>
+                <div class="mini-code"><span class="mini-prompt">$</span><span>shelldocs dev</span></div>
+            </div>
+        </div>
+        <div class="install-step">
+            <div class="install-num">4</div>
+            <div class="install-body">
+                <h4>Build for production</h4>
+                <div class="mini-code"><span class="mini-prompt">$</span><span>shelldocs build --output ./dist</span></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="primitives">
+    <div class="section-heading">
+        <span class="eyebrow">Primitives</span>
+        <h2>Ready-made pieces</h2>
+        <p>The pattern every good docs site uses — assembled, themed, keyboard-accessible.</p>
+    </div>
+    <div class="prim-grid">
+        <a class="prim" href="/docs/components/callout"><span class="prim-key">Callout</span><span class="prim-desc">Info / warning / tip / danger boxes with icons</span></a>
+        <a class="prim" href="/docs/components/code-block"><span class="prim-key">CodeBlock</span><span class="prim-desc">Syntax-highlighted fences with copy button + filename tab</span></a>
+        <a class="prim" href="/docs/components/tabs"><span class="prim-key">Tabs</span><span class="prim-desc">Keyboard-nav tabs with sync groups across the page</span></a>
+        <a class="prim" href="/docs/markdown-syntax"><span class="prim-key">SearchDialog</span><span class="prim-desc">⌘K palette with sub-ms client-side ranking</span></a>
+        <a class="prim" href="/docs/introduction"><span class="prim-key">TableOfContents</span><span class="prim-desc">Right-rail nav with smooth scroll-tracked highlight</span></a>
+        <a class="prim" href="/docs/introduction"><span class="prim-key">PrevNextNav</span><span class="prim-desc">Auto-derived pagination from your navigation graph</span></a>
+        <a class="prim" href="/docs/introduction"><span class="prim-key">Breadcrumb</span><span class="prim-desc">Path-aware breadcrumbs for nested doc sections</span></a>
+        <a class="prim" href="/docs/theming"><span class="prim-key">TypeTable</span><span class="prim-desc">API reference tables — hand-authored or XML-doc driven</span></a>
+    </div>
+</section>
+
+<section class="cta">
+    <div class="cta-inner">
+        <h2>Built by the ShellUI team.</h2>
+        <p>Same taste, same craftsmanship, same install-and-go DX. Free forever, MIT-licensed, community-driven.</p>
+        <div class="hero-actions">
+            <a class="btn primary" href="/docs/introduction">Read the docs <span>→</span></a>
+            <a class="btn ghost" href="https://github.com/shellui-dev/shelldocs" target="_blank" rel="noopener">Contribute on GitHub</a>
+        </div>
+    </div>
+</section>
+
+<style>
+    .hero { position: relative; padding: 7rem 1.5rem 5rem; overflow: hidden; }
+    .hero-bg { position: absolute; inset: 0; z-index: 0; pointer-events: none;
+        background:
+            radial-gradient(50% 60% at 50% 0%, color-mix(in oklch, var(--accent) 20%, transparent) 0%, transparent 70%),
+            radial-gradient(30% 30% at 80% 20%, color-mix(in oklch, oklch(0.7 0.2 320) 15%, transparent) 0%, transparent 60%);
+        opacity: 0.6;
+    }
+    .hero-inner { position: relative; max-width: 48rem; margin: 0 auto; text-align: center; }
+
+    .hero-badge {
+        display: inline-flex; align-items: center; gap: 0.5rem;
+        padding: 0.25rem 0.75rem 0.25rem 0.3rem;
+        border-radius: 9999px;
+        border: 1px solid var(--border);
+        background: var(--background);
+        color: var(--muted-foreground);
+        font-size: 0.75rem;
+        text-decoration: none;
+        margin-bottom: 1.75rem;
+        transition: border-color 150ms, color 150ms;
+    }
+    .hero-badge:hover { border-color: var(--border-strong); color: var(--foreground); }
+    .hero-badge svg { width: 0.75rem; height: 0.75rem; }
+    .hero-badge-tag {
+        background: var(--accent);
+        color: var(--accent-foreground);
+        padding: 0.05rem 0.5rem;
+        border-radius: 9999px;
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+    }
+
+    .hero h1 {
+        font-size: 2.75rem; font-weight: 800; letter-spacing: -0.035em;
+        line-height: 1.05; margin: 0 0 1.25rem;
+    }
+    .hero-grad {
+        background: linear-gradient(135deg, var(--accent), oklch(0.72 0.2 320));
+        -webkit-background-clip: text; background-clip: text;
+        color: transparent;
+    }
+    .hero p {
+        font-size: 1.0625rem; color: var(--muted-foreground);
+        margin: 0 0 2rem; line-height: 1.6; max-width: 34rem;
+        margin-left: auto; margin-right: auto;
+    }
+
+    .hero-actions { display: inline-flex; gap: 0.75rem; flex-wrap: wrap; justify-content: center; }
+    .btn {
+        display: inline-flex; align-items: center; gap: 0.5rem;
+        padding: 0.55rem 1.05rem; border-radius: calc(var(--radius) - 2px);
+        border: 1px solid transparent;
+        text-decoration: none; font-weight: 500; font-size: 0.875rem;
+        transition: background 150ms, border-color 150ms, transform 150ms, box-shadow 150ms;
+    }
+    .btn.primary {
+        background: var(--foreground); color: var(--background);
+        border-color: var(--foreground);
+        box-shadow: 0 1px 2px rgb(0 0 0 / 0.06);
+    }
+    .btn.primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px -2px rgb(0 0 0 / 0.15); }
+    .btn.primary span { transition: transform 150ms; }
+    .btn.primary:hover span { transform: translateX(2px); }
+
+    .btn.ghost {
+        background: var(--card); color: var(--foreground);
+        border-color: var(--border);
+    }
+    .btn.ghost:hover { background: var(--muted); border-color: var(--border-strong); }
+
+    @@media (min-width: 768px) { .hero h1 { font-size: 4rem; } .hero p { font-size: 1.125rem; } }
+
+    .features {
+        max-width: 1100px; margin: 0 auto;
+        padding: 3rem 1.5rem 6rem;
+    }
+    .features-inner {
+        display: grid;
+        gap: 1rem;
+        grid-template-columns: 1fr;
+    }
+    @@media (min-width: 640px) { .features-inner { grid-template-columns: repeat(2, 1fr); } }
+    @@media (min-width: 900px) { .features-inner { grid-template-columns: repeat(3, 1fr); } }
+
+    .feature {
+        padding: 1.5rem;
+        border: 1px solid var(--border);
+        border-radius: calc(var(--radius) + 2px);
+        background: var(--card);
+        transition: border-color 200ms, transform 200ms;
+    }
+    .feature:hover { border-color: var(--border-strong); }
+    .feature-icon {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 2rem; height: 2rem;
+        border-radius: calc(var(--radius) - 2px);
+        background: var(--accent-soft);
+        color: var(--accent);
+        margin-bottom: 0.9rem;
+    }
+    .feature-icon svg { width: 1.125rem; height: 1.125rem; }
+    .feature h3 { margin: 0 0 0.35rem; font-size: 0.9375rem; font-weight: 600; letter-spacing: -0.01em; }
+    .feature p { margin: 0; color: var(--muted-foreground); font-size: 0.875rem; line-height: 1.55; }
+    .feature code {
+        font-family: var(--font-mono); font-size: 0.8em;
+        background: var(--muted); padding: 0.05rem 0.35rem; border-radius: 4px;
+        color: var(--foreground); border: 1px solid var(--border);
+    }
+
+    .section-heading { text-align: center; max-width: 44rem; margin: 0 auto 3rem; }
+    .section-heading .eyebrow {
+        display: inline-block;
+        font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em;
+        color: var(--muted-foreground); font-weight: 600;
+        padding: 0.2rem 0.6rem; border: 1px solid var(--border); border-radius: 9999px;
+        margin-bottom: 1rem;
+    }
+    .section-heading h2 {
+        font-size: 2rem; font-weight: 700; letter-spacing: -0.025em;
+        line-height: 1.15; margin: 0 0 0.75rem;
+    }
+    .section-heading p {
+        margin: 0; color: var(--muted-foreground); font-size: 1rem; line-height: 1.6;
+    }
+    @@media (min-width: 768px) { .section-heading h2 { font-size: 2.5rem; } }
+
+    /* Showcase — code window + steps */
+    .showcase { max-width: 1100px; margin: 0 auto; padding: 5rem 1.5rem; }
+    .showcase-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 2.5rem;
+        align-items: start;
+    }
+    @@media (min-width: 900px) { .showcase-grid { grid-template-columns: 1.15fr 1fr; gap: 3rem; } }
+
+    .code-window {
+        border: 1px solid var(--border);
+        border-radius: calc(var(--radius) + 4px);
+        background: var(--card);
+        overflow: hidden;
+        box-shadow: 0 12px 40px -12px rgb(0 0 0 / 0.15);
+    }
+    .code-chrome {
+        display: flex; align-items: center; gap: 0.4rem;
+        padding: 0.65rem 0.9rem;
+        border-bottom: 1px solid var(--border);
+        background: color-mix(in oklch, var(--card) 60%, var(--background));
+    }
+    .code-chrome .dot { width: 0.65rem; height: 0.65rem; border-radius: 9999px; }
+    .code-chrome .d-r { background: #ff5f57; }
+    .code-chrome .d-y { background: #febc2e; }
+    .code-chrome .d-g { background: #28c840; }
+    .code-file {
+        margin-left: 0.75rem;
+        font-family: var(--font-mono); font-size: 0.75rem;
+        color: var(--muted-foreground);
+    }
+    .code-body {
+        margin: 0; padding: 1.25rem 1.35rem;
+        font-family: var(--font-mono); font-size: 0.8rem;
+        line-height: 1.65; color: var(--foreground);
+        white-space: pre; overflow-x: auto;
+    }
+    .code-body .tk-punc { color: var(--muted-foreground); }
+    .code-body .tk-key  { color: oklch(0.7 0.15 200); }
+    .code-body .tk-str  { color: oklch(0.72 0.16 140); }
+    .code-body .tk-num  { color: oklch(0.75 0.16 80); }
+    .code-body .tk-hash { color: oklch(0.72 0.19 320); font-weight: 600; }
+    .code-body .tk-tag  { color: oklch(0.7 0.18 20); }
+
+    .showcase-notes { display: flex; flex-direction: column; gap: 1.5rem; }
+    .showcase-item { display: flex; gap: 1rem; align-items: flex-start; }
+    .showcase-num {
+        flex-shrink: 0;
+        width: 1.75rem; height: 1.75rem;
+        display: inline-flex; align-items: center; justify-content: center;
+        border-radius: 9999px;
+        background: var(--muted); border: 1px solid var(--border);
+        font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600;
+        color: var(--foreground);
+    }
+    .showcase-item h4 { margin: 0 0 0.35rem; font-size: 0.95rem; font-weight: 600; letter-spacing: -0.01em; }
+    .showcase-item p { margin: 0; color: var(--muted-foreground); font-size: 0.875rem; line-height: 1.55; }
+    .showcase-item code {
+        font-family: var(--font-mono); font-size: 0.8em;
+        background: var(--muted); padding: 0.05rem 0.35rem; border-radius: 4px;
+        border: 1px solid var(--border);
+    }
+
+    /* Install steps */
+    .install {
+        max-width: 1000px; margin: 0 auto;
+        padding: 4rem 1.5rem;
+        border-top: 1px solid var(--border);
+    }
+    .install-steps {
+        display: grid;
+        gap: 0.85rem;
+        grid-template-columns: 1fr;
+    }
+    @@media (min-width: 640px) { .install-steps { grid-template-columns: repeat(2, 1fr); } }
+
+    .install-step {
+        display: flex; gap: 0.85rem;
+        padding: 1rem 1.15rem;
+        border: 1px solid var(--border);
+        border-radius: calc(var(--radius) + 2px);
+        background: var(--card);
+        transition: border-color 150ms, background 150ms;
+    }
+    .install-step:hover { border-color: var(--border-strong); background: var(--muted); }
+    .install-num {
+        flex-shrink: 0;
+        width: 1.75rem; height: 1.75rem;
+        display: inline-flex; align-items: center; justify-content: center;
+        border-radius: 6px;
+        background: var(--foreground); color: var(--background);
+        font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700;
+    }
+    .install-body { flex: 1; min-width: 0; }
+    .install-body h4 { margin: 0 0 0.4rem; font-size: 0.875rem; font-weight: 600; letter-spacing: -0.005em; }
+    .mini-code {
+        display: flex; gap: 0.5rem; align-items: center;
+        font-family: var(--font-mono); font-size: 0.8125rem;
+        color: var(--foreground); overflow-x: auto; white-space: nowrap;
+    }
+    .mini-prompt { color: var(--muted-foreground); user-select: none; }
+
+    /* Primitives grid */
+    .primitives { max-width: 1100px; margin: 0 auto; padding: 4rem 1.5rem; border-top: 1px solid var(--border); }
+    .prim-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.65rem;
+    }
+    @@media (min-width: 640px) { .prim-grid { grid-template-columns: repeat(2, 1fr); } }
+    @@media (min-width: 900px) { .prim-grid { grid-template-columns: repeat(4, 1fr); } }
+
+    .prim {
+        display: flex; flex-direction: column; gap: 0.35rem;
+        padding: 0.9rem 1rem;
+        border: 1px solid var(--border);
+        border-radius: calc(var(--radius) + 2px);
+        background: var(--card);
+        color: var(--foreground);
+        text-decoration: none;
+        transition: border-color 150ms, background 150ms, transform 150ms;
+    }
+    .prim:hover { border-color: var(--border-strong); background: var(--muted); transform: translateY(-1px); }
+    .prim-key { font-family: var(--font-mono); font-size: 0.8125rem; font-weight: 600; color: var(--foreground); }
+    .prim-desc { font-size: 0.75rem; color: var(--muted-foreground); line-height: 1.4; }
+
+    /* CTA */
+    .cta {
+        max-width: 900px; margin: 0 auto;
+        padding: 6rem 1.5rem 8rem;
+        text-align: center;
+    }
+    .cta-inner h2 { font-size: 2rem; font-weight: 700; letter-spacing: -0.025em; margin: 0 0 0.85rem; }
+    .cta-inner p { margin: 0 0 2rem; color: var(--muted-foreground); font-size: 1rem; line-height: 1.6; }
+    @@media (min-width: 768px) { .cta-inner h2 { font-size: 2.5rem; } }
+</style>

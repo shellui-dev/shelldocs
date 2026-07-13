@@ -1,0 +1,120 @@
+@page "/blog"
+@layout HomeLayout
+
+<PageTitle>Blog — ShellDocs</PageTitle>
+
+<div class="blog-wrap">
+    <header class="blog-hero">
+        <span class="eyebrow">Blog</span>
+        <h1>Notes from the ShellDocs team</h1>
+        <p>Release notes, deep-dives, and the occasional postmortem. Written by the same people building the framework.</p>
+    </header>
+
+    <div class="posts">
+        @foreach (var post in _posts)
+        {
+            <a class="post" href="@post.Href">
+                <div class="post-meta">
+                    <span class="post-tag">@post.Tag</span>
+                    <time>@post.Date</time>
+                </div>
+                <h2>@post.Title</h2>
+                <p>@post.Excerpt</p>
+                <div class="post-foot">
+                    <div class="post-author">
+                        <span class="post-avatar" style="background:@post.AvatarBg">@post.AuthorInitials</span>
+                        <span>@post.Author</span>
+                    </div>
+                    <span class="post-read">@post.ReadTime</span>
+                </div>
+            </a>
+        }
+    </div>
+</div>
+
+@code {
+    private record Post(string Title, string Excerpt, string Tag, string Date, string Author, string AuthorInitials, string AvatarBg, string ReadTime, string Href);
+
+    private static readonly List<Post> _posts = new()
+    {
+        new("Announcing ShellDocs 0.1.0-alpha",
+            "The docs framework we wanted for .NET. Markdown-first, Razor-native, Cmd+K searchable, deploys anywhere. Here's what shipped and what's next on the roadmap.",
+            "Release", "Jul 12 · 2026", "Shephard Tseisi", "ST", "oklch(0.65 0.18 260)", "6 min read", "#"),
+
+        new("Why we built the TOC three times",
+            "The story of every fumadocs-inspired scroll spy we shipped, why they broke on Blazor Server, and the 50-line version we ended up with. A lesson in doing less.",
+            "Engineering", "Jul 9 · 2026", "Shephard Tseisi", "ST", "oklch(0.7 0.18 200)", "9 min read", "#"),
+
+        new("Frontmatter, not folders",
+            "How ShellDocs decides sidebar ordering, breadcrumbs, and prev/next navigation from a single YAML block. Plus: the meta.json escape hatch for when you need it.",
+            "Design", "Jul 3 · 2026", "Shephard Tseisi", "ST", "oklch(0.72 0.19 320)", "5 min read", "#"),
+
+        new("Razor components mid-markdown, live",
+            "A short walkthrough of how <Button /> mid-markdown becomes a real Blazor component at render time. Includes the parsing rules and why we chose them.",
+            "Engineering", "Jun 27 · 2026", "Shephard Tseisi", "ST", "oklch(0.7 0.18 200)", "7 min read", "#"),
+
+        new("The Blazor Server signalR trap",
+            "Why round-tripping every scroll event through SignalR is a bad idea, and the pattern we use to keep Blazor out of hot animation loops. Applies to any Blazor Server app.",
+            "Engineering", "Jun 20 · 2026", "Shephard Tseisi", "ST", "oklch(0.7 0.18 200)", "8 min read", "#"),
+
+        new("How shellui.dev is being rebuilt on ShellDocs",
+            "A dogfood tour: the ShellUI docs site is moving from custom Blazor pages to ShellDocs' primitives. Screenshots, migration notes, and every rough edge we hit.",
+            "Case study", "Jun 14 · 2026", "Shephard Tseisi", "ST", "oklch(0.68 0.2 30)", "10 min read", "#")
+    };
+}
+
+<style>
+    .blog-wrap { max-width: 60rem; margin: 0 auto; padding: 5rem 1.5rem 6rem; }
+
+    .blog-hero { text-align: center; margin-bottom: 3.5rem; }
+    .blog-hero .eyebrow {
+        display: inline-block;
+        font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em;
+        color: var(--muted-foreground); font-weight: 600;
+        padding: 0.2rem 0.6rem; border: 1px solid var(--border); border-radius: 9999px;
+        margin-bottom: 1rem;
+    }
+    .blog-hero h1 { font-size: 2.5rem; font-weight: 700; letter-spacing: -0.03em; margin: 0 0 0.75rem; line-height: 1.1; }
+    .blog-hero p { margin: 0 auto; max-width: 34rem; color: var(--muted-foreground); font-size: 1rem; line-height: 1.6; }
+    @@media (min-width: 768px) { .blog-hero h1 { font-size: 3rem; } }
+
+    .posts { display: flex; flex-direction: column; gap: 1rem; }
+    .post {
+        display: flex; flex-direction: column; gap: 0.5rem;
+        padding: 1.5rem;
+        border: 1px solid var(--border);
+        border-radius: calc(var(--radius) + 2px);
+        background: var(--card);
+        color: var(--foreground);
+        text-decoration: none;
+        transition: border-color 200ms, background 200ms, transform 200ms;
+    }
+    .post:hover { border-color: var(--border-strong); background: var(--muted); transform: translateY(-2px); }
+    .post-meta {
+        display: flex; align-items: center; gap: 0.75rem;
+        font-size: 0.75rem; color: var(--muted-foreground);
+    }
+    .post-tag {
+        display: inline-flex; align-items: center;
+        padding: 0.15rem 0.55rem;
+        background: var(--muted); border: 1px solid var(--border); border-radius: 9999px;
+        font-size: 0.7rem; font-weight: 500; color: var(--foreground);
+        letter-spacing: -0.005em;
+    }
+    .post h2 { margin: 0; font-size: 1.25rem; font-weight: 600; letter-spacing: -0.015em; line-height: 1.3; }
+    .post p { margin: 0; color: var(--muted-foreground); font-size: 0.9rem; line-height: 1.55; }
+    .post-foot {
+        display: flex; align-items: center; justify-content: space-between;
+        margin-top: 0.5rem; padding-top: 0.9rem;
+        border-top: 1px solid var(--border);
+        font-size: 0.75rem; color: var(--muted-foreground);
+    }
+    .post-author { display: inline-flex; align-items: center; gap: 0.5rem; }
+    .post-avatar {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 1.4rem; height: 1.4rem;
+        border-radius: 9999px;
+        font-size: 0.6rem; font-weight: 700; color: white;
+        letter-spacing: 0;
+    }
+</style>
