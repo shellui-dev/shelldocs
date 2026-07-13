@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <UserSecretsId>shelldocs-preview</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\ShellDocs.Components\ShellDocs.Components.csproj" />
+    <ProjectReference Include="..\..\src\ShellDocs.Core\ShellDocs.Core.csproj" />
+    <ProjectReference Include="..\..\src\ShellDocs.Markdown\ShellDocs.Markdown.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="content/**/*.md;content/**/meta.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>
