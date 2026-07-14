@@ -1,0 +1,64 @@
+@inject MarkdownRenderer Renderer
+@inject IJSRuntime JS
+
+<div class="shelldocs-prose">
+    @if (_parts is null)
+    {
+        <div class="shelldocs-loading">Loading…</div>
+    }
+    else
+    {
+        @foreach (var part in _parts)
+        {
+            @if (part is HtmlPart html)
+            {
+                @((MarkupString)html.Html)
+            }
+            else if (part is SlotPart slot)
+            {
+                @if (slot.Slot is ComponentSlot comp)
+                {
+                    <DynamicComponent Type="comp.ComponentType" Parameters="BuildParameters(comp)" />
+                }
+                else if (slot.Slot is PreviewSlot preview)
+                {
+                    <PreviewFrame Preview="preview" />
+                }
+            }
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public string? Markdown { get; set; }
+    [Parameter] public RenderedDocument? Document { get; set; }
+
+    private IReadOnlyList<RenderPart>? _parts;
+
+    protected override void OnParametersSet()
+    {
+        var doc = Document ?? (Markdown is not null ? Renderer.Render(Markdown) : null);
+        _parts = doc is null ? null : SlotSplitter.Split(doc);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_parts is null) return;
+        try { await JS.InvokeVoidAsync("shelldocsHighlight"); } catch { }
+    }
+
+    private IDictionary<string, object> BuildParameters(ComponentSlot slot) =>
+        BuildParameters(slot.Parameters, slot.ChildContentRaw);
+
+    private IDictionary<string, object> BuildParameters(IReadOnlyDictionary<string, string> attrs, string? childContentRaw)
+    {
+        var dict = new Dictionary<string, object>(StringComparer.Ordinal);
+        foreach (var (k, v) in attrs) dict[k] = v;
+        if (!string.IsNullOrEmpty(childContentRaw))
+        {
+            dict["ChildContent"] = (RenderFragment)(builder =>
+                builder.AddMarkupContent(0, childContentRaw));
+        }
+        return dict;
+    }
+}
