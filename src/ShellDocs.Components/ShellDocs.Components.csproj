@@ -13,9 +13,10 @@
   <ItemGroup>
     <ProjectReference Include="..\ShellDocs.Core\ShellDocs.Core.csproj" />
     <ProjectReference Include="..\ShellDocs.Markdown\ShellDocs.Markdown.csproj" />
+    <ProjectReference Include="..\ShellDocs.Tokens\ShellDocs.Tokens.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
-    <!-- ShellUI.Components ref lands in feat/components-shell once shellui is published to NuGet. -->
+    <!-- ShellUI.Components ref lands once shellui is published to NuGet. -->
     <!-- <PackageReference Include="ShellUI.Components" /> -->
   </ItemGroup>
 
