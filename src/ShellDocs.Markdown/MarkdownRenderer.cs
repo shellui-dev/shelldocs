@@ -28,7 +28,7 @@ public class MarkdownRenderer
 
         var doc = Markdig.Markdown.Parse(processed, _pipeline);
         var headings = HeadingExtractor.Extract(doc);
-        var html = doc.ToHtml(_pipeline);
+        var html = CodeBlockEnhancer.Enhance(doc.ToHtml(_pipeline));
 
         return new RenderedDocument(html, slots, parsed, headings);
     }
