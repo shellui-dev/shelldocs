@@ -164,10 +164,10 @@ body { margin: 0; min-height: 100vh; }
     font-feature-settings: 'ss01', 'cv02';
 }
 
-/* Prism.js override — let Prism color tokens, keep our frame chrome */
-.shelldocs-codeblock pre[class*="language-"],
-.shelldocs-prose pre[class*="language-"] {
-    background: transparent !important;
+/* Shiki output — normalise its inline styles into our chrome. */
+.shelldocs-codeblock pre.shiki,
+.shelldocs-prose pre.shiki,
+.preview-body pre.shiki {
     margin: 0 !important;
     padding: 1rem 1.125rem !important;
     border: 0 !important;
@@ -175,14 +175,21 @@ body { margin: 0; min-height: 100vh; }
     font-family: var(--font-mono) !important;
     font-size: 0.85rem !important;
     line-height: 1.7 !important;
-    text-shadow: none !important;
+    overflow-x: auto;
 }
-.shelldocs-codeblock code[class*="language-"],
-.shelldocs-prose code[class*="language-"] {
+pre.shiki code {
     background: transparent !important;
-    border: 0 !important;
     padding: 0 !important;
+    border: 0 !important;
     font-family: var(--font-mono) !important;
     font-size: inherit !important;
-    text-shadow: none !important;
 }
+
+/* Dual-theme: Shiki emits --shiki-light + --shiki-dark on each token span
+   with defaultColor:false. Only set `color` — NEVER background on spans, or
+   every .line wrapper paints a bg strip across the block. */
+pre.shiki { background-color: transparent !important; }
+pre.shiki,
+pre.shiki span { color: var(--shiki-light); }
+:root.dark pre.shiki,
+:root.dark pre.shiki span { color: var(--shiki-dark); }
