@@ -1,0 +1,262 @@
+@import url('https://rsms.me/inter/inter.css');
+
+/*
+    Neutral palette ported from fumadocs base-ui.
+    Accent is a subtle translucent gray, not a color — vibrancy is reserved for semantic states.
+*/
+
+:root {
+    --background: hsl(0, 0%, 96%);
+    --foreground: hsl(0, 0%, 3.9%);
+
+    --card: hsl(0, 0%, 94.7%);
+    --card-foreground: hsl(0, 0%, 3.9%);
+
+    --popover: hsl(0, 0%, 98%);
+    --popover-foreground: hsl(0, 0%, 15.1%);
+
+    --primary: hsl(0, 0%, 9%);
+    --primary-foreground: hsl(0, 0%, 98%);
+
+    --secondary: hsl(0, 0%, 93.1%);
+    --secondary-foreground: hsl(0, 0%, 9%);
+
+    --muted: hsl(0, 0%, 96.1%);
+    --muted-foreground: hsl(0, 0%, 45.1%);
+
+    --accent: hsla(0, 0%, 82%, 0.5);
+    --accent-foreground: hsl(0, 0%, 9%);
+
+    --border: hsla(0, 0%, 80%, 0.5);
+    --border-strong: hsl(0, 0%, 78%);
+    --input: hsl(0, 0%, 89%);
+    --ring: hsl(0, 0%, 63.9%);
+
+    /* Semantic — the only vibrant tokens */
+    --info: oklch(0.623 0.214 259.815);
+    --warning: oklch(0.769 0.188 70.08);
+    --error: oklch(0.637 0.237 25.331);
+    --success: oklch(0.723 0.219 149.579);
+
+    --radius: 0.5rem;
+    --sidebar-width: 17.5rem;
+    --toc-width: 14rem;
+    --header-height: 3.5rem;
+
+    --font-sans: 'Inter var', 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-mono: ui-monospace, 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
+
+    color-scheme: light;
+}
+
+:root.dark {
+    --background: hsl(0, 0%, 7.04%);
+    --foreground: hsl(0, 0%, 92%);
+
+    --card: hsl(0, 0%, 9.8%);
+    --card-foreground: hsl(0, 0%, 98%);
+
+    --popover: hsl(0, 0%, 11.6%);
+    --popover-foreground: hsl(0, 0%, 86.9%);
+
+    --primary: hsl(0, 0%, 98%);
+    --primary-foreground: hsl(0, 0%, 9%);
+
+    --secondary: hsl(0, 0%, 12.9%);
+    --secondary-foreground: hsl(0, 0%, 92%);
+
+    --muted: hsl(0, 0%, 12.9%);
+    --muted-foreground: hsla(0, 0%, 70%, 0.8);
+
+    --accent: hsla(0, 0%, 40.9%, 0.3);
+    --accent-foreground: hsl(0, 0%, 90%);
+
+    --border: hsla(0, 0%, 40%, 0.2);
+    --border-strong: hsla(0, 0%, 40%, 0.5);
+    --input: hsl(0, 0%, 15%);
+    --ring: hsl(0, 0%, 54.9%);
+
+    color-scheme: dark;
+}
+
+/* Base */
+*, *::before, *::after { box-sizing: border-box; border-color: var(--border); }
+html {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11', 'ss01';
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    scroll-behavior: smooth;
+    scrollbar-gutter: stable; /* fumadocs — no jumpy shift when a modal opens */
+}
+body { margin: 0; min-height: 100vh; }
+
+::selection { background: color-mix(in oklch, var(--primary) 20%, transparent); color: var(--foreground); }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 8px; border: 2px solid var(--background); }
+::-webkit-scrollbar-thumb:hover { background: var(--muted-foreground); }
+
+/* Prose */
+.shelldocs-prose { color: var(--foreground); font-size: 0.95rem; line-height: 1.7; }
+.shelldocs-prose > *:first-child { margin-top: 0; }
+.shelldocs-prose > *:last-child { margin-bottom: 0; }
+
+.shelldocs-prose h1 { font-size: 2.125rem; font-weight: 700; letter-spacing: -0.025em; margin: 0 0 0.75rem; line-height: 1.2; color: var(--foreground); }
+.shelldocs-prose h2 { font-size: 1.5rem; font-weight: 600; letter-spacing: -0.02em; margin: 2.5rem 0 0.75rem; line-height: 1.3; scroll-margin-top: calc(var(--header-height) + 2rem); }
+.shelldocs-prose h3 { font-size: 1.125rem; font-weight: 600; letter-spacing: -0.015em; margin: 1.75rem 0 0.5rem; line-height: 1.4; scroll-margin-top: calc(var(--header-height) + 2rem); }
+.shelldocs-prose h4 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
+
+.shelldocs-prose p { margin: 1rem 0; color: var(--foreground); }
+
+.shelldocs-prose a {
+    color: var(--foreground);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1px;
+    text-decoration-color: color-mix(in oklch, var(--foreground) 30%, transparent);
+    transition: text-decoration-color 150ms;
+    font-weight: 500;
+}
+.shelldocs-prose a:hover { text-decoration-color: var(--foreground); }
+
+.shelldocs-prose strong { font-weight: 600; color: var(--foreground); }
+
+.shelldocs-prose code {
+    font-family: var(--font-mono);
+    font-size: 0.85em;
+    background: var(--muted);
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    color: var(--foreground);
+    border: 1px solid var(--border);
+    font-feature-settings: 'ss01';
+}
+
+.shelldocs-prose ul, .shelldocs-prose ol { padding-left: 1.5rem; margin: 1rem 0; }
+.shelldocs-prose li { margin: 0.35rem 0; }
+.shelldocs-prose li::marker { color: var(--muted-foreground); }
+
+.shelldocs-prose blockquote {
+    border-left: 3px solid var(--border-strong);
+    padding: 0.75rem 0 0.75rem 1rem;
+    margin: 1.25rem 0;
+    color: var(--muted-foreground);
+    background: color-mix(in oklch, var(--muted) 60%, transparent);
+    border-radius: 0 var(--radius) var(--radius) 0;
+}
+.shelldocs-prose blockquote p { margin: 0; }
+
+.shelldocs-prose table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1.25rem 0;
+    font-size: 0.875rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+.shelldocs-prose th, .shelldocs-prose td { padding: 0.625rem 0.875rem; text-align: left; border-bottom: 1px solid var(--border); }
+.shelldocs-prose th { font-weight: 600; color: var(--foreground); background: var(--muted); font-size: 0.8125rem; }
+.shelldocs-prose tr:last-child td { border-bottom: 0; }
+.shelldocs-prose tr:hover { background: color-mix(in oklch, var(--muted) 40%, transparent); }
+
+.shelldocs-prose hr { border: 0; border-top: 1px solid var(--border); margin: 2.5rem 0; }
+.shelldocs-prose img { border-radius: var(--radius); border: 1px solid var(--border); max-width: 100%; height: auto; }
+
+/* Code blocks — wrapped by CodeBlockEnhancer */
+.shelldocs-codeblock {
+    position: relative;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--card);
+    overflow: hidden;
+    margin: 1.5rem 0;
+}
+.shelldocs-codeblock-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.375rem 0.5rem 0.375rem 0.875rem;
+    border-bottom: 1px solid var(--border);
+    background: color-mix(in oklch, var(--card) 60%, var(--background));
+}
+.shelldocs-code-lang {
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--muted-foreground);
+    text-transform: lowercase;
+    letter-spacing: 0.02em;
+    font-family: var(--font-mono);
+}
+.shelldocs-codeblock-copy {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 5px;
+    color: var(--muted-foreground);
+    cursor: pointer;
+    transition: color 150ms, background 150ms, border-color 150ms;
+    padding: 0;
+    margin-left: auto;
+}
+.shelldocs-codeblock-copy:hover {
+    color: var(--foreground);
+    background: var(--muted);
+    border-color: var(--border);
+}
+.shelldocs-codeblock-copy svg { width: 0.875rem; height: 0.875rem; }
+.shelldocs-codeblock-copy .icon-check { display: none; color: var(--success); }
+.shelldocs-codeblock-copy.copied .icon-copy { display: none; }
+.shelldocs-codeblock-copy.copied .icon-check { display: block; }
+
+.shelldocs-codeblock pre {
+    margin: 0;
+    padding: 1rem 1.125rem;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    font-size: 0.85rem;
+    line-height: 1.7;
+    overflow-x: auto;
+}
+.shelldocs-codeblock pre code {
+    background: transparent;
+    padding: 0;
+    border: 0;
+    font-family: var(--font-mono);
+    font-size: inherit;
+    color: var(--foreground);
+    font-feature-settings: 'ss01', 'cv02';
+}
+
+/* Prism.js override — let Prism color tokens, keep our frame chrome */
+.shelldocs-codeblock pre[class*="language-"],
+.shelldocs-prose pre[class*="language-"] {
+    background: transparent !important;
+    margin: 0 !important;
+    padding: 1rem 1.125rem !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    font-family: var(--font-mono) !important;
+    font-size: 0.85rem !important;
+    line-height: 1.7 !important;
+    text-shadow: none !important;
+}
+.shelldocs-codeblock code[class*="language-"],
+.shelldocs-prose code[class*="language-"] {
+    background: transparent !important;
+    border: 0 !important;
+    padding: 0 !important;
+    font-family: var(--font-mono) !important;
+    font-size: inherit !important;
+    text-shadow: none !important;
+}
