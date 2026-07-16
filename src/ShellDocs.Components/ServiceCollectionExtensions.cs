@@ -14,6 +14,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton(options);
 
         services.AddScoped<MobileNavState>();
+        services.AddScoped<ThemeState>();
         services.AddSingleton<TypeRegistry>(_ => options.BuildTypeRegistry());
         services.AddSingleton<MarkdownRenderer>(sp => new MarkdownRenderer(sp.GetRequiredService<TypeRegistry>()));
 
