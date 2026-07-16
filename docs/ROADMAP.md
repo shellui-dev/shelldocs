@@ -94,7 +94,7 @@ Extracts the palette + scale from `ShellDocs.Components/wwwroot/shelldocs-theme.
 - **ShellUI integration path (NuGet install):** ShellUI's RCL detects `ShellDocs.Tokens` at runtime and skips emitting its own token file. Deferred to Phase 3 — needs a small opt-in flag on `AddShellUI()`.
 - Unit tests: token file emits, dark-mode class toggling, no duplicate declarations across bundles
 
-### `feat/codeblock-shiki`
+### ✅ `feat/codeblock-shiki` — shipped
 Ships to `ShellDocs.Components`.
 
 - `CodeBlock` component — takes `Language`, `Code`, `Filename`, `HighlightLines`
