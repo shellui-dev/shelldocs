@@ -8,6 +8,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\ShellDocs.Core\ShellDocs.Core.csproj" />
     <ProjectReference Include="..\..\src\ShellDocs.Markdown\ShellDocs.Markdown.csproj" />
+    <ProjectReference Include="..\..\src\ShellDocs.Components\ShellDocs.Components.csproj" />
     <ProjectReference Include="..\..\src\ShellDocs.Templates\ShellDocs.Templates.csproj" />
   </ItemGroup>
 
