@@ -1,0 +1,16 @@
+{
+  "title": "Documentation",
+  "pages": [
+    {
+      "title": "Getting Started",
+      "pages": ["introduction", "installation"]
+    },
+    "---",
+    {
+      "title": "Concepts",
+      "pages": ["theming", "markdown-syntax"]
+    },
+    "---",
+    "components"
+  ]
+}

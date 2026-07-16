@@ -1,0 +1,68 @@
+@inject NavigationManager Nav
+
+<div class="pkg" @onfocusout="OnBlur">
+    <button type="button" class="pkg-trigger" @onclick="Toggle" aria-haspopup="listbox" aria-expanded="@_open">
+        <span class="pkg-mark">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <path d="@Selected.IconPath"/>
+            </svg>
+        </span>
+        <span class="pkg-value">@Selected.Title</span>
+        <svg class="pkg-chevrons" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="8 10 12 6 16 10"/>
+            <polyline points="16 14 12 18 8 14"/>
+        </svg>
+    </button>
+
+    @if (_open)
+    {
+        <div class="pkg-menu" role="listbox">
+            @foreach (var pkg in Packages)
+            {
+                var isSel = pkg.Id == Selected.Id;
+                <button type="button" class="pkg-option @(isSel ? "selected" : "")" role="option" aria-selected="@isSel" @onclick="() => Choose(pkg)">
+                    <span class="pkg-option-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="@pkg.IconPath"/>
+                        </svg>
+                    </span>
+                    <span class="pkg-option-body">
+                        <span class="pkg-option-title">@pkg.Title</span>
+                        <span class="pkg-option-desc">@pkg.Description</span>
+                    </span>
+                    @if (isSel)
+                    {
+                        <svg class="pkg-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    }
+                </button>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private bool _open;
+
+    private record Package(string Id, string Title, string Description, string IconPath, string RootUrl);
+
+    private static readonly List<Package> Packages = new()
+    {
+        new("shelldocs",          "ShellDocs",          "The docs framework itself.",       "M12 2 4 6v6c0 5 3.5 9.5 8 10 4.5-.5 8-5 8-10V6z", "/docs/introduction"),
+        new("shelldocs.markdown", "ShellDocs.Markdown", "Markdig extensions, slots, MDX.",  "M4 4h16v16H4z M4 9h16 M9 4v16", "/docs/markdown"),
+        new("shelldocs.core",     "ShellDocs.Core",     "Navigation graph + content model.","M12 2 2 7l10 5 10-5-10-5z M2 17l10 5 10-5 M2 12l10 5 10-5", "/docs/core"),
+        new("shelldocs.cli",      "ShellDocs.CLI",      "Scaffold, build, publish.",        "m8 6-6 6 6 6 M16 6l6 6-6 6", "/docs/cli"),
+        new("shelldocs.components","ShellDocs.Components","Layouts, header, sidebar, TOC.","M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z", "/docs/components")
+    };
+
+    private Package Selected => Packages.FirstOrDefault(p => Nav.Uri.Contains(p.RootUrl.Split('/', StringSplitOptions.RemoveEmptyEntries).LastOrDefault() ?? "")) ?? Packages[0];
+
+    private void Toggle() => _open = !_open;
+
+    private void Choose(Package pkg)
+    {
+        _open = false;
+        Nav.NavigateTo(pkg.RootUrl);
+    }
+
+    private void OnBlur(FocusEventArgs _) { /* closes via next click cycle */ }
+}

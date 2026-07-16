@@ -1,0 +1,11 @@
+.home-shell {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--background);
+    color: var(--foreground);
+}
+
+.home-main {
+    flex: 1;
+}

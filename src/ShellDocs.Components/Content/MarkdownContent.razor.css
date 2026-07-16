@@ -1,0 +1,49 @@
+.shelldocs-loading {
+    color: var(--muted-foreground);
+    font-size: 0.875rem;
+    padding: 2rem 0;
+}
+
+::deep .shelldocs-preview {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin: 1.25rem 0;
+    overflow: hidden;
+    background: var(--card);
+}
+
+::deep .shelldocs-preview-render {
+    padding: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 8rem;
+}
+
+::deep .shelldocs-preview-code {
+    border-top: 1px solid var(--border);
+    background: var(--muted);
+}
+
+::deep .shelldocs-preview-code summary {
+    cursor: pointer;
+    padding: 0.5rem 0.875rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--muted-foreground);
+    list-style: none;
+    user-select: none;
+}
+::deep .shelldocs-preview-code summary:hover { color: var(--foreground); }
+::deep .shelldocs-preview-code summary::-webkit-details-marker { display: none; }
+
+::deep .shelldocs-preview-code pre {
+    margin: 0;
+    padding: 0.875rem;
+    background: transparent;
+    border-radius: 0;
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    line-height: 1.6;
+    overflow-x: auto;
+}

@@ -1,0 +1,61 @@
+.prevnext {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.85rem;
+    margin-top: 3rem;
+}
+
+.prevnext-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.9rem 1.1rem;
+    border: 1px solid var(--border);
+    border-radius: calc(var(--radius) + 2px);
+    background: transparent;
+    color: var(--foreground);
+    text-decoration: none;
+    transition: border-color 200ms, background 200ms;
+    min-width: 0;
+}
+.prevnext-card:hover { border-color: var(--border-strong); background: var(--muted); }
+.prevnext-card.next { text-align: right; align-items: flex-end; }
+
+.prevnext-hint {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--muted-foreground);
+    font-size: 0.9rem;
+    font-weight: 500;
+    letter-spacing: -0.005em;
+    transition: color 200ms;
+}
+.prevnext-card:hover .prevnext-hint { color: var(--foreground); }
+.prevnext-card.prev .prevnext-hint > span { line-height: 1.3; }
+.prevnext-card.next .prevnext-hint > span { line-height: 1.3; }
+
+.chev {
+    width: 0.95rem;
+    height: 0.95rem;
+    color: var(--muted-foreground);
+    transition: color 200ms, transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.prevnext-card:hover .chev { color: var(--foreground); }
+.prevnext-card.prev:hover .chev { transform: translateX(-2px); }
+.prevnext-card.next:hover .chev { transform: translateX(2px); }
+
+.prevnext-desc {
+    display: block;
+    color: var(--muted-foreground);
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    letter-spacing: -0.003em;
+}
+
+.prevnext-placeholder { display: block; }
+
+@media (max-width: 640px) {
+    .prevnext { grid-template-columns: 1fr; }
+    .prevnext-placeholder { display: none; }
+}

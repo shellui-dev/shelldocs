@@ -1,0 +1,113 @@
+@using ShellDocs.Components.Chrome
+
+@if (Node.Kind == NodeKind.Divider)
+{
+    <hr class="sidebar-divider" />
+}
+else if (Node.Kind == NodeKind.Section)
+{
+    <div class="sidebar-section" data-depth="@Depth" data-open="@(_isOpen ? "true" : "false")">
+        @if (!string.IsNullOrEmpty(Node.Title))
+        {
+            @if (_isToggleable)
+            {
+                <button type="button" class="sidebar-section-label sidebar-section-toggle" @onclick="Toggle" aria-expanded="@_isOpen">
+                    @RenderLabelInner()
+                    <svg class="sidebar-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
+                </button>
+            }
+            else
+            {
+                <div class="sidebar-section-label">
+                    @RenderLabelInner()
+                </div>
+            }
+        }
+        @if (!_isToggleable || _isOpen)
+        {
+            <div class="sidebar-section-items">
+                @foreach (var child in Node.Children)
+                {
+                    <DocsSidebarNode Node="child" Depth="@(Depth + 1)" CurrentPath="@CurrentPath" />
+                }
+            </div>
+        }
+    </div>
+}
+else
+{
+    var isActive = string.Equals(Node.Url.TrimEnd('/'), CurrentPath.TrimEnd('/'), StringComparison.OrdinalIgnoreCase);
+    var itemIcon = Depth <= 1 ? SidebarIcons.GetPath(Node.Title) : null;
+    <a class="sidebar-item @(isActive ? "active" : "")" href="@Node.Url">
+        @if (itemIcon is not null)
+        {
+            <svg class="sidebar-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="@itemIcon"/></svg>
+        }
+        <span class="sidebar-item-label">@Node.Title</span>
+    </a>
+}
+
+@code {
+    [Parameter, EditorRequired] public NavigationNode Node { get; set; } = default!;
+    [Parameter] public int Depth { get; set; }
+    [Parameter] public string CurrentPath { get; set; } = "/";
+
+    private bool _isOpen;
+    private bool _isToggleable;
+    private bool _initialized;
+    private string _lastPath = "";
+
+    protected override void OnParametersSet()
+    {
+        _isToggleable = Node.Kind == NodeKind.Section
+            && Depth >= 1
+            && Node.Children.Any(c => c.Kind == NodeKind.Page);
+
+        var containsActive = ContainsPath(Node, CurrentPath);
+
+        /* Open on first render if we contain the active page.
+           Re-open on later renders only when the active path just moved into us —
+           this preserves the user's manual collapses on the current section. */
+        if (!_initialized)
+        {
+            _isOpen = containsActive;
+            _initialized = true;
+        }
+        else if (containsActive && !ContainsPath(Node, _lastPath))
+        {
+            _isOpen = true;
+        }
+
+        _lastPath = CurrentPath;
+    }
+
+    private void Toggle() => _isOpen = !_isOpen;
+
+    private static bool ContainsPath(NavigationNode node, string path)
+    {
+        if (string.IsNullOrEmpty(path)) return false;
+        var target = path.TrimEnd('/');
+        foreach (var child in node.Children)
+        {
+            if (child.Kind == NodeKind.Page && string.Equals(child.Url.TrimEnd('/'), target, StringComparison.OrdinalIgnoreCase))
+                return true;
+            if (child.Kind == NodeKind.Section && ContainsPath(child, path))
+                return true;
+        }
+        return false;
+    }
+
+    private RenderFragment RenderLabelInner() => builder =>
+    {
+        var iconD = Depth <= 1 ? SidebarIcons.GetPath(Node.Title) : null;
+        if (iconD is not null)
+        {
+            builder.AddMarkupContent(0,
+                $"<svg class=\"sidebar-section-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"{iconD}\"/></svg>");
+        }
+        builder.OpenElement(1, "span");
+        builder.AddAttribute(2, "class", "sidebar-section-title");
+        builder.AddContent(3, Node.Title);
+        builder.CloseElement();
+    };
+}

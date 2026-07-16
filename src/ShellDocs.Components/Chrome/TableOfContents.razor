@@ -1,0 +1,67 @@
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+@using ShellDocs.Core
+
+@if (_items.Count > 0)
+{
+    <nav class="toc" aria-label="On this page">
+        <div class="toc-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            <span>On this page</span>
+        </div>
+        <ul class="toc-list" @ref="_listEl">
+            <li class="toc-bar" aria-hidden="true"></li>
+            @foreach (var h in _items)
+            {
+                <li class="toc-item" data-level="@h.Level">
+                    <a class="toc-link" href="#@h.Id" data-toc-id="@h.Id"
+                       @onclick="() => Scroll(h.Id)" @onclick:preventDefault="true">@h.Text</a>
+                </li>
+            }
+        </ul>
+    </nav>
+}
+
+@code {
+    [Parameter] public IReadOnlyList<Heading>? Headings { get; set; }
+
+    private List<Heading> _items = new();
+    private ElementReference _listEl;
+    private IJSObjectReference? _handle;
+    private string _sig = "";
+
+    protected override void OnParametersSet()
+    {
+        _items = (Headings ?? Array.Empty<Heading>())
+            .Where(h => h.Level == 2 || h.Level == 3)
+            .ToList();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool _)
+    {
+        if (_items.Count == 0) return;
+        var sig = string.Join(",", _items.Select(h => h.Id));
+        if (sig == _sig) return;
+
+        if (_handle is not null)
+        {
+            try { await _handle.InvokeVoidAsync("dispose"); await _handle.DisposeAsync(); } catch { }
+            _handle = null;
+        }
+        try
+        {
+            _handle = await JS.InvokeAsync<IJSObjectReference>(
+                "shelldocsToc.attach", _listEl, _items.Select(h => h.Id).ToArray());
+            _sig = sig;
+        }
+        catch { }
+    }
+
+    private Task Scroll(string id) => JS.InvokeVoidAsync("shelldocsToc.scrollTo", id).AsTask();
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_handle is null) return;
+        try { await _handle.InvokeVoidAsync("dispose"); await _handle.DisposeAsync(); } catch { }
+    }
+}

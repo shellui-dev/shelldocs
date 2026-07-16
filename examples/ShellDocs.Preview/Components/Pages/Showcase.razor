@@ -1,0 +1,166 @@
+@page "/showcase"
+@layout HomeLayout
+
+<PageTitle>Showcase — ShellDocs</PageTitle>
+
+<div class="show-wrap">
+    <header class="show-hero">
+        <span class="eyebrow">Showcase</span>
+        <h1>Docs sites built with ShellDocs</h1>
+        <p>The teams and projects shipping documentation on ShellDocs. Submit yours by opening a PR against <code>docs/showcase.json</code>.</p>
+    </header>
+
+    <div class="show-grid">
+        @foreach (var s in _sites)
+        {
+            <a class="show-card" href="@s.Url" target="_blank" rel="noopener">
+                <div class="show-preview" style="background:@s.PreviewBg">
+                    <div class="show-mini" style="color:@s.Accent">
+                        <div class="show-mini-nav">
+                            <span class="show-mini-dot"></span>
+                            <span class="show-mini-line" style="width:35%"></span>
+                            <span class="show-mini-line" style="width:20%;opacity:0.5"></span>
+                            <span class="show-mini-line" style="width:15%;opacity:0.5"></span>
+                        </div>
+                        <div class="show-mini-body">
+                            <span class="show-mini-title">@s.Name</span>
+                            <span class="show-mini-desc"></span>
+                            <span class="show-mini-desc" style="width:70%"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="show-meta">
+                    <div>
+                        <h3>@s.Name</h3>
+                        <p>@s.Description</p>
+                    </div>
+                    <span class="show-arrow">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M7 7h10v10"/></svg>
+                    </span>
+                </div>
+            </a>
+        }
+    </div>
+
+    <div class="show-cta">
+        <h2>Ship your docs on ShellDocs?</h2>
+        <p>Open a PR to get listed here. Include a screenshot, a one-line description, and your live URL.</p>
+        <a class="btn primary" href="https://github.com/shellui-dev/shelldocs" target="_blank" rel="noopener">Submit on GitHub →</a>
+    </div>
+</div>
+
+@code {
+    private record Site(string Name, string Description, string Url, string PreviewBg, string Accent);
+
+    private static readonly List<Site> _sites = new()
+    {
+        new("shellui.dev", "The primary ShellUI component library docs — dogfooding ShellDocs since day one.",
+            "https://shellui.dev", "linear-gradient(135deg, oklch(0.94 0.02 260), oklch(0.88 0.05 200))", "oklch(0.4 0.15 260)"),
+
+        new("shellops.tools", "Ops tooling and shell scripts written up as browsable, versioned recipes.",
+            "#", "linear-gradient(135deg, oklch(0.93 0.03 30), oklch(0.86 0.08 60))", "oklch(0.4 0.15 30)"),
+
+        new("shelldocs.dev", "ShellDocs' own docs, built on ShellDocs. Yes, we're that team.",
+            "#", "linear-gradient(135deg, oklch(0.92 0.04 320), oklch(0.86 0.08 280))", "oklch(0.4 0.15 320)"),
+
+        new("blazor-alpine.io", "A community-maintained cookbook of Blazor patterns paired with Alpine.js snippets.",
+            "#", "linear-gradient(135deg, oklch(0.94 0.03 140), oklch(0.87 0.06 170))", "oklch(0.4 0.15 140)"),
+
+        new("razoruikit", "A component library for internal tooling, documented with ShellDocs' preview-first blocks.",
+            "#", "linear-gradient(135deg, oklch(0.94 0.02 220), oklch(0.87 0.05 260))", "oklch(0.4 0.15 220)"),
+
+        new("shellops/mastery", "A running personal knowledge base — mixed markdown, code, and live component demos.",
+            "#", "linear-gradient(135deg, oklch(0.93 0.03 60), oklch(0.86 0.08 100))", "oklch(0.4 0.15 60)")
+    };
+}
+
+<style>
+    .show-wrap { max-width: 76rem; margin: 0 auto; padding: 5rem 1.5rem 6rem; }
+
+    .show-hero { text-align: center; margin-bottom: 3.5rem; }
+    .show-hero .eyebrow {
+        display: inline-block;
+        font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em;
+        color: var(--muted-foreground); font-weight: 600;
+        padding: 0.2rem 0.6rem; border: 1px solid var(--border); border-radius: 9999px;
+        margin-bottom: 1rem;
+    }
+    .show-hero h1 { font-size: 2.5rem; font-weight: 700; letter-spacing: -0.03em; margin: 0 0 0.75rem; line-height: 1.1; }
+    .show-hero p { margin: 0 auto; max-width: 40rem; color: var(--muted-foreground); font-size: 1rem; line-height: 1.6; }
+    .show-hero code { font-family: var(--font-mono); font-size: 0.875em; background: var(--muted); padding: 0.1rem 0.4rem; border-radius: 4px; border: 1px solid var(--border); }
+    @@media (min-width: 768px) { .show-hero h1 { font-size: 3rem; } }
+
+    .show-grid {
+        display: grid; gap: 1rem;
+        grid-template-columns: 1fr;
+        margin-bottom: 5rem;
+    }
+    @@media (min-width: 640px) { .show-grid { grid-template-columns: repeat(2, 1fr); } }
+    @@media (min-width: 1000px) { .show-grid { grid-template-columns: repeat(3, 1fr); } }
+
+    .show-card {
+        display: flex; flex-direction: column;
+        border: 1px solid var(--border);
+        border-radius: calc(var(--radius) + 2px);
+        background: var(--card);
+        text-decoration: none;
+        color: var(--foreground);
+        overflow: hidden;
+        transition: border-color 200ms, transform 200ms, box-shadow 200ms;
+    }
+    .show-card:hover {
+        border-color: var(--border-strong);
+        transform: translateY(-3px);
+        box-shadow: 0 12px 32px -12px rgb(0 0 0 / 0.15);
+    }
+
+    .show-preview {
+        aspect-ratio: 16 / 10;
+        padding: 1rem;
+        display: flex;
+        align-items: center; justify-content: center;
+    }
+    .show-mini {
+        width: 100%; max-width: 14rem;
+        border-radius: 6px;
+        background: rgb(255 255 255 / 0.7);
+        backdrop-filter: blur(8px);
+        padding: 0.5rem 0.6rem;
+        display: flex; flex-direction: column; gap: 0.5rem;
+        box-shadow: 0 4px 12px rgb(0 0 0 / 0.08);
+    }
+    .show-mini-nav { display: flex; align-items: center; gap: 0.35rem; }
+    .show-mini-dot { width: 0.55rem; height: 0.55rem; border-radius: 9999px; background: currentColor; opacity: 0.7; }
+    .show-mini-line { height: 0.4rem; border-radius: 2px; background: currentColor; opacity: 0.35; }
+    .show-mini-body { display: flex; flex-direction: column; gap: 0.35rem; padding-top: 0.25rem; }
+    .show-mini-title { height: 0.7rem; border-radius: 3px; background: currentColor; width: 60%; }
+    .show-mini-desc  { height: 0.4rem; border-radius: 2px; background: currentColor; opacity: 0.35; width: 100%; }
+
+    .show-meta {
+        display: flex; align-items: flex-start; justify-content: space-between;
+        gap: 0.75rem;
+        padding: 1rem 1.15rem;
+        border-top: 1px solid var(--border);
+    }
+    .show-meta h3 { margin: 0 0 0.2rem; font-size: 0.9375rem; font-weight: 600; letter-spacing: -0.01em; }
+    .show-meta p { margin: 0; font-size: 0.8125rem; color: var(--muted-foreground); line-height: 1.5; }
+    .show-arrow {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 1.75rem; height: 1.75rem;
+        border-radius: 6px;
+        background: var(--muted);
+        color: var(--muted-foreground);
+        flex-shrink: 0;
+        transition: color 150ms, background 150ms;
+    }
+    .show-card:hover .show-arrow { color: var(--foreground); background: var(--accent); }
+    .show-arrow svg { width: 0.85rem; height: 0.85rem; }
+
+    .show-cta {
+        text-align: center;
+        padding: 3rem 1.5rem;
+        border-top: 1px solid var(--border);
+    }
+    .show-cta h2 { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 0.75rem; }
+    .show-cta p { margin: 0 auto 1.75rem; max-width: 32rem; color: var(--muted-foreground); font-size: 0.95rem; line-height: 1.6; }
+</style>

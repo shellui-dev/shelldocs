@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/examples/">
+    <Project Path="examples/ShellDocs.Preview/ShellDocs.Preview.csproj" />
+  </Folder>
   <Folder Name="/src/">
     <Project Path="src/ShellDocs.CLI/ShellDocs.CLI.csproj" />
     <Project Path="src/ShellDocs.Components/ShellDocs.Components.csproj" />

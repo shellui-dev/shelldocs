@@ -1,0 +1,41 @@
+@using ShellDocs.Core
+
+@if (Prev is not null || Next is not null)
+{
+    <nav class="prevnext" aria-label="Previous and next">
+        @if (Prev is not null)
+        {
+            <a class="prevnext-card prev" href="@Prev.Url">
+                <span class="prevnext-hint">
+                    <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                    <span>@Prev.Title</span>
+                </span>
+                @if (!string.IsNullOrEmpty(Prev.Description))
+                {
+                    <span class="prevnext-desc">@Prev.Description</span>
+                }
+            </a>
+        }
+        else { <span class="prevnext-placeholder" aria-hidden="true"></span> }
+
+        @if (Next is not null)
+        {
+            <a class="prevnext-card next" href="@Next.Url">
+                <span class="prevnext-hint">
+                    <span>@Next.Title</span>
+                    <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </span>
+                @if (!string.IsNullOrEmpty(Next.Description))
+                {
+                    <span class="prevnext-desc">@Next.Description</span>
+                }
+            </a>
+        }
+        else { <span class="prevnext-placeholder" aria-hidden="true"></span> }
+    </nav>
+}
+
+@code {
+    [Parameter] public NavigationNode? Prev { get; set; }
+    [Parameter] public NavigationNode? Next { get; set; }
+}

@@ -1,0 +1,43 @@
+@inherits LayoutComponentBase
+@inject NavigationManager Nav
+@inject ShellDocs.Components.Chrome.MobileNavState MobileNav
+@implements IDisposable
+@using Microsoft.AspNetCore.Components.Sections
+
+<div class="docs-shell" data-mobile-open="@MobileNav.IsOpen">
+    <DocsHeader />
+    <div class="docs-body">
+        <aside class="docs-sidebar-slot @(MobileNav.IsOpen ? "open" : "")" aria-label="Sidebar">
+            <DocsSidebar />
+        </aside>
+        @if (MobileNav.IsOpen)
+        {
+            <button type="button" class="docs-sidebar-backdrop" @onclick="MobileNav.Close" aria-label="Close navigation"></button>
+        }
+        <main class="docs-main">
+            <div class="docs-content">
+                @Body
+            </div>
+        </main>
+        <aside class="docs-toc-slot" aria-label="On this page">
+            <SectionOutlet SectionName="docs-toc" />
+        </aside>
+    </div>
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        MobileNav.OnChange += StateHasChanged;
+        Nav.LocationChanged += OnRouteChanged;
+    }
+
+    private void OnRouteChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+        => MobileNav.Close();
+
+    public void Dispose()
+    {
+        MobileNav.OnChange -= StateHasChanged;
+        Nav.LocationChanged -= OnRouteChanged;
+    }
+}

@@ -1,0 +1,94 @@
+@inject ShellDocsOptions Options
+@inject ShellDocs.Components.Chrome.MobileNavState MobileNav
+
+<header class="docs-header">
+    <div class="docs-header-inner">
+        <button type="button" class="docs-header-hamburger" @onclick="MobileNav.Toggle" aria-label="Toggle navigation">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                @if (MobileNav.IsOpen)
+                {
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                }
+                else
+                {
+                    <line x1="3" y1="6" x2="21" y2="6"/>
+                    <line x1="3" y1="12" x2="21" y2="12"/>
+                    <line x1="3" y1="18" x2="21" y2="18"/>
+                }
+            </svg>
+        </button>
+        <a class="docs-header-brand" href="/">
+            <span class="docs-header-logo-dot"></span>
+            <span class="docs-header-brand-name">@(!string.IsNullOrEmpty(Options.SiteName) ? Options.SiteName : "Docs")</span>
+        </a>
+
+        <nav class="docs-header-nav" aria-label="Primary">
+            @foreach (var link in Options.PrimaryNav)
+            {
+                if (link.Children is { Count: > 0 })
+                {
+                    <div class="docs-header-nav-item has-menu">
+                        <button type="button" class="docs-header-nav-link">
+                            @link.Label
+                            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                        </button>
+                        <div class="docs-header-mega">
+                            <div class="docs-header-mega-grid">
+                                @foreach (var child in link.Children)
+                                {
+                                    <a class="docs-header-mega-card" href="@child.Href">
+                                        <span class="docs-header-mega-icon">
+                                            @((MarkupString)(child.IconSvg ?? DefaultIcon))
+                                        </span>
+                                        <span class="docs-header-mega-body">
+                                            <span class="docs-header-mega-title">@child.Label</span>
+                                            @if (!string.IsNullOrEmpty(child.Description))
+                                            {
+                                                <span class="docs-header-mega-desc">@child.Description</span>
+                                            }
+                                        </span>
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <a class="docs-header-nav-link" href="@link.Href">@link.Label</a>
+                }
+            }
+        </nav>
+
+        <div class="docs-header-actions">
+            <button type="button" class="docs-header-search" aria-label="Search">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+                <span class="docs-header-search-label">Search</span>
+                <span class="docs-header-kbd">
+                    <kbd>Ctrl</kbd>
+                    <kbd>K</kbd>
+                </span>
+            </button>
+
+            <ThemeToggle />
+
+            @if (!string.IsNullOrEmpty(Options.GitHubRepo))
+            {
+                <a class="docs-header-icon-link" href="https://github.com/@Options.GitHubRepo" target="_blank" rel="noopener" aria-label="GitHub">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .3a12 12 0 0 0-3.8 23.38c.6.12.83-.26.83-.58v-2.02c-3.34.72-4.04-1.6-4.04-1.6-.55-1.4-1.35-1.78-1.35-1.78-1.1-.75.08-.74.08-.74 1.22.09 1.86 1.26 1.86 1.26 1.08 1.85 2.84 1.32 3.53 1 .11-.79.42-1.32.77-1.62-2.66-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.13-.3-.54-1.53.12-3.19 0 0 1-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.28-1.55 3.29-1.23 3.29-1.23.66 1.66.24 2.89.12 3.19.77.84 1.24 1.91 1.24 3.22 0 4.61-2.81 5.62-5.48 5.92.42.36.81 1.1.81 2.22v3.29c0 .32.22.7.83.58A12 12 0 0 0 12 .3"/></svg>
+                </a>
+            }
+        </div>
+    </div>
+</header>
+
+@implements IDisposable
+
+@code {
+    private const string DefaultIcon =
+        "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"3\"/></svg>";
+
+    protected override void OnInitialized() => MobileNav.OnChange += StateHasChanged;
+    public void Dispose() => MobileNav.OnChange -= StateHasChanged;
+}

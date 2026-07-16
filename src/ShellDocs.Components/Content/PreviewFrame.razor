@@ -1,0 +1,84 @@
+@using ShellDocs.Markdown
+
+<div class="preview-frame">
+    <div class="preview-tabs">
+        <button type="button" class="preview-tab @(!_showCode ? "active" : "")" @onclick="() => _showCode = false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+            Preview
+        </button>
+        <button type="button" class="preview-tab @(_showCode ? "active" : "")" @onclick="() => _showCode = true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            Code
+        </button>
+        <div class="preview-spacer"></div>
+        @if (_showCode)
+        {
+            <button type="button" class="preview-copy @(_copied ? "copied" : "")" @onclick="Copy" aria-label="Copy code">
+                @if (_copied)
+                {
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span>Copied</span>
+                }
+                else
+                {
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    <span>Copy</span>
+                }
+            </button>
+        }
+    </div>
+    <div class="preview-body">
+        @if (!_showCode)
+        {
+            <div class="preview-render">
+                <DynamicComponent Type="Preview!.ComponentType"
+                                  Parameters="BuildParameters(Preview!.Parameters)" />
+            </div>
+        }
+        else
+        {
+            @* Prism ships no razor grammar; markup/html grammar handles the tag+attr+string structure just fine. *@
+            <pre class="preview-code language-markup" @ref="_codeEl"><code class="language-markup">@Preview!.Code</code></pre>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public PreviewSlot Preview { get; set; } = default!;
+
+    private bool _showCode;
+    private bool _copied;
+    private ElementReference _codeEl;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        /* Prism's global highlightAll runs once when MarkdownContent mounts, but
+           the code tab renders lazily — re-highlight this specific block whenever
+           the code tab becomes visible. */
+        if (_showCode)
+        {
+            try { await JS.InvokeVoidAsync("shelldocsHighlightElement", _codeEl); } catch { }
+        }
+    }
+
+    private async Task Copy()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", Preview.Code);
+            _copied = true;
+            await Task.Delay(1400);
+            _copied = false;
+        }
+        catch { }
+    }
+
+    [Inject] private IJSRuntime JS { get; set; } = default!;
+
+    private IDictionary<string, object> BuildParameters(IReadOnlyDictionary<string, string> attrs)
+    {
+        var dict = new Dictionary<string, object>(StringComparer.Ordinal);
+        foreach (var (k, v) in attrs) dict[k] = v;
+        return dict;
+    }
+}

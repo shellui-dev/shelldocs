@@ -26,6 +26,7 @@ See [DESIGN.md](DESIGN.md) for the high-level design and [ARCHITECTURE.md](ARCHI
 | `ShellDocs.Core` | Navigation graph, search index model, routing helpers |
 | `ShellDocs.Markdown` | Markdig pipeline + frontmatter + Razor component embedding |
 | `ShellDocs.Components` | RCL — UI primitives (DocsLayout, CodeBlock, SearchDialog, etc.) |
+| `ShellDocs.Tokens` | Shared CSS variable definitions — the palette + spacing scale that both ShellDocs and ShellUI-in-docs consume. Single source of truth for `--background`, `--foreground`, `--primary`, `--radius`, etc. |
 | `ShellDocs.CLI` | `shelldocs init`, `shelldocs new`, `shelldocs dev`, `shelldocs build` |
 | `ShellDocs.Templates` | Content for CLI scaffolding — starter markdown, meta.json, .csproj patches |
 | `ShellDocs.Xml` | v2 — extract `<TypeTable>` from XML doc comments |
@@ -38,17 +39,17 @@ Each branch below annotates which package it touches. Multi-package branches cal
 
 Goal: a consumer can `shelldocs init` an empty Blazor WASM project and get a working docs site with sidebar, header, code blocks, and one theme.
 
-### `chore/repo-scaffolding`
+### ✅ `chore/repo-scaffolding` — shipped
 Bootstrap the monorepo.
 
-- `.sln` with the six package projects (`ShellDocs.Core`, `ShellDocs.Markdown`, `ShellDocs.Components`, `ShellDocs.CLI`, `ShellDocs.Templates`, plus `ShellDocs.Tests`)
+- `.slnx` (.NET 10 XML solution format) with all package projects + tests
 - `.csproj` files with correct `TargetFramework`, `IsPackable`, `PackageId`
 - `.gitignore`, `Directory.Build.props`, `Directory.Packages.props` for central package management
 - `.github/workflows/ci.yml` — build + test on every push
 - `.github/workflows/release.yml` — pack + push to NuGet on tag
 - Nothing shipped; groundwork only
 
-### `feat/core-navigation-graph`
+### ✅ `feat/core-navigation-graph` — shipped
 Ships to `ShellDocs.Core`.
 
 - `NavigationGraph` — tree of `NavigationNode { Url, Title, Description, Category, Order, Headings, Path }`
@@ -57,7 +58,7 @@ Ships to `ShellDocs.Core`.
 - Route resolution — `NavigationGraph.ResolveByUrl("/docs/button")` → node
 - Unit tests: markdown → tree, meta.json ordering, deep-nested folders
 
-### `feat/markdown-pipeline`
+### ✅ `feat/markdown-pipeline` — shipped
 Ships to `ShellDocs.Markdown`.
 
 - Markdig extension for YAML frontmatter (YamlDotNet)
@@ -67,15 +68,31 @@ Ships to `ShellDocs.Markdown`.
 - Type registry — `RegisterComponent<T>()` API for consumer to expose their components to inline tags
 - Unit tests: frontmatter parsing, fenced block replacement, tag resolution, unknown-tag graceful degradation
 
-### `feat/components-shell`
+### ✅ `feat/components-shell` — shipped
 Ships to `ShellDocs.Components`.
 
-- `DocsLayout` — full-page grid: header + sidebar + main + TOC placeholder + footer
-- `DocsHeader` — logo, primary nav, search-button placeholder, theme toggle, GitHub link
-- `DocsSidebar` — grouped nav from navigation graph, collapsible sections, active highlighting
+- `DocsLayout` — full-page grid: header + sidebar + main + TOC + footer, fumadocs-shaped
+- `DocsHeader` — logo, primary nav with hover mega-menu (icon cards), search-button placeholder, theme toggle, GitHub link, hamburger for mobile
+- `DocsSidebar` — grouped nav from navigation graph, collapsible sections (fumadocs pattern — closed by default, active-path auto-open), lucide-style icons per section/page, package selector (ShellDocs · Markdown · Core · CLI · Components), footer bar with GitHub + theme toggle
 - `MarkdownContent` — renders a doc page from a `.md` path via `MarkdownRenderer`
-- One theme preset baked in (`Shadcn`)
-- No search, no TOC, no code highlighting yet — those come in later branches
+- `TableOfContents` — right-rail nav (h2/h3), scroll-tracked via multi-active headings so the thumb slides smoothly, SVG-mask + coloured thumb pattern lifted from fumadocs' `ClerkTOCItems`
+- `PrevNextNav` — bordered cards, arrow icon square, translate-on-hover
+- `MobileNavState` service + fixed drawer + backdrop + auto-close on route change
+- Prism.js syntax highlighting (via CDN for now — Shiki lands in the next branch)
+- Neutral fumadocs-shaped palette (`--background`, `--foreground`, `--primary`, `--muted`, `--accent`, `--border`) — will move to `ShellDocs.Tokens` in the next branch
+
+### `feat/design-tokens` — **next**
+Ships to new package `ShellDocs.Tokens`.
+
+Extracts the palette + scale from `ShellDocs.Components/wwwroot/shelldocs-theme.css` into its own package so ShellUI (and any third-party consumer) can depend on the *tokens* without pulling in the whole components RCL.
+
+- New `ShellDocs.Tokens` project — RCL that ships a single `wwwroot/tokens.css` with `:root` + `:root.dark` variable definitions
+- `ShellDocs.Components` and `ShellDocs.Preview` update their `App.razor` link to `_content/ShellDocs.Tokens/tokens.css` and remove the inline theme file
+- Add a `tokens-full.css` variant for consumers who want the extended set (semantic + chart colors), and a `tokens-base.css` for consumers who only want the core palette
+- Document the token contract in `docs/TOKENS.md`: which names are stable, which are internal, and how to override
+- **ShellUI integration path (Tailwind install):** ShellUI's Tailwind config reads the same `--primary`, `--background`, `--border` etc. — nothing changes on their side. Consumer just references `tokens.css` and both design systems light up together.
+- **ShellUI integration path (NuGet install):** ShellUI's RCL detects `ShellDocs.Tokens` at runtime and skips emitting its own token file. Deferred to Phase 3 — needs a small opt-in flag on `AddShellUI()`.
+- Unit tests: token file emits, dark-mode class toggling, no duplicate declarations across bundles
 
 ### `feat/codeblock-shiki`
 Ships to `ShellDocs.Components`.
@@ -302,6 +319,14 @@ ShellDocs depends on `ShellUI.Components` for base primitives:
 | `Shell.Cn` | Throughout |
 
 **Locked ShellUI version:** ShellDocs targets `ShellUI.Components >= 0.5.0` (the version that ships `feat/data-selection-suite` — CommandPalette is required). Bumps require a ShellDocs major/minor.
+
+### Install path — Tailwind-first, NuGet later
+
+Mirrors how shadcn interops with fumadocs: shared CSS variables on `:root`, both design systems read them, one visual language.
+
+- **Phase 1–2 (now):** ShellUI ships as a Tailwind consumer. Doc site owners install ShellUI the same way they would in any Blazor app — via `shellui add card` etc. — and the components read the same `--primary`, `--muted`, `--border` tokens that ShellDocs emits. Zero interop work; a `<Card>` written mid-markdown just picks up the ShellDocs palette. `ShellDocs.Tokens` (next branch) formalizes the contract so both packages point at the same source of truth.
+- **Phase 3+ (`feat/shellui-nuget-interop`):** teach the ShellUI NuGet RCL to defer to `ShellDocs.Tokens` when it's on the classpath, so shipping both packages doesn't double-emit `:root` blocks. Small change — an `AddShellUI(o => o.UseSharedTokens())` opt-in. Deferred because it's not blocking for real docs sites — Tailwind consumers get 90% of the value today, and the NuGet story only matters for pure-server projects that don't run Tailwind.
+- **Not doing:** shipping a "ShellUI-NuGet-only" install story for now. It'd double the QA surface for zero customer wins on day one. Revisit when a real consumer asks.
 
 ---
 
