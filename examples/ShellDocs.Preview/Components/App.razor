@@ -9,8 +9,6 @@
     <link rel="stylesheet" href="_content/ShellDocs.Tokens/tokens.css" />
     <link rel="stylesheet" href="_content/ShellDocs.Components/shelldocs-theme.css" />
     <link rel="stylesheet" href="ShellDocs.Preview.styles.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" media="(prefers-color-scheme: dark)" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" media="(prefers-color-scheme: light)" />
     <script>
         (function () {
             var q = new URLSearchParams(location.search).get('theme');
@@ -26,13 +24,17 @@
 <body>
     <Routes @rendermode="RenderMode.InteractiveServer" />
     <script src="_content/ShellDocs.Components/shelldocs.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-csharp.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markup-templating.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-typescript.min.js"></script>
+    <script type="module">
+        /* Shiki singleton highlighter — VSCode-quality syntax colouring via
+           WASM. Loads the fixed subset of languages we support; dual-theme
+           (github-light + github-dark) resolves through CSS vars. */
+        import { createHighlighter } from 'https://esm.sh/shiki@1.24.0';
+        window.__shiki = await createHighlighter({
+            themes: ['github-light', 'github-dark'],
+            langs: ['razor', 'csharp', 'html', 'json', 'yaml', 'bash', 'typescript', 'javascript', 'markdown']
+        });
+        if (window.shelldocsHighlight) window.shelldocsHighlight();
+    </script>
     <script src="_framework/blazor.web.js"></script>
 </body>
 </html>

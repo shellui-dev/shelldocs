@@ -37,8 +37,8 @@
         }
         else
         {
-            @* Prism ships no razor grammar; markup/html grammar handles the tag+attr+string structure just fine. *@
-            <pre class="preview-code language-markup" @ref="_codeEl"><code class="language-markup">@Preview!.Code</code></pre>
+            @* Shiki ships a razor grammar — full razor highlighting for previews. *@
+            <pre class="preview-code language-razor" @ref="_codeEl"><code class="language-razor">@Preview!.Code</code></pre>
         }
     </div>
 </div>

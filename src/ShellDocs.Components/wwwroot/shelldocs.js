@@ -1,20 +1,50 @@
 window.ShellDocs = window.ShellDocs || {};
 
-// Re-highlight all code blocks. Called from MarkdownContent after render.
-window.shelldocsHighlight = function () {
-    if (window.Prism) {
-        try { window.Prism.highlightAll(); } catch (e) {}
-    }
-};
+/* Shiki-backed highlighters. Both functions replace <pre><code class="language-X">
+   with Shiki's rendered <pre> so we get VSCode-parity colouring. Idempotent —
+   a data-shiki flag prevents re-highlighting. */
 
-// Highlight a specific <pre> element — used by PreviewFrame when the code tab
-// mounts, so we don't re-scan the whole page on every tab flip.
-window.shelldocsHighlightElement = function (preEl) {
-    if (!preEl || !window.Prism) return;
+function langOf(codeEl) {
+    var cls = (codeEl.className || '').split(/\s+/);
+    for (var i = 0; i < cls.length; i++) {
+        if (cls[i].indexOf('language-') === 0) return cls[i].substring(9);
+    }
+    return null;
+}
+
+function highlightOne(preEl) {
+    if (!preEl || !window.__shiki) return;
+    if (preEl.dataset.shiki === 'done') return;
     var code = preEl.querySelector('code');
     if (!code) return;
-    try { window.Prism.highlightElement(code); } catch (e) {}
+    var lang = langOf(code);
+    if (!lang) return;
+    /* Shiki doesn't know every Prism alias — silently fall back. */
+    if (!window.__shiki.getLoadedLanguages().includes(lang)) return;
+
+    var source = code.textContent;
+    try {
+        var html = window.__shiki.codeToHtml(source, {
+            lang: lang,
+            themes: { light: 'github-light', dark: 'github-dark' },
+            defaultColor: false
+        });
+        var tpl = document.createElement('template');
+        tpl.innerHTML = html.trim();
+        var newPre = tpl.content.firstElementChild;
+        if (!newPre) return;
+        newPre.dataset.shiki = 'done';
+        preEl.parentNode.replaceChild(newPre, preEl);
+    } catch (e) { /* skip on grammar error */ }
+}
+
+window.shelldocsHighlight = function () {
+    if (!window.__shiki) return;
+    document.querySelectorAll('pre:not([data-shiki]) > code[class*="language-"]')
+        .forEach(function (code) { highlightOne(code.parentElement); });
 };
+
+window.shelldocsHighlightElement = function (preEl) { highlightOne(preEl); };
 
 // Copy-to-clipboard for code blocks.
 window.shelldocsCopyCode = function (button) {
