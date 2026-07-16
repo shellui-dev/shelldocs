@@ -81,7 +81,7 @@ Ships to `ShellDocs.Components`.
 - Prism.js syntax highlighting (via CDN for now — Shiki lands in the next branch)
 - Neutral fumadocs-shaped palette (`--background`, `--foreground`, `--primary`, `--muted`, `--accent`, `--border`) — will move to `ShellDocs.Tokens` in the next branch
 
-### `feat/design-tokens` — **next**
+### ✅ `feat/design-tokens` — shipped
 Ships to new package `ShellDocs.Tokens`.
 
 Extracts the palette + scale from `ShellDocs.Components/wwwroot/shelldocs-theme.css` into its own package so ShellUI (and any third-party consumer) can depend on the *tokens* without pulling in the whole components RCL.

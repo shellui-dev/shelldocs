@@ -3,22 +3,25 @@
 
 <PageTitle>ShellDocs — the docs framework for .NET</PageTitle>
 
-<section class="hero">
-    <div class="hero-bg" aria-hidden="true"></div>
-    <div class="hero-inner">
-        <a class="hero-badge" href="https://github.com/shellui-dev/shelldocs" target="_blank" rel="noopener">
-            <span class="hero-badge-tag">New</span>
-            <span>0.1.0-alpha in progress</span>
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 3l5 5-5 5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </a>
-        <h1>The docs framework <span class="hero-grad">for .NET</span></h1>
-        <p>Beautiful, animated, Cmd+K-searchable documentation sites — powered by Blazor.<br/>Compose with ShellUI, or any Blazor component library.</p>
-        <div class="hero-actions">
-            <a class="btn primary" href="/docs/introduction">Get started <span>→</span></a>
-            <a class="btn ghost" href="https://github.com/shellui-dev/shelldocs" target="_blank" rel="noopener">
-                <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M12 .3a12 12 0 0 0-3.8 23.38c.6.12.83-.26.83-.58v-2.02c-3.34.72-4.04-1.6-4.04-1.6-.55-1.4-1.35-1.78-1.35-1.78-1.1-.75.08-.74.08-.74 1.22.09 1.86 1.26 1.86 1.26 1.08 1.85 2.84 1.32 3.53 1 .11-.79.42-1.32.77-1.62-2.66-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.13-.3-.54-1.53.12-3.19 0 0 1-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.28-1.55 3.29-1.23 3.29-1.23.66 1.66.24 2.89.12 3.19.77.84 1.24 1.91 1.24 3.22 0 4.61-2.81 5.62-5.48 5.92.42.36.81 1.1.81 2.22v3.29c0 .32.22.7.83.58A12 12 0 0 0 12 .3"/></svg>
-                Star on GitHub
-            </a>
+<section class="hero-wrap">
+    <div class="hero-frame">
+        <video class="hero-video hero-video-light" autoplay loop muted playsinline>
+            <source src="/hero-bg-light.webm" type="video/webm" />
+        </video>
+        <video class="hero-video hero-video-dark" autoplay loop muted playsinline>
+            <source src="/hero-bg-dark.webm" type="video/webm" />
+        </video>
+        <div class="hero-overlay" aria-hidden="true"></div>
+        <div class="hero-inner">
+            <h1>Docs for your <span class="hero-grad">.NET library.</span></h1>
+            <p>Author in markdown, drop Blazor components mid-page, ship one binary. MudBlazor, Radzen, Avalonia — every .NET UI library ends up building the same sidebar, search, and code-block. Now they don't have to.</p>
+            <div class="hero-actions">
+                <a class="btn primary" href="/docs/introduction">Get started</a>
+                <a class="btn ghost" href="https://github.com/shellui-dev/shelldocs" target="_blank" rel="noopener">
+                    <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M12 .3a12 12 0 0 0-3.8 23.38c.6.12.83-.26.83-.58v-2.02c-3.34.72-4.04-1.6-4.04-1.6-.55-1.4-1.35-1.78-1.35-1.78-1.1-.75.08-.74.08-.74 1.22.09 1.86 1.26 1.86 1.26 1.08 1.85 2.84 1.32 3.53 1 .11-.79.42-1.32.77-1.62-2.66-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.13-.3-.54-1.53.12-3.19 0 0 1-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.28-1.55 3.29-1.23 3.29-1.23.66 1.66.24 2.89.12 3.19.77.84 1.24 1.91 1.24 3.22 0 4.61-2.81 5.62-5.48 5.92.42.36.81 1.1.81 2.22v3.29c0 .32.22.7.83.58A12 12 0 0 0 12 .3"/></svg>
+                    Star on GitHub
+                </a>
+            </div>
         </div>
     </div>
 </section>
@@ -200,79 +203,132 @@ Works in Server, WASM, and static output.
 </section>
 
 <style>
-    .hero { position: relative; padding: 7rem 1.5rem 5rem; overflow: hidden; }
-    .hero-bg { position: absolute; inset: 0; z-index: 0; pointer-events: none;
-        background:
-            radial-gradient(50% 60% at 50% 0%, color-mix(in oklch, var(--accent) 20%, transparent) 0%, transparent 70%),
-            radial-gradient(30% 30% at 80% 20%, color-mix(in oklch, oklch(0.7 0.2 320) 15%, transparent) 0%, transparent 60%);
-        opacity: 0.6;
+    /* Hero — bordered rounded frame with looping video bg + content overlay.
+       Copied from the ShellUI docs home. */
+    .hero-wrap {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 1rem;
     }
-    .hero-inner { position: relative; max-width: 48rem; margin: 0 auto; text-align: center; }
+    @@media (min-width: 768px) { .hero-wrap { padding: 1.5rem; } }
 
-    .hero-badge {
-        display: inline-flex; align-items: center; gap: 0.5rem;
-        padding: 0.25rem 0.75rem 0.25rem 0.3rem;
-        border-radius: 9999px;
+    .hero-frame {
+        position: relative;
+        display: flex;
+        min-height: 600px;
+        height: 70vh;
+        max-height: 900px;
         border: 1px solid var(--border);
-        background: var(--background);
+        border-radius: 1rem;
+        overflow: hidden;
+        background: var(--card);
+    }
+
+    .hero-video {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .hero-video-dark { display: none; }
+    :root.dark .hero-video-light { display: none; }
+    :root.dark .hero-video-dark { display: block; }
+
+    /* Gradient overlay so the text stays readable over the video */
+    .hero-overlay {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg,
+            color-mix(in oklch, var(--background) 40%, transparent) 0%,
+            color-mix(in oklch, var(--background) 20%, transparent) 40%,
+            transparent 100%);
+        pointer-events: none;
+    }
+    :root.dark .hero-overlay {
+        background: linear-gradient(135deg,
+            color-mix(in oklch, var(--background) 60%, transparent) 0%,
+            color-mix(in oklch, var(--background) 30%, transparent) 40%,
+            transparent 100%);
+    }
+
+    .hero-inner {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        width: 100%;
+        padding: 2rem 1.5rem;
+        text-align: center;
+        align-items: center;
+    }
+    @@media (min-width: 768px) {
+        .hero-inner {
+            padding: 3rem;
+            text-align: left;
+            align-items: flex-start;
+        }
+    }
+
+    .hero-inner h1 {
+        font-size: 2.25rem;
+        font-weight: 600;
+        letter-spacing: -0.025em;
+        line-height: 1.1;
+        margin: 0 0 1rem;
+        color: var(--foreground);
+    }
+    @@media (min-width: 1024px) {
+        .hero-inner h1 { font-size: 3rem; }
+    }
+    @@media (min-width: 1280px) {
+        .hero-inner h1 { font-size: 3.5rem; }
+    }
+
+    .hero-grad { color: var(--primary); }
+
+    .hero-inner p {
+        font-size: 1rem;
         color: var(--muted-foreground);
-        font-size: 0.75rem;
-        text-decoration: none;
-        margin-bottom: 1.75rem;
-        transition: border-color 150ms, color 150ms;
+        margin: 0 0 2rem;
+        line-height: 1.6;
+        max-width: 36rem;
     }
-    .hero-badge:hover { border-color: var(--border-strong); color: var(--foreground); }
-    .hero-badge svg { width: 0.75rem; height: 0.75rem; }
-    .hero-badge-tag {
-        background: var(--accent);
-        color: var(--accent-foreground);
-        padding: 0.05rem 0.5rem;
-        border-radius: 9999px;
-        font-size: 0.65rem;
-        font-weight: 700;
-        letter-spacing: 0.03em;
-        text-transform: uppercase;
+    @@media (min-width: 768px) { .hero-inner p { font-size: 1.125rem; } }
+
+    .hero-actions {
+        display: inline-flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        justify-content: center;
     }
 
-    .hero h1 {
-        font-size: 2.75rem; font-weight: 800; letter-spacing: -0.035em;
-        line-height: 1.05; margin: 0 0 1.25rem;
-    }
-    .hero-grad {
-        background: linear-gradient(135deg, var(--accent), oklch(0.72 0.2 320));
-        -webkit-background-clip: text; background-clip: text;
-        color: transparent;
-    }
-    .hero p {
-        font-size: 1.0625rem; color: var(--muted-foreground);
-        margin: 0 0 2rem; line-height: 1.6; max-width: 34rem;
-        margin-left: auto; margin-right: auto;
-    }
-
-    .hero-actions { display: inline-flex; gap: 0.75rem; flex-wrap: wrap; justify-content: center; }
     .btn {
-        display: inline-flex; align-items: center; gap: 0.5rem;
-        padding: 0.55rem 1.05rem; border-radius: calc(var(--radius) - 2px);
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.65rem 1.25rem;
+        border-radius: 9999px;
         border: 1px solid transparent;
-        text-decoration: none; font-weight: 500; font-size: 0.875rem;
-        transition: background 150ms, border-color 150ms, transform 150ms, box-shadow 150ms;
+        text-decoration: none;
+        font-weight: 500;
+        font-size: 0.9rem;
+        letter-spacing: -0.005em;
+        transition: background 150ms, border-color 150ms, color 150ms;
     }
     .btn.primary {
-        background: var(--foreground); color: var(--background);
-        border-color: var(--foreground);
-        box-shadow: 0 1px 2px rgb(0 0 0 / 0.06);
+        background: var(--primary);
+        color: var(--primary-foreground);
     }
-    .btn.primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px -2px rgb(0 0 0 / 0.15); }
-    .btn.primary span { transition: transform 150ms; }
-    .btn.primary:hover span { transform: translateX(2px); }
+    .btn.primary:hover { background: color-mix(in oklch, var(--primary) 90%, transparent); }
 
     .btn.ghost {
-        background: var(--card); color: var(--foreground);
+        background: var(--background);
+        color: var(--foreground);
         border-color: var(--border);
     }
-    .btn.ghost:hover { background: var(--muted); border-color: var(--border-strong); }
-
-    @@media (min-width: 768px) { .hero h1 { font-size: 4rem; } .hero p { font-size: 1.125rem; } }
+    .btn.ghost:hover { background: var(--accent); }
 
     .features {
         max-width: 1100px; margin: 0 auto;
@@ -314,9 +370,9 @@ Works in Server, WASM, and static output.
     .section-heading { text-align: center; max-width: 44rem; margin: 0 auto 3rem; }
     .section-heading .eyebrow {
         display: inline-block;
-        font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em;
-        color: var(--muted-foreground); font-weight: 600;
-        padding: 0.2rem 0.6rem; border: 1px solid var(--border); border-radius: 9999px;
+        font-size: 0.75rem; letter-spacing: -0.005em;
+        color: var(--muted-foreground); font-weight: 500;
+        padding: 0.2rem 0.7rem; border: 1px solid var(--border); border-radius: 9999px;
         margin-bottom: 1rem;
     }
     .section-heading h2 {

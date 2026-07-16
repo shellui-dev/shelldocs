@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageId>ShellDocs.Tokens</PackageId>
+    <Description>The ShellDocs design-token layer — CSS variables for palette, spacing, radius, and typography. Consumed by ShellDocs.Components and any Blazor UI library (ShellUI, custom) that wants to share the same visual system on :root.</Description>
+    <PackageTags>blazor;design-tokens;css-variables;theming;shelldocs;shellui;shadcn</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <SupportedPlatform Include="browser" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" />
+  </ItemGroup>
+
+</Project>

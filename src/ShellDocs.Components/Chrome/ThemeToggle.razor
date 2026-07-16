@@ -1,40 +1,44 @@
 @inject IJSRuntime JS
+@inject ThemeState Theme
+@implements IDisposable
 
-<button type="button" class="theme-toggle" @onclick="Toggle" aria-label="Toggle theme">
-    @if (_isDark)
+<button type="button" class="theme-toggle" @onclick="OnClick" aria-label="Toggle theme">
+    @if (Theme.IsDark)
     {
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
     }
     else
     {
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
     }
 </button>
 
 @code {
-    private bool _isDark;
+    protected override void OnInitialized() => Theme.OnChange += StateHasChanged;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!firstRender) return;
+        if (!firstRender || Theme.IsInitialized) return;
         try
         {
-            var current = await JS.InvokeAsync<string>("eval", "document.documentElement.classList.contains('dark') ? 'dark' : 'light'");
-            _isDark = current == "dark";
-            StateHasChanged();
+            var current = await JS.InvokeAsync<string>("eval",
+                "document.documentElement.classList.contains('dark') ? 'dark' : 'light'");
+            Theme.Init(current == "dark");
         }
         catch { }
     }
 
-    private async Task Toggle()
+    private async Task OnClick()
     {
-        _isDark = !_isDark;
+        Theme.Toggle();
         try
         {
-            await JS.InvokeVoidAsync("eval", _isDark
+            await JS.InvokeVoidAsync("eval", Theme.IsDark
                 ? "document.documentElement.classList.add('dark'); try { localStorage.setItem('shelldocs-theme','dark'); } catch{}"
                 : "document.documentElement.classList.remove('dark'); try { localStorage.setItem('shelldocs-theme','light'); } catch{}");
         }
         catch { }
     }
+
+    public void Dispose() => Theme.OnChange -= StateHasChanged;
 }

@@ -8,6 +8,7 @@
     <Project Path="src/ShellDocs.Core/ShellDocs.Core.csproj" />
     <Project Path="src/ShellDocs.Markdown/ShellDocs.Markdown.csproj" />
     <Project Path="src/ShellDocs.Templates/ShellDocs.Templates.csproj" />
+    <Project Path="src/ShellDocs.Tokens/ShellDocs.Tokens.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/ShellDocs.Tests/ShellDocs.Tests.csproj" />
