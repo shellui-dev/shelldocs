@@ -104,7 +104,7 @@ Ships to `ShellDocs.Components`.
 - Line-highlight styling via CSS
 - Handles `razor:preview` blocks — code visible in Preview + Code tabs (`<DocsTabs>` primitive comes in Phase 2)
 
-### `feat/cli-init`
+### ✅ `feat/cli-init` — shipped
 Ships to `ShellDocs.CLI` + `ShellDocs.Templates`.
 
 - `shelldocs init` — detects Blazor WASM project, adds package references, generates `content/`, `Layout/DocsLayout.razor`, patches `Program.cs` to register services, writes default `meta.json`
