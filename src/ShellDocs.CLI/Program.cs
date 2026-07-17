@@ -72,31 +72,57 @@ internal class Program
 
     private static Command CreateDevCommand()
     {
+        var dir = new Option<string>("--dir")
+        {
+            Description = "Project directory (default: current dir).",
+            DefaultValueFactory = _ => Directory.GetCurrentDirectory()
+        };
         var port = new Option<int>("--port")
         {
             Description = "Port to bind on.",
             DefaultValueFactory = _ => 5000
         };
-        var cmd = new Command("dev", "Start dev server with hot-reload for .razor / .cs / .md changes.") { port };
-        cmd.SetAction(_ =>
+        var cmd = new Command("dev", "Start dev server with hot-reload for .razor / .cs / .md changes.")
         {
-            AnsiConsole.MarkupLine("[yellow]shelldocs dev[/] — not yet implemented (feat/cli-dev-build).");
-        });
+            dir, port
+        };
+        cmd.SetAction(pr =>
+            DevCommand.Run(
+                pr.GetValue(dir) ?? Directory.GetCurrentDirectory(),
+                pr.GetValue(port)));
         return cmd;
     }
 
     private static Command CreateBuildCommand()
     {
+        var dir = new Option<string>("--dir")
+        {
+            Description = "Project directory (default: current dir).",
+            DefaultValueFactory = _ => Directory.GetCurrentDirectory()
+        };
         var output = new Option<string>("--output")
         {
-            Description = "Output directory.",
+            Description = "Output directory for the static site.",
             DefaultValueFactory = _ => "publish"
         };
-        var cmd = new Command("build", "Produce a static site ready for GH Pages / Vercel / Netlify.") { output };
-        cmd.SetAction(_ =>
+        var baseHref = new Option<string?>("--base-href")
         {
-            AnsiConsole.MarkupLine("[yellow]shelldocs build[/] — not yet implemented (feat/cli-dev-build).");
-        });
+            Description = "Rewrite <base href> in index.html (e.g. \"/my-repo/\" for GH Pages subpaths)."
+        };
+        var spaFallback = new Option<bool>("--spa-fallback")
+        {
+            Description = "Copy index.html → 404.html so client-side routes survive on GH Pages."
+        };
+        var cmd = new Command("build", "Produce a static site ready for GH Pages / Cloudflare / S3.")
+        {
+            dir, output, baseHref, spaFallback
+        };
+        cmd.SetAction(pr =>
+            BuildCommand.Run(
+                pr.GetValue(dir) ?? Directory.GetCurrentDirectory(),
+                pr.GetValue(output) ?? "publish",
+                pr.GetValue(baseHref),
+                pr.GetValue(spaFallback)));
         return cmd;
     }
 
