@@ -1,4 +1,5 @@
 using System.CommandLine;
+using ShellDocs.CLI.Commands;
 using Spectre.Console;
 
 namespace ShellDocs.CLI;
@@ -29,22 +30,30 @@ internal class Program
 
     private static Command CreateInitCommand()
     {
+        var dir = new Option<string>("--dir")
+        {
+            Description = "Project directory to initialise (default: current dir).",
+            DefaultValueFactory = _ => Directory.GetCurrentDirectory()
+        };
         var yes = new Option<bool>("--yes") { Description = "Non-interactive mode with default options." };
         var theme = new Option<string>("--theme")
         {
             Description = "Theme preset: shadcn, fuma, nextra.",
             DefaultValueFactory = _ => "shadcn"
         };
-        var cmd = new Command("init", "Initialize ShellDocs in a Blazor WASM project — adds packages, generates content/ and Layout/, patches Program.cs.")
+        var cmd = new Command("init", "Initialize ShellDocs in a Blazor project — adds packages, generates content/ and DocsPage.razor, emits Program.cs + App.razor snippets.")
         {
-            yes, theme
+            dir, yes, theme
         };
-        cmd.SetAction(_ =>
+        cmd.SetAction(pr =>
         {
             AnsiConsole.Markup($"[blue]{Logo}[/]");
             AnsiConsole.MarkupLine("[dim]     the docs framework for .NET[/]");
             AnsiConsole.WriteLine();
-            AnsiConsole.MarkupLine("[yellow]shelldocs init[/] — not yet implemented (feat/cli-init).");
+            return InitCommand.Run(
+                pr.GetValue(dir) ?? Directory.GetCurrentDirectory(),
+                pr.GetValue(yes),
+                pr.GetValue(theme) ?? "shadcn");
         });
         return cmd;
     }
