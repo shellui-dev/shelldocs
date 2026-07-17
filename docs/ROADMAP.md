@@ -113,7 +113,7 @@ Ships to `ShellDocs.CLI` + `ShellDocs.Templates`.
 - Templates for `Program.cs` snippets, starter `.md` content, `meta.json` skeleton
 - Similar structure to `ShellUI.CLI` from ShellUI project
 
-### `feat/cli-dev-build`
+### ✅ `feat/cli-dev-build` — shipped
 Ships to `ShellDocs.CLI`.
 
 - `shelldocs dev` — starts `dotnet watch run` with markdown file watcher, hot-reload triggers navigation graph rebuild on `.md` change
