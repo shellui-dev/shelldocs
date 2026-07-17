@@ -11,6 +11,7 @@
     <ProjectReference Include="..\..\src\ShellDocs.Components\ShellDocs.Components.csproj" />
     <ProjectReference Include="..\..\src\ShellDocs.Templates\ShellDocs.Templates.csproj" />
     <ProjectReference Include="..\..\src\ShellDocs.Tokens\ShellDocs.Tokens.csproj" />
+    <ProjectReference Include="..\..\src\ShellDocs.CLI\ShellDocs.CLI.csproj" />
   </ItemGroup>
 
   <ItemGroup>
