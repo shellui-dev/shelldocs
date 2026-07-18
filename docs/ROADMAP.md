@@ -105,6 +105,12 @@ Ships to `ShellDocs.Components`.
 - Handles `razor:preview` blocks — code visible in Preview + Code tabs (`<DocsTabs>` primitive comes in Phase 2)
 
 ### ✅ `feat/cli-init` — shipped
+
+### ✅ `feat/cli-init-create-mode` — shipped
+Split `shelldocs init` into two modes:
+- **create** (default) — runs `dotnet new blazor` in `docs/<CwdName>.Docs`, then directly patches Program.cs + App.razor + adds packages + drops content/DocsPage.razor. One-command scaffold.
+- **attach** (`--attach`) — the old behaviour; augments an existing csproj and emits `SHELLDOCS_SETUP.md` for manual patching (safer for projects with custom auth/middleware).
+Both idempotent. Tests: 12 (4 attach + 4 patcher + 4 fixture-verified).
 Ships to `ShellDocs.CLI` + `ShellDocs.Templates`.
 
 - `shelldocs init` — detects Blazor WASM project, adds package references, generates `content/`, `Layout/DocsLayout.razor`, patches `Program.cs` to register services, writes default `meta.json`

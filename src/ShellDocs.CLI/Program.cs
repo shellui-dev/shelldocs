@@ -30,10 +30,19 @@ internal class Program
 
     private static Command CreateInitCommand()
     {
+        var path = new Argument<string?>("path")
+        {
+            Description = "Target directory for the new docs project (default: docs/<CwdName>.Docs). Ignored with --attach.",
+            Arity = ArgumentArity.ZeroOrOne
+        };
         var dir = new Option<string>("--dir")
         {
-            Description = "Project directory to initialise (default: current dir).",
+            Description = "Working directory (default: current dir). With --attach, the project directory.",
             DefaultValueFactory = _ => Directory.GetCurrentDirectory()
+        };
+        var attach = new Option<bool>("--attach")
+        {
+            Description = "Augment an existing Blazor project in --dir instead of creating a new one. Emits SHELLDOCS_SETUP.md for manual Program.cs / App.razor patching."
         };
         var yes = new Option<bool>("--yes") { Description = "Non-interactive mode with default options." };
         var theme = new Option<string>("--theme")
@@ -41,9 +50,9 @@ internal class Program
             Description = "Theme preset: shadcn, fuma, nextra.",
             DefaultValueFactory = _ => "shadcn"
         };
-        var cmd = new Command("init", "Initialize ShellDocs in a Blazor project — adds packages, generates content/ and DocsPage.razor, emits Program.cs + App.razor snippets.")
+        var cmd = new Command("init", "Scaffold a new ShellDocs site (default) or attach to an existing Blazor project.")
         {
-            dir, yes, theme
+            path, dir, attach, yes, theme
         };
         cmd.SetAction(pr =>
         {
@@ -51,7 +60,9 @@ internal class Program
             AnsiConsole.MarkupLine("[dim]     the docs framework for .NET[/]");
             AnsiConsole.WriteLine();
             return InitCommand.Run(
+                pr.GetValue(path),
                 pr.GetValue(dir) ?? Directory.GetCurrentDirectory(),
+                pr.GetValue(attach),
                 pr.GetValue(yes),
                 pr.GetValue(theme) ?? "shadcn");
         });

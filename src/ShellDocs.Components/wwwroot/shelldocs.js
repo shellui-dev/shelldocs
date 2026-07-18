@@ -1,5 +1,21 @@
 window.ShellDocs = window.ShellDocs || {};
 
+/* Theme sync — Blazor's enhanced navigation swaps the DOM on route change,
+   which strips the .dark class the head-inline bootstrap set. Re-apply the
+   theme from localStorage after every enhanced-nav commit. */
+(function () {
+    function applyTheme() {
+        var saved = null;
+        try { saved = localStorage.getItem('shelldocs-theme'); } catch (e) {}
+        var systemDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var isDark = (saved || (systemDark ? 'dark' : 'light')) === 'dark';
+        document.documentElement.classList.toggle('dark', isDark);
+    }
+    applyTheme();
+    document.addEventListener('enhancedload', applyTheme);
+    window.shelldocsApplyTheme = applyTheme;
+})();
+
 /* Shiki-backed highlighters. Both functions replace <pre><code class="language-X">
    with Shiki's rendered <pre> so we get VSCode-parity colouring. Idempotent —
    a data-shiki flag prevents re-highlighting. */
