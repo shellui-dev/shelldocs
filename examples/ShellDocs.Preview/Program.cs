@@ -14,6 +14,8 @@ builder.Services.AddShellDocs(o =>
     o.SiteName = "ShellDocs";
     o.SiteTagline = "the docs framework for .NET";
     o.GitHubRepo = "shellui-dev/shelldocs";
+    // Try the new floating-sidebar variant. Flip to TopNav for the classic look.
+    o.LayoutVariant = DocsLayoutVariant.Sidebar;
     o.AddNavMenu("Documentation",
         new NavMenuItem("Getting Started", "/docs/introduction",
             "Install, configure, and ship your first ShellDocs site.",
