@@ -196,7 +196,10 @@ Works in Server, WASM, and static output.
         <h2>Built by the ShellUI team.</h2>
         <p>Same taste, same craftsmanship, same install-and-go DX. Free forever, MIT-licensed, community-driven.</p>
         <div class="hero-actions">
-            <a class="btn primary" href="/docs/introduction">Read the docs <span>→</span></a>
+            <a class="btn primary" href="/docs/introduction">
+                <span>Read the docs</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </a>
             <a class="btn ghost" href="https://github.com/shellui-dev/shelldocs" target="_blank" rel="noopener">Contribute on GitHub</a>
         </div>
     </div>
@@ -328,16 +331,18 @@ Works in Server, WASM, and static output.
     .btn {
         display: inline-flex;
         align-items: center;
-        gap: 0.5rem;
-        padding: 0.65rem 1.25rem;
+        gap: 0.4rem;
+        padding: 0.6rem 1.15rem;
         border-radius: 9999px;
         border: 1px solid transparent;
         text-decoration: none;
         font-weight: 500;
         font-size: 0.9rem;
         letter-spacing: -0.005em;
+        white-space: nowrap;
         transition: background 150ms, border-color 150ms, color 150ms;
     }
+    .btn svg { width: 0.9rem; height: 0.9rem; flex-shrink: 0; }
     .btn.primary {
         background: var(--primary);
         color: var(--primary-foreground);
