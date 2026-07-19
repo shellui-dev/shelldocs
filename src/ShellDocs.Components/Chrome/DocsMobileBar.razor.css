@@ -1,0 +1,36 @@
+.docs-mobile-bar {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.5rem 0.75rem;
+    background: color-mix(in oklch, var(--background) 90%, transparent);
+    backdrop-filter: saturate(180%) blur(12px);
+    -webkit-backdrop-filter: saturate(180%) blur(12px);
+    border-bottom: 1px solid var(--border);
+}
+@media (min-width: 1024px) {
+    .docs-mobile-bar { display: none; }
+}
+
+::deep .docs-mobile-tool {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    border-radius: calc(var(--radius) - 3px);
+    color: var(--muted-foreground);
+    cursor: pointer;
+    transition: color 150ms, background 150ms;
+}
+::deep .docs-mobile-tool:hover { color: var(--foreground); background: var(--muted); }
+::deep .docs-mobile-tool svg { width: 1.15rem; height: 1.15rem; }
+
+/* Push ThemeToggle to the right end */
+::deep .theme-toggle { margin-left: auto; }
