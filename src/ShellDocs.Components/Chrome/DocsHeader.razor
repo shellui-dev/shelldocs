@@ -1,5 +1,6 @@
 @inject ShellDocsOptions Options
 @inject ShellDocs.Components.Chrome.MobileNavState MobileNav
+@inject IJSRuntime JS
 
 <header class="docs-header">
     <div class="docs-header-inner">
@@ -62,7 +63,7 @@
         </nav>
 
         <div class="docs-header-actions">
-            <button type="button" class="docs-header-search" aria-label="Search">
+            <button type="button" class="docs-header-search" @onclick="OpenSearch" aria-label="Search">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
                 <span class="docs-header-search-label">Search</span>
                 <span class="docs-header-kbd">
@@ -91,4 +92,5 @@
 
     protected override void OnInitialized() => MobileNav.OnChange += StateHasChanged;
     public void Dispose() => MobileNav.OnChange -= StateHasChanged;
+    private Task OpenSearch() => JS.InvokeVoidAsync("shelldocsSearch.open").AsTask();
 }
