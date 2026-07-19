@@ -1,5 +1,35 @@
 window.ShellDocs = window.ShellDocs || {};
 
+/* Search — global Cmd/Ctrl+K opens the <SearchDialog>. Bridges to Blazor
+   via a DotNetObjectReference the dialog registers on first render. */
+window.shelldocsSearch = (function () {
+    var dotnet = null;
+    function isModK(e) {
+        return (e.key === 'k' || e.key === 'K') && (e.metaKey || e.ctrlKey);
+    }
+    function onKeydown(e) {
+        if (!isModK(e)) return;
+        e.preventDefault();
+        openInternal();
+    }
+    function openInternal() {
+        if (dotnet) { dotnet.invokeMethodAsync('OpenFromJs'); }
+    }
+    return {
+        init: function (dotnetRef) {
+            dotnet = dotnetRef;
+            document.addEventListener('keydown', onKeydown);
+            return {
+                dispose: function () {
+                    document.removeEventListener('keydown', onKeydown);
+                    dotnet = null;
+                }
+            };
+        },
+        open: openInternal
+    };
+})();
+
 /* Theme sync — Blazor's enhanced navigation swaps the DOM on route change,
    which strips the .dark class the head-inline bootstrap set. Re-apply the
    theme from localStorage after every enhanced-nav commit. */
