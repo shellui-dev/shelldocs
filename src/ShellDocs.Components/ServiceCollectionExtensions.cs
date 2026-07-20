@@ -15,6 +15,8 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<MobileNavState>();
         services.AddScoped<ThemeState>();
+        services.AddScoped<SearchState>();
+        services.AddScoped<SidebarCollapseState>();
         services.AddSingleton<TypeRegistry>(_ => options.BuildTypeRegistry());
         services.AddSingleton<MarkdownRenderer>(sp => new MarkdownRenderer(sp.GetRequiredService<TypeRegistry>()));
 
@@ -26,6 +28,7 @@ public static class ServiceCollectionExtensions
             }
             return NavigationGraphBuilder.Build(options.ContentRoot);
         });
+        services.AddSingleton<SearchIndex>(sp => SearchIndex.FromGraph(sp.GetRequiredService<NavigationGraph>()));
 
         return services;
     }
