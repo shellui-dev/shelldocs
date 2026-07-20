@@ -9,16 +9,14 @@
     font-size: 0.75rem;
     font-weight: 500;
     color: var(--muted-foreground);
-    padding: 2rem 0 0.75rem 0.75rem;
-    /* Sticks to the top of the scrolling TOC slot; solid background so links
-       scroll cleanly underneath. A subtle fade below hints at more content. */
+    padding: 1rem 0 0.75rem 0.75rem;
+    /* Sticky at top of the scrolling TOC slot. Solid bg = content hides
+       cleanly under it (no bleed-through). Bottom border optional; kept
+       transparent to stay minimal. */
     position: sticky;
     top: 0;
     z-index: 5;
-    background: linear-gradient(to bottom,
-        var(--background) 0%,
-        var(--background) calc(100% - 8px),
-        color-mix(in oklch, var(--background) 40%, transparent) 100%);
+    background: var(--background);
 }
 .toc-title svg { width: 0.9rem; height: 0.9rem; }
 

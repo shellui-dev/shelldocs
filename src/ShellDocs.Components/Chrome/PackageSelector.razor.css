@@ -46,14 +46,17 @@
     white-space: nowrap;
 }
 
-/* Stacked select-style chevrons — fumadocs pattern */
-.pkg-chevrons {
+/* Single chevron-down that rotates 180° when the menu opens — matches
+   the collapsible section toggles in the sidebar. */
+.pkg-chevron {
     width: 0.9rem;
     height: 0.9rem;
     color: var(--muted-foreground);
     flex-shrink: 0;
     margin-left: 0.25rem;
+    transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
 }
+.pkg-chevron.open { transform: rotate(180deg); }
 
 .pkg-menu {
     position: absolute;

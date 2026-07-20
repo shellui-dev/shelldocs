@@ -9,6 +9,7 @@ public class ShellDocsOptions
     public string? SiteTagline { get; set; }
     public string? GitHubRepo { get; set; }
     public ShellDocsTheme Theme { get; set; } = ShellDocsTheme.Shadcn;
+    public DocsLayoutVariant LayoutVariant { get; set; } = DocsLayoutVariant.TopNav;
 
     public List<NavLink> PrimaryNav { get; } = new();
     public List<Type> RegisteredComponents { get; } = new();
@@ -47,4 +48,14 @@ public enum ShellDocsTheme
     Shadcn,
     Fuma,
     Nextra
+}
+
+/* Which docs-layout chrome to render. TopNav is the classic build (DocsHeader
+   spanning the top + sidebar below). Sidebar drops the top nav and moves
+   brand + search + collapse into the sidebar itself — floating shadcn
+   sidebar-04 / Claude-Code aesthetic. */
+public enum DocsLayoutVariant
+{
+    TopNav = 0,
+    Sidebar = 1
 }

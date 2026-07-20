@@ -1,0 +1,208 @@
+@inject SearchState State
+@inject SearchIndex Index
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+@implements IDisposable
+
+@if (State.IsOpen)
+{
+    <div class="search-backdrop" @onclick="State.Close">
+        <div class="search-panel" @onclick:stopPropagation>
+            <div class="search-input-row">
+                <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+                <input @ref="_inputEl"
+                       type="text"
+                       class="search-input"
+                       placeholder="Search docs…"
+                       @bind="_query"
+                       @bind:event="oninput"
+                       @onkeydown="OnKey"
+                       autocomplete="off"
+                       spellcheck="false" />
+                <kbd class="search-esc">Esc</kbd>
+            </div>
+
+            <div class="search-results">
+                @if (_results.Count == 0 && !string.IsNullOrWhiteSpace(_query))
+                {
+                    <div class="search-empty">No results for “@_query”.</div>
+                }
+                else
+                {
+                    @for (var i = 0; i < _results.Count; i++)
+                    {
+                        var idx = i;
+                        var r = _results[i];
+                        <button type="button"
+                                class="search-result @(idx == _highlightedIndex ? "highlighted" : "")"
+                                @onclick="() => Jump(r.Entry)"
+                                @onmouseenter="() => _highlightedIndex = idx">
+                            <span class="search-result-kind">
+                                @if (r.Entry.Kind == SearchEntryKind.Page)
+                                {
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                }
+                                else
+                                {
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6v12M15 6v12M4 9h5M15 9h5M4 15h5M15 15h5"/></svg>
+                                }
+                            </span>
+                            <span class="search-result-body">
+                                <span class="search-result-title">@r.Entry.Title</span>
+                                @if (!string.IsNullOrEmpty(r.Entry.Section))
+                                {
+                                    <span class="search-result-section">@r.Entry.Section</span>
+                                }
+                            </span>
+                        </button>
+                    }
+                }
+            </div>
+
+            <div class="search-footer">
+                <span class="search-hint">
+                    <kbd class="kbd-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></kbd>
+                    <kbd class="kbd-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg></kbd>
+                    navigate
+                </span>
+                <span class="search-hint">
+                    <kbd class="kbd-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 10l-5 5 5 5M4 15h11a5 5 0 0 0 5-5V4"/></svg></kbd>
+                    open
+                </span>
+                <span class="search-hint"><kbd>Esc</kbd> close</span>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private string _query = "";
+    private int _highlightedIndex;
+    private List<Scored> _results = new();
+    private ElementReference _inputEl;
+    private bool _needsFocus;
+    private DotNetObjectReference<SearchDialog>? _selfRef;
+    private IJSObjectReference? _hotkeyDisposer;
+
+    protected override void OnInitialized()
+    {
+        State.OnChange += OnStateChange;
+        Recalc();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _selfRef = DotNetObjectReference.Create(this);
+            try
+            {
+                _hotkeyDisposer = await JS.InvokeAsync<IJSObjectReference>("shelldocsSearch.init", _selfRef);
+            }
+            catch { }
+        }
+        if (_needsFocus)
+        {
+            _needsFocus = false;
+            try { await _inputEl.FocusAsync(); } catch { }
+        }
+    }
+
+    [JSInvokable] public void OpenFromJs() => InvokeAsync(() => State.Open());
+
+    private void OnStateChange()
+    {
+        if (State.IsOpen)
+        {
+            _query = "";
+            _highlightedIndex = 0;
+            Recalc();
+            _needsFocus = true;
+        }
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void OnKey(KeyboardEventArgs e)
+    {
+        switch (e.Key)
+        {
+            case "Escape": State.Close(); break;
+            case "ArrowDown":
+                if (_results.Count > 0)
+                    _highlightedIndex = (_highlightedIndex + 1) % _results.Count;
+                break;
+            case "ArrowUp":
+                if (_results.Count > 0)
+                    _highlightedIndex = (_highlightedIndex - 1 + _results.Count) % _results.Count;
+                break;
+            case "Enter":
+                if (_highlightedIndex >= 0 && _highlightedIndex < _results.Count)
+                    Jump(_results[_highlightedIndex].Entry);
+                break;
+            default:
+                // Any other key = user is typing; rerun search on next binding cycle.
+                InvokeAsync(Recalc);
+                break;
+        }
+    }
+
+    private void Jump(SearchEntry entry)
+    {
+        State.Close();
+        Nav.NavigateTo(entry.Url);
+    }
+
+    private void Recalc()
+    {
+        _results = Rank(_query, Index.Entries).Take(30).ToList();
+        if (_highlightedIndex >= _results.Count) _highlightedIndex = 0;
+    }
+
+    /* Naive fuzzy score: substring hit boosts by big margin, then per-word
+       token overlap. Good enough for the ~100-entry indexes docs sites have. */
+    private static IEnumerable<Scored> Rank(string query, IReadOnlyList<SearchEntry> entries)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            return entries.Take(20).Select(e => new Scored(e, 0));
+        }
+        var q = query.Trim().ToLowerInvariant();
+        var tokens = q.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return entries
+            .Select(e => new Scored(e, Score(e, q, tokens)))
+            .Where(s => s.Score > 0)
+            .OrderByDescending(s => s.Score);
+    }
+
+    private static int Score(SearchEntry e, string q, string[] tokens)
+    {
+        var title = e.Title.ToLowerInvariant();
+        var desc  = (e.Description ?? "").ToLowerInvariant();
+        var sec   = (e.Section ?? "").ToLowerInvariant();
+        var score = 0;
+        // Exact substring in title: massive boost.
+        if (title.Contains(q)) score += 100;
+        if (title.StartsWith(q)) score += 50;
+        if (sec.Contains(q))   score += 20;
+        if (desc.Contains(q))  score += 10;
+        // Per-token AND — every token must appear somewhere.
+        foreach (var t in tokens)
+        {
+            if (title.Contains(t)) score += 8;
+            else if (sec.Contains(t)) score += 4;
+            else if (desc.Contains(t)) score += 2;
+            else return 0; // hard reject: token missing
+        }
+        // Pages rank slightly higher than headings when otherwise-equal.
+        if (e.Kind == SearchEntryKind.Page) score += 2;
+        return score;
+    }
+
+    private record Scored(SearchEntry Entry, int Score);
+
+    public void Dispose()
+    {
+        State.OnChange -= OnStateChange;
+        _selfRef?.Dispose();
+    }
+}

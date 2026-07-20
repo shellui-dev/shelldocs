@@ -65,7 +65,7 @@ public static class ScaffoldTemplates
             <div class="doc-not-found">
                 <h1>Page not found</h1>
                 <p>The page <code>@Path</code> doesn't exist yet.</p>
-                <p><a href="/docs/introduction">← Back to introduction</a></p>
+                <p><a href="/docs/introduction"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:0.35rem"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>Back to introduction</a></p>
             </div>
         }
 
@@ -115,7 +115,10 @@ public static class ScaffoldTemplates
             <div class="welcome-hero">
                 <h1>Welcome to your <span class="grad">ShellDocs</span> site.</h1>
                 <p>Everything is wired up. Author markdown in <code>content/docs/</code>, and it renders live under <code>/docs</code>.</p>
-                <a href="/docs/introduction" class="btn primary">View your docs →</a>
+                <a href="/docs/introduction" class="btn primary">
+                    <span>View your docs</span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                </a>
             </div>
 
             <div class="welcome-hints">
@@ -159,6 +162,7 @@ public static class ScaffoldTemplates
                 transition: background 150ms;
             }
             .btn.primary:hover { background: color-mix(in oklch, var(--primary) 90%, transparent); }
+            .btn.primary svg { width: 0.85rem; height: 0.85rem; }
         </style>
 
         @code {
