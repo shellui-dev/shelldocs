@@ -118,3 +118,100 @@
 @media (min-width: 1280px) {
     .docs-toc-slot { display: block; }
 }
+
+/* ───────────────────────────────────────────────────────────────────
+   Sidebar variant — no top nav, sidebar is the ONLY floating card,
+   content sits flush against the page bg. shadcn sidebar-04 vibe.
+   ─────────────────────────────────────────────────────────────────── */
+
+.docs-shell-sidebar { background: var(--background); }
+
+@media (min-width: 1024px) {
+    .docs-shell-sidebar .docs-body {
+        padding: 0.85rem 1rem 1rem 0.85rem;
+        gap: 1rem;
+        max-width: 1500px;
+        grid-template-columns: var(--sidebar-width) 1fr;
+    }
+    /* Sidebar = the floating card */
+    .docs-shell-sidebar .docs-sidebar-slot {
+        display: flex;
+        flex-direction: column;
+        position: sticky;
+        top: 0.85rem;
+        height: calc(100vh - 1.85rem);
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: calc(var(--radius) + 2px);
+        box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
+        margin-right: 0;
+        overflow: hidden;
+    }
+    /* DocsSidebar's own <nav> must flex-fill so its footer (theme toggle) sticks to the bottom */
+    .docs-shell-sidebar .docs-sidebar-slot > nav {
+        flex: 1;
+        min-height: 0;
+    }
+    /* Content = flush to page bg, no border, no shadow */
+    .docs-shell-sidebar .docs-main {
+        padding: 1.5rem 0 4rem;
+        background: transparent;
+        border: 0;
+        box-shadow: none;
+    }
+    .docs-shell-sidebar .docs-toc-slot {
+        top: 0.85rem;
+        height: calc(100vh - 1.85rem);
+        margin-left: 0;
+        padding: 0 1rem 1rem 1.25rem;
+    }
+
+    /* Collapsed — sidebar column disappears, grid expands to single column */
+    .docs-shell-sidebar.docs-sidebar-collapsed .docs-sidebar-slot { display: none; }
+    .docs-shell-sidebar.docs-sidebar-collapsed .docs-body {
+        grid-template-columns: 1fr;
+    }
+    .docs-shell-sidebar.docs-sidebar-collapsed .docs-main {
+        padding-left: 3rem;
+    }
+}
+
+@media (min-width: 1280px) {
+    .docs-shell-sidebar .docs-body {
+        grid-template-columns: var(--sidebar-width) 1fr var(--toc-width);
+    }
+    .docs-shell-sidebar.docs-sidebar-collapsed .docs-body {
+        grid-template-columns: 1fr var(--toc-width);
+    }
+}
+
+/* Floating reopen toolbar — appears at top-left when collapsed */
+.docs-collapsed-toolbar {
+    position: fixed;
+    top: 0.9rem;
+    left: 0.9rem;
+    z-index: 30;
+    display: flex;
+    gap: 0.25rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: calc(var(--radius) - 2px);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
+    padding: 0.2rem;
+}
+.docs-collapsed-tool {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.85rem;
+    height: 1.85rem;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    border-radius: calc(var(--radius) - 3px);
+    color: var(--muted-foreground);
+    cursor: pointer;
+    transition: color 150ms, background 150ms;
+}
+.docs-collapsed-tool:hover { color: var(--foreground); background: var(--muted); }
+.docs-collapsed-tool svg { width: 1rem; height: 1rem; }
