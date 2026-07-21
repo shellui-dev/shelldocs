@@ -1,0 +1,79 @@
+.type-table-wrap {
+    margin: 1.5rem 0;
+    border: 1px solid var(--border);
+    border-radius: calc(var(--radius) + 2px);
+    background: var(--card);
+    overflow-x: auto;
+}
+
+.type-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+    line-height: 1.55;
+}
+
+.type-table thead {
+    background: color-mix(in oklch, var(--card) 55%, var(--background));
+    border-bottom: 1px solid var(--border);
+}
+
+.type-table th {
+    text-align: left;
+    padding: 0.65rem 0.9rem;
+    color: var(--muted-foreground);
+    font-weight: 500;
+    font-size: 0.75rem;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.type-table tbody tr + tr {
+    border-top: 1px solid color-mix(in oklch, var(--border) 60%, transparent);
+}
+
+.type-table td {
+    padding: 0.7rem 0.9rem;
+    vertical-align: top;
+    color: var(--foreground);
+}
+
+.type-table code {
+    background: color-mix(in oklch, var(--card) 55%, var(--background));
+    border: 1px solid var(--border);
+    border-radius: calc(var(--radius) - 4px);
+    padding: 0.05rem 0.4rem;
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    color: var(--foreground);
+    white-space: nowrap;
+}
+
+.type-table-name code { color: var(--foreground); font-weight: 500; }
+.type-table-type code { color: var(--primary); }
+.type-table-default code { color: var(--muted-foreground); }
+
+.type-table-required {
+    margin-left: 0.5rem;
+    padding: 0.05rem 0.4rem;
+    background: color-mix(in oklch, var(--destructive, oklch(0.577 0.245 27.325)) 12%, transparent);
+    color: var(--destructive, oklch(0.577 0.245 27.325));
+    border-radius: calc(var(--radius) - 4px);
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+}
+
+.type-table-muted { color: var(--muted-foreground); }
+.type-table-desc { color: var(--muted-foreground); }
+.type-table-desc code { display: inline; }
+
+.type-table-empty {
+    text-align: center;
+    padding: 1.5rem;
+    color: var(--muted-foreground);
+    font-style: italic;
+}

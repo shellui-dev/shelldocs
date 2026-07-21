@@ -1,16 +1,18 @@
 .steps {
     list-style: none;
     counter-reset: step;
+    /* Push the whole rail right so the border-left lives at x = 1rem, which is
+       where the ::before badges get centered via the negative-left offset below. */
+    margin: 1.5rem 0 1.5rem 1rem;
     padding: 0;
-    margin: 1.5rem 0;
     border-left: 1px solid var(--border);
 }
 
 ::deep .step {
     counter-increment: step;
     position: relative;
-    padding: 0 0 1.5rem 2.5rem;
-    margin-left: 0.9rem;
+    padding: 0.15rem 0 1.75rem 2.5rem;
+    min-height: 2.25rem;
     color: var(--foreground);
 }
 ::deep .step:last-child { padding-bottom: 0; }
@@ -18,11 +20,14 @@
 ::deep .step::before {
     content: counter(step);
     position: absolute;
-    left: -1.05rem;
+    /* Badge is 2rem wide; pulling it left by (badge-width / 2 + rail-half-px)
+       centers it on the 1px rail. */
+    left: calc(-1rem - 0.5px);
     top: 0;
-    width: 1.85rem;
-    height: 1.85rem;
-    background: var(--muted);
+    width: 2rem;
+    height: 2rem;
+    box-sizing: border-box;
+    background: var(--card);
     color: var(--foreground);
     border: 1px solid var(--border);
     border-radius: 9999px;
@@ -30,18 +35,19 @@
     align-items: center;
     justify-content: center;
     font-family: var(--font-mono);
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     font-weight: 600;
     letter-spacing: -0.02em;
+    line-height: 1;
 }
 
 ::deep .step-title {
-    margin: 0 0 0.35rem;
-    font-size: 1.05rem;
+    margin: 0 0 0.4rem;
+    font-size: 1rem;
     font-weight: 600;
     letter-spacing: -0.015em;
-    line-height: 1.4;
+    line-height: 1.5;
 }
-::deep .step-content { color: var(--muted-foreground); font-size: 0.9rem; line-height: 1.6; }
+::deep .step-content { color: var(--muted-foreground); font-size: 0.9rem; line-height: 1.65; }
 ::deep .step-content > *:first-child { margin-top: 0; }
 ::deep .step-content > *:last-child { margin-bottom: 0; }

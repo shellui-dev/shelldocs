@@ -83,13 +83,19 @@ internal static class SlotRenderer
         if (!string.IsNullOrWhiteSpace(childContentRaw))
         {
             dict["ChildContent"] = FromMarkup(renderer, childContentRaw);
+            /* If the target declares a ChildContentSource [Parameter] (as
+               ComponentPreview does for reconstructing its source view),
+               pass the raw markup through unchanged in addition to the
+               RenderFragment above. */
+            if (props.ContainsKey("ChildContentSource"))
+                dict["ChildContentSource"] = childContentRaw;
         }
         return dict;
     }
 
     private static readonly Dictionary<Type, Dictionary<string, PropertyInfo>> _propCache = new();
 
-    private static Dictionary<string, PropertyInfo> GetParameterProps(Type t)
+    internal static Dictionary<string, PropertyInfo> GetParameterProps(Type t)
     {
         lock (_propCache)
         {
@@ -104,7 +110,7 @@ internal static class SlotRenderer
         }
     }
 
-    private static object Coerce(string raw, Type target)
+    internal static object Coerce(string raw, Type target)
     {
         var underlying = Nullable.GetUnderlyingType(target) ?? target;
         if (underlying == typeof(string)) return raw;
