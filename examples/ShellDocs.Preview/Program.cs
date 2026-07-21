@@ -33,8 +33,8 @@ builder.Services.AddShellDocs(o =>
     o.AddNavLink("Showcase", "/showcase");
     o.AddNavLink("Blog", "/blog");
 
-    // Demo components available for <razor:preview> blocks in markdown.
-    o.RegisterComponent<ShellDocs.Preview.Components.Demos.Callout>();
+    // Callout, Card, Steps, FileTree, CodeGroup, LinkCard etc. are
+    // auto-registered by AddShellDocs — no extra work needed here.
 });
 
 var app = builder.Build();
