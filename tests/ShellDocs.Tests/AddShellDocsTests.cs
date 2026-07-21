@@ -36,11 +36,11 @@ public class AddShellDocsTests
     public void AddShellDocs_RegisteredComponents_FlowIntoTypeRegistry()
     {
         var services = new ServiceCollection();
-        services.AddShellDocs(o => o.RegisterComponent<Callout>());
+        services.AddShellDocs(o => o.RegisterComponent<CustomWidget>());
         var sp = services.BuildServiceProvider();
 
         var registry = sp.GetRequiredService<TypeRegistry>();
-        Assert.Equal(typeof(Callout), registry.Resolve("Callout"));
+        Assert.Equal(typeof(CustomWidget), registry.Resolve("CustomWidget"));
     }
 
     [Fact]
@@ -55,5 +55,5 @@ public class AddShellDocsTests
         Assert.Equal("/blog", options.PrimaryNav[1].Href);
     }
 
-    public class Callout : Microsoft.AspNetCore.Components.ComponentBase { }
+    public class CustomWidget : Microsoft.AspNetCore.Components.ComponentBase { }
 }
