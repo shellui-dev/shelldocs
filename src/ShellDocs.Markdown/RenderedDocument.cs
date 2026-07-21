@@ -21,4 +21,5 @@ public record PreviewSlot(
     Type ComponentType,
     IReadOnlyDictionary<string, string> Parameters,
     string Code,
-    string Language) : Slot(Id);
+    string Language,
+    string? ChildContentRaw = null) : Slot(Id);
