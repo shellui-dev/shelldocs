@@ -1,0 +1,33 @@
+@namespace ShellDocs.Components.Content
+
+<li class="filetree-item @(IsFolder ? "is-folder" : "is-file") @(Highlight ? "highlight" : "")">
+    <span class="filetree-glyph" aria-hidden="true">
+        @if (IsFolder)
+        {
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        }
+        else
+        {
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        }
+    </span>
+    <span class="filetree-label">@Name</span>
+    @if (!string.IsNullOrEmpty(Comment))
+    {
+        <span class="filetree-comment">@Comment</span>
+    }
+    @if (IsFolder && ChildContent is not null)
+    {
+        <ul class="filetree-list">
+            @ChildContent
+        </ul>
+    }
+</li>
+
+@code {
+    [Parameter, EditorRequired] public string Name { get; set; } = "";
+    [Parameter] public bool IsFolder { get; set; }
+    [Parameter] public string? Comment { get; set; }
+    [Parameter] public bool Highlight { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

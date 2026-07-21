@@ -1,0 +1,78 @@
+@namespace ShellDocs.Components.Content
+@inject CodeGroupSyncState Sync
+@implements IDisposable
+
+<div class="code-group">
+    <div class="code-group-tabs" role="tablist">
+        @foreach (var tab in _tabs)
+        {
+            var isActive = tab.Label == _active;
+            <button type="button"
+                    role="tab"
+                    aria-selected="@isActive"
+                    class="code-group-tab @(isActive ? "active" : "")"
+                    @onclick="() => Select(tab.Label)">
+                @tab.Label
+            </button>
+        }
+    </div>
+    <div class="code-group-panel">
+        @foreach (var tab in _tabs)
+        {
+            var isActive = tab.Label == _active;
+            <div class="code-group-content" hidden="@(!isActive)">
+                @tab.Content
+            </div>
+        }
+    </div>
+</div>
+
+<CascadingValue Value="this" IsFixed="true">
+    @* Consume ChildContent silently — CodeTab siblings register themselves via
+       this cascading value; the CodeTabs themselves don't render anything from
+       their own body — we replay their Content above. *@
+    <div style="display:none">@ChildContent</div>
+</CascadingValue>
+
+@code {
+    [Parameter] public string? SyncKey { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private readonly List<(string Label, RenderFragment Content)> _tabs = new();
+    private string? _active;
+
+    internal void Register(string label, RenderFragment content)
+    {
+        if (_tabs.Any(t => t.Label == label)) return;
+        _tabs.Add((label, content));
+        // Initial selection: sync-group's stored pick if available, else first tab.
+        if (_active is null)
+        {
+            _active = (SyncKey is not null ? Sync.Get(SyncKey) : null) ?? label;
+            StateHasChanged();
+        }
+    }
+
+    private void Select(string label)
+    {
+        if (_active == label) return;
+        _active = label;
+        if (SyncKey is not null) Sync.Set(SyncKey, label);
+        StateHasChanged();
+    }
+
+    protected override void OnInitialized() => Sync.OnChange += OnSyncChange;
+
+    private void OnSyncChange(string changedKey)
+    {
+        if (SyncKey != changedKey) return;
+        var v = Sync.Get(SyncKey);
+        if (v is not null && _tabs.Any(t => t.Label == v) && _active != v)
+        {
+            _active = v;
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    public void Dispose() => Sync.OnChange -= OnSyncChange;
+}

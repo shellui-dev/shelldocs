@@ -1,0 +1,50 @@
+.filetree {
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: calc(var(--radius) + 2px);
+    background: var(--card);
+    margin: 1.5rem 0;
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    line-height: 1.6;
+}
+.filetree-list {
+    list-style: none;
+    padding-left: 0;
+    margin: 0;
+}
+
+::deep .filetree-item {
+    position: relative;
+    padding: 0.15rem 0;
+    color: var(--foreground);
+}
+::deep .filetree-item .filetree-list {
+    padding-left: 1.15rem;
+    margin: 0.15rem 0 0.15rem 0.4rem;
+    border-left: 1px solid var(--border);
+}
+
+::deep .filetree-glyph {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted-foreground);
+    margin-right: 0.4rem;
+    vertical-align: middle;
+}
+::deep .filetree-glyph svg { width: 0.85rem; height: 0.85rem; }
+::deep .filetree-item.is-folder > .filetree-glyph { color: var(--foreground); }
+::deep .filetree-item.highlight > .filetree-label {
+    background: color-mix(in oklch, var(--warning) 20%, transparent);
+    padding: 0 0.35rem;
+    border-radius: 3px;
+}
+
+::deep .filetree-label { color: inherit; }
+::deep .filetree-comment {
+    color: var(--muted-foreground);
+    margin-left: 0.6rem;
+    font-style: italic;
+    font-size: 0.9em;
+}

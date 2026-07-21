@@ -1,0 +1,24 @@
+@namespace ShellDocs.Components.Content
+
+<a class="link-card" href="@Href" target="@(External ? "_blank" : null)" rel="@(External ? "noopener" : null)">
+    <div class="link-card-body">
+        @if (!string.IsNullOrEmpty(Title))
+        {
+            <div class="link-card-title">@Title</div>
+        }
+        @if (!string.IsNullOrEmpty(Description))
+        {
+            <div class="link-card-desc">@Description</div>
+        }
+    </div>
+    <span class="link-card-arrow">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </span>
+</a>
+
+@code {
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Description { get; set; }
+    [Parameter, EditorRequired] public string Href { get; set; } = "#";
+    [Parameter] public bool External { get; set; }
+}

@@ -1,0 +1,27 @@
+.callout {
+    display: flex;
+    gap: 0.85rem;
+    padding: 0.9rem 1.1rem;
+    border: 1px solid var(--border);
+    border-radius: calc(var(--radius) + 2px);
+    background: color-mix(in oklch, var(--card) 70%, var(--background));
+    line-height: 1.6;
+    font-size: 0.9rem;
+    margin: 1.25rem 0;
+}
+.callout-icon { flex-shrink: 0; display: inline-flex; align-items: flex-start; padding-top: 0.05rem; }
+.callout-icon svg { width: 1.05rem; height: 1.05rem; }
+.callout-body { flex: 1; min-width: 0; }
+.callout-title { font-weight: 600; margin-bottom: 0.2rem; letter-spacing: -0.005em; color: var(--foreground); }
+.callout-content { color: var(--muted-foreground); }
+.callout-content > *:first-child { margin-top: 0; }
+.callout-content > *:last-child { margin-bottom: 0; }
+
+.callout-info    { border-color: color-mix(in oklch, var(--info) 30%, var(--border)); }
+.callout-info .callout-icon { color: var(--info); }
+.callout-warning { border-color: color-mix(in oklch, var(--warning) 35%, var(--border)); }
+.callout-warning .callout-icon { color: var(--warning); }
+.callout-danger, .callout-error { border-color: color-mix(in oklch, var(--error) 35%, var(--border)); }
+.callout-danger .callout-icon, .callout-error .callout-icon { color: var(--error); }
+.callout-tip, .callout-success { border-color: color-mix(in oklch, var(--success) 30%, var(--border)); }
+.callout-tip .callout-icon, .callout-success .callout-icon { color: var(--success); }

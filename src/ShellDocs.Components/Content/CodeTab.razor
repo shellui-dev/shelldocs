@@ -1,0 +1,15 @@
+@namespace ShellDocs.Components.Content
+
+@code {
+    [Parameter, EditorRequired] public string Label { get; set; } = "";
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [CascadingParameter] public CodeGroup? Parent { get; set; }
+
+    protected override void OnInitialized()
+    {
+        if (Parent is not null && ChildContent is not null)
+        {
+            Parent.Register(Label, ChildContent);
+        }
+    }
+}

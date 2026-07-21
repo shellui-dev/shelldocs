@@ -1,0 +1,9 @@
+@namespace ShellDocs.Components.Content
+
+<ol class="steps">
+    @ChildContent
+</ol>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}
