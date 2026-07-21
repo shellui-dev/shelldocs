@@ -33,6 +33,9 @@ public static class ServiceCollectionExtensions
         options.RegisterComponent<FileTreeItem>();
         options.RegisterComponent<CodeGroup>();
         options.RegisterComponent<CodeTab>();
+        options.RegisterComponent<TypeTable>();
+        options.RegisterComponent<TypeRow>();
+        options.RegisterComponent<ComponentPreview>();
 
         services.AddSingleton<TypeRegistry>(_ => options.BuildTypeRegistry());
         services.AddSingleton<MarkdownRenderer>(sp => new MarkdownRenderer(sp.GetRequiredService<TypeRegistry>()));

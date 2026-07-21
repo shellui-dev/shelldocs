@@ -1,0 +1,130 @@
+.component-preview {
+    border: 1px solid var(--border);
+    border-radius: calc(var(--radius) + 2px);
+    background: var(--card);
+    overflow: hidden;
+    margin: 1.5rem 0;
+}
+
+.component-preview-render {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    min-height: 12rem;
+    padding: 2rem 1.5rem;
+    background:
+        repeating-linear-gradient(45deg,
+            color-mix(in oklch, var(--foreground) 2.5%, transparent) 0,
+            color-mix(in oklch, var(--foreground) 2.5%, transparent) 1px,
+            transparent 1px, transparent 8px);
+}
+
+.component-preview-error {
+    color: var(--destructive, oklch(0.577 0.245 27.325));
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+}
+.component-preview-error code {
+    background: color-mix(in oklch, var(--destructive, oklch(0.577 0.245 27.325)) 12%, transparent);
+    padding: 0.1rem 0.4rem;
+    border-radius: calc(var(--radius) - 4px);
+}
+
+.component-preview-source-wrap {
+    position: relative;
+    border-top: 1px solid var(--border);
+    background: color-mix(in oklch, var(--card) 55%, var(--background));
+    overflow: hidden;
+    transition: max-height 300ms ease;
+}
+.component-preview.collapsed .component-preview-source-wrap { max-height: 6rem; }
+.component-preview.expanded  .component-preview-source-wrap { max-height: none; }
+
+.component-preview-source {
+    margin: 0;
+    padding: 1.15rem 1.25rem;
+    background: transparent;
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    line-height: 1.65;
+    color: var(--foreground);
+    overflow-x: auto;
+}
+.component-preview-source code {
+    background: transparent !important;
+    border: 0 !important;
+    padding: 0 !important;
+    font-family: var(--font-mono) !important;
+    font-size: inherit !important;
+    color: inherit !important;
+}
+
+.component-preview-fade {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(
+        to bottom,
+        transparent 0%,
+        color-mix(in oklch, var(--card) 40%, transparent) 35%,
+        var(--card) 75%);
+    pointer-events: none;
+}
+
+.component-preview-expand {
+    pointer-events: auto;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: calc(var(--radius) - 2px);
+    color: var(--foreground);
+    padding: 0.45rem 1rem;
+    font-family: inherit;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    cursor: pointer;
+    box-shadow: 0 1px 2px color-mix(in oklch, var(--foreground) 8%, transparent);
+    transition: background 150ms, border-color 150ms;
+}
+.component-preview-expand:hover {
+    background: var(--muted);
+    border-color: color-mix(in oklch, var(--border) 60%, var(--foreground));
+}
+
+.component-preview-actions {
+    position: absolute;
+    top: 0.55rem;
+    right: 0.6rem;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    z-index: 1;
+}
+
+.component-preview-copy,
+.component-preview-hide {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.3rem 0.55rem;
+    background: color-mix(in oklch, var(--card) 92%, var(--foreground));
+    border: 1px solid var(--border);
+    border-radius: calc(var(--radius) - 3px);
+    color: var(--muted-foreground);
+    font-family: inherit;
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color 150ms, background 150ms, border-color 150ms;
+}
+.component-preview-copy:hover,
+.component-preview-hide:hover {
+    color: var(--foreground);
+    background: var(--muted);
+    border-color: color-mix(in oklch, var(--border) 60%, var(--foreground));
+}
+.component-preview-copy.copied { color: var(--success, oklch(0.723 0.219 149.579)); }
+.component-preview-copy svg { width: 0.8125rem; height: 0.8125rem; }

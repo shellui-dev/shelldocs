@@ -1,0 +1,138 @@
+@namespace ShellDocs.Components.Content
+@using System.Reflection
+@using System.Text
+@using ShellDocs.Markdown
+@inject TypeRegistry Registry
+@inject IJSRuntime JS
+
+<div class="component-preview @(_showSource ? "expanded" : "collapsed")">
+    <div class="component-preview-render">
+        @if (_target is not null && _targetParams is not null)
+        {
+            <DynamicComponent Type="_target" Parameters="_targetParams" />
+        }
+        else
+        {
+            <div class="component-preview-error">
+                Unknown component: <code>@Component</code>
+            </div>
+        }
+    </div>
+    <div class="component-preview-source-wrap">
+        <pre class="component-preview-source language-razor" @ref="_sourceEl"><code class="language-razor">@_source</code></pre>
+        @if (!_showSource)
+        {
+            <div class="component-preview-fade">
+                <button type="button" class="component-preview-expand" @onclick="Show">View source</button>
+            </div>
+        }
+        else
+        {
+            <div class="component-preview-actions">
+                <button type="button" class="component-preview-copy @(_copied ? "copied" : "")" @onclick="Copy" aria-label="Copy source">
+                    @if (_copied)
+                    {
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    }
+                    else
+                    {
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    }
+                </button>
+                <button type="button" class="component-preview-hide" @onclick="Hide">Hide</button>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string? Component { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    /* Threaded in by SlotRenderer alongside ChildContent when the tag has body
+       content — used to reconstruct the source-view string. */
+    [Parameter] public string? ChildContentSource { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)]
+    public IReadOnlyDictionary<string, object>? ExtraProps { get; set; }
+
+    private Type? _target;
+    private IDictionary<string, object>? _targetParams;
+    private string? _source;
+    private bool _showSource;
+    private bool _copied;
+    private bool _highlighted;
+    private ElementReference _sourceEl;
+
+    protected override void OnParametersSet()
+    {
+        _target = Component is null ? null : Registry.Resolve(Component);
+        _targetParams = _target is null ? null : BuildTargetParams(_target);
+        _source = _target is null ? null : BuildSource();
+    }
+
+    private IDictionary<string, object> BuildTargetParams(Type target)
+    {
+        var dict = new Dictionary<string, object>(StringComparer.Ordinal);
+        var props = SlotRenderer.GetParameterProps(target);
+        if (ExtraProps is not null)
+        {
+            foreach (var (k, v) in ExtraProps)
+            {
+                dict[k] = (v is string s && props.TryGetValue(k, out var prop))
+                    ? SlotRenderer.Coerce(s, prop.PropertyType)
+                    : v;
+            }
+        }
+        if (ChildContent is not null) dict["ChildContent"] = ChildContent;
+        return dict;
+    }
+
+    private string BuildSource()
+    {
+        var sb = new StringBuilder();
+        sb.Append('<').Append(Component);
+        if (ExtraProps is not null)
+        {
+            foreach (var (k, v) in ExtraProps.OrderBy(x => x.Key, StringComparer.Ordinal))
+            {
+                sb.Append(' ').Append(k).Append("=\"").Append(v).Append('"');
+            }
+        }
+        var body = ChildContentSource?.Trim();
+        if (string.IsNullOrEmpty(body))
+        {
+            sb.Append(" />");
+        }
+        else
+        {
+            sb.Append('>').Append(body).Append("</").Append(Component).Append('>');
+        }
+        return sb.ToString();
+    }
+
+    private void Show() => _showSource = true;
+    private void Hide() => _showSource = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_highlighted && _source is not null)
+        {
+            _highlighted = true;
+            try { await JS.InvokeVoidAsync("shelldocsHighlightElement", _sourceEl); } catch { }
+        }
+    }
+
+    private async Task Copy()
+    {
+        if (_source is null) return;
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", _source);
+            _copied = true;
+            StateHasChanged();
+            await Task.Delay(1400);
+            _copied = false;
+            StateHasChanged();
+        }
+        catch { }
+    }
+}

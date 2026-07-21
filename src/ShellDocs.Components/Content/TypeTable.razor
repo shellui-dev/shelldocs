@@ -1,0 +1,79 @@
+@namespace ShellDocs.Components.Content
+
+<div class="type-table-wrap">
+    <table class="type-table">
+        <thead>
+            <tr>
+                <th class="type-table-col-name">Prop</th>
+                <th class="type-table-col-type">Type</th>
+                <th class="type-table-col-default">Default</th>
+                <th class="type-table-col-desc">Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (_rows.Count == 0)
+            {
+                <tr>
+                    <td colspan="4" class="type-table-empty">No props documented.</td>
+                </tr>
+            }
+            else
+            {
+                @foreach (var row in _rows)
+                {
+                    <tr>
+                        <td class="type-table-name">
+                            <code>@row.Name</code>
+                            @if (row.Required)
+                            {
+                                <span class="type-table-required" title="Required">required</span>
+                            }
+                        </td>
+                        <td class="type-table-type">
+                            @if (!string.IsNullOrEmpty(row.Type))
+                            {
+                                <code>@row.Type</code>
+                            }
+                            else
+                            {
+                                <span class="type-table-muted">—</span>
+                            }
+                        </td>
+                        <td class="type-table-default">
+                            @if (!string.IsNullOrEmpty(row.Default))
+                            {
+                                <code>@row.Default</code>
+                            }
+                            else
+                            {
+                                <span class="type-table-muted">—</span>
+                            }
+                        </td>
+                        <td class="type-table-desc">@row.Description</td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>
+
+<CascadingValue Value="this" IsFixed="true">
+    @* Consume ChildContent silently — TypeRow children register into _rows via
+       this cascading value; TypeRow itself renders nothing on its own. *@
+    <div style="display:none">@ChildContent</div>
+</CascadingValue>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private readonly List<TypeRowInfo> _rows = new();
+
+    internal void Register(TypeRowInfo info)
+    {
+        if (_rows.Any(r => r.Name == info.Name)) return;
+        _rows.Add(info);
+        StateHasChanged();
+    }
+}
+
+@* Info record used by TypeRow to hand its data up to the table. *@
