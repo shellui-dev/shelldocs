@@ -1,0 +1,11 @@
+@namespace ShellDocs.Components.Content
+
+<div class="filetree">
+    <ul class="filetree-list">
+        @ChildContent
+    </ul>
+</div>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

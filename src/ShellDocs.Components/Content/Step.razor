@@ -1,0 +1,16 @@
+@namespace ShellDocs.Components.Content
+
+<li class="step">
+    @if (!string.IsNullOrEmpty(Title))
+    {
+        <div class="step-title">@Title</div>
+    }
+    <div class="step-content">
+        @ChildContent
+    </div>
+</li>
+
+@code {
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

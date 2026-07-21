@@ -148,7 +148,21 @@ internal class SlotExtractor
         }
 
         var attrs = ParseAttributes(open.Groups["attrs"].Value);
-        return new PreviewSlot(NewSlotId(), type, attrs, code, "razor");
+
+        // Extract inner ChildContent for non-self-closing tags. e.g.
+        //   <CardGrid>...<Card /> <Card />...</CardGrid>
+        // The inner text is what ends up injected as a RenderFragment at render time.
+        string? childContentRaw = null;
+        if (!open.Groups["self"].Success)
+        {
+            var range = FindMatchingClose(code, name, open.Index + open.Length);
+            if (range.Start >= 0)
+            {
+                childContentRaw = code.Substring(open.Index + open.Length, range.Start - (open.Index + open.Length));
+            }
+        }
+
+        return new PreviewSlot(NewSlotId(), type, attrs, code, "razor", childContentRaw);
     }
 
     private static (int Start, int End) FindMatchingClose(string text, string name, int fromIndex)

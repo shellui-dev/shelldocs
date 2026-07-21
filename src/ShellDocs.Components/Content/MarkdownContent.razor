@@ -48,17 +48,5 @@
     }
 
     private IDictionary<string, object> BuildParameters(ComponentSlot slot) =>
-        BuildParameters(slot.Parameters, slot.ChildContentRaw);
-
-    private IDictionary<string, object> BuildParameters(IReadOnlyDictionary<string, string> attrs, string? childContentRaw)
-    {
-        var dict = new Dictionary<string, object>(StringComparer.Ordinal);
-        foreach (var (k, v) in attrs) dict[k] = v;
-        if (!string.IsNullOrEmpty(childContentRaw))
-        {
-            dict["ChildContent"] = (RenderFragment)(builder =>
-                builder.AddMarkupContent(0, childContentRaw));
-        }
-        return dict;
-    }
+        SlotRenderer.BuildParameters(Renderer, slot.ComponentType, slot.Parameters, slot.ChildContentRaw);
 }

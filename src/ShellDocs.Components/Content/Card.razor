@@ -1,0 +1,63 @@
+@namespace ShellDocs.Components.Content
+
+@{
+    var isLink = !string.IsNullOrEmpty(Href);
+    var tag = isLink ? "a" : "div";
+}
+
+@if (isLink)
+{
+    <a class="doc-card" href="@Href" target="@(External ? "_blank" : null)" rel="@(External ? "noopener" : null)">
+        @Body
+    </a>
+}
+else
+{
+    <div class="doc-card">
+        @Body
+    </div>
+}
+
+@code {
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Description { get; set; }
+    [Parameter] public string? Href { get; set; }
+    [Parameter] public string? IconSvg { get; set; }
+    [Parameter] public bool External { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private RenderFragment Body => __b =>
+    {
+        if (!string.IsNullOrEmpty(IconSvg))
+        {
+            __b.OpenElement(0, "span");
+            __b.AddAttribute(1, "class", "doc-card-icon");
+            __b.AddMarkupContent(2, IconSvg);
+            __b.CloseElement();
+        }
+        __b.OpenElement(3, "div");
+        __b.AddAttribute(4, "class", "doc-card-body");
+        if (!string.IsNullOrEmpty(Title))
+        {
+            __b.OpenElement(5, "div");
+            __b.AddAttribute(6, "class", "doc-card-title");
+            __b.AddContent(7, Title);
+            __b.CloseElement();
+        }
+        if (!string.IsNullOrEmpty(Description))
+        {
+            __b.OpenElement(8, "div");
+            __b.AddAttribute(9, "class", "doc-card-description");
+            __b.AddContent(10, Description);
+            __b.CloseElement();
+        }
+        if (ChildContent is not null)
+        {
+            __b.OpenElement(11, "div");
+            __b.AddAttribute(12, "class", "doc-card-content");
+            __b.AddContent(13, ChildContent);
+            __b.CloseElement();
+        }
+        __b.CloseElement();
+    };
+}

@@ -1,0 +1,10 @@
+@namespace ShellDocs.Components.Content
+
+<div class="card-grid" data-cols="@Columns">
+    @ChildContent
+</div>
+
+@code {
+    [Parameter] public int Columns { get; set; } = 2;
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

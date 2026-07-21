@@ -1,0 +1,61 @@
+.code-group {
+    border: 1px solid var(--border);
+    border-radius: calc(var(--radius) + 2px);
+    overflow: hidden;
+    margin: 1.5rem 0;
+    background: var(--card);
+}
+
+.code-group-tabs {
+    display: flex;
+    align-items: center;
+    gap: 0.1rem;
+    padding: 0.35rem 0.4rem;
+    background: color-mix(in oklch, var(--card) 55%, var(--background));
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    scrollbar-width: thin;
+}
+.code-group-tab {
+    padding: 0.35rem 0.7rem;
+    background: transparent;
+    border: 0;
+    border-radius: calc(var(--radius) - 3px);
+    color: var(--muted-foreground);
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color 150ms, background 150ms;
+    white-space: nowrap;
+}
+.code-group-tab:hover { color: var(--foreground); }
+.code-group-tab.active {
+    color: var(--foreground);
+    background: var(--muted);
+}
+
+.code-group-panel { position: relative; }
+
+::deep .code-group-content {
+    padding: 1rem 1.25rem;
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    line-height: 1.65;
+    color: var(--foreground);
+    overflow-x: auto;
+}
+
+/* When the tab body is a real fenced code block, the inner <pre> already has
+   its own padding — strip our wrapper padding so we don't stack. */
+::deep .code-group-content:has(> pre),
+::deep .code-group-content:has(> .shelldocs-codeblock) {
+    padding: 0;
+}
+::deep .code-group-content > pre,
+::deep .code-group-content > .shelldocs-codeblock,
+::deep .code-group-content > pre.shiki {
+    margin: 0 !important;
+    border-radius: 0 !important;
+    border: 0 !important;
+}

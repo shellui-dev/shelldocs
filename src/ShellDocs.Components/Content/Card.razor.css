@@ -1,0 +1,35 @@
+.doc-card {
+    display: flex;
+    gap: 0.75rem;
+    padding: 1rem 1.15rem;
+    border: 1px solid var(--border);
+    border-radius: calc(var(--radius) + 2px);
+    background: var(--card);
+    color: var(--foreground);
+    text-decoration: none;
+    transition: border-color 200ms, background 200ms, transform 200ms;
+    align-items: flex-start;
+}
+a.doc-card:hover {
+    border-color: var(--border-strong);
+    background: var(--muted);
+}
+
+::deep .doc-card-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 6px;
+    background: var(--muted);
+    color: var(--foreground);
+    flex-shrink: 0;
+}
+::deep .doc-card-icon svg { width: 1rem; height: 1rem; }
+::deep .doc-card-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.2rem; }
+::deep .doc-card-title { font-weight: 600; font-size: 0.9375rem; letter-spacing: -0.005em; color: var(--foreground); }
+::deep .doc-card-description { color: var(--muted-foreground); font-size: 0.85rem; line-height: 1.5; }
+::deep .doc-card-content { color: var(--muted-foreground); font-size: 0.85rem; line-height: 1.5; margin-top: 0.25rem; }
+::deep .doc-card-content > *:first-child { margin-top: 0; }
+::deep .doc-card-content > *:last-child { margin-bottom: 0; }

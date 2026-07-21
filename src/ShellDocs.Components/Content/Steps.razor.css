@@ -1,0 +1,47 @@
+.steps {
+    list-style: none;
+    counter-reset: step;
+    padding: 0;
+    margin: 1.5rem 0;
+    border-left: 1px solid var(--border);
+}
+
+::deep .step {
+    counter-increment: step;
+    position: relative;
+    padding: 0 0 1.5rem 2.5rem;
+    margin-left: 0.9rem;
+    color: var(--foreground);
+}
+::deep .step:last-child { padding-bottom: 0; }
+
+::deep .step::before {
+    content: counter(step);
+    position: absolute;
+    left: -1.05rem;
+    top: 0;
+    width: 1.85rem;
+    height: 1.85rem;
+    background: var(--muted);
+    color: var(--foreground);
+    border: 1px solid var(--border);
+    border-radius: 9999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+}
+
+::deep .step-title {
+    margin: 0 0 0.35rem;
+    font-size: 1.05rem;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    line-height: 1.4;
+}
+::deep .step-content { color: var(--muted-foreground); font-size: 0.9rem; line-height: 1.6; }
+::deep .step-content > *:first-child { margin-top: 0; }
+::deep .step-content > *:last-child { margin-bottom: 0; }
