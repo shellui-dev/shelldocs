@@ -1,4 +1,4 @@
 {
   "title": "Components",
-  "pages": ["callout", "code-block", "tabs"]
+  "pages": ["callout", "card", "code-block", "code-group", "steps", "tabs", "filetree"]
 }
