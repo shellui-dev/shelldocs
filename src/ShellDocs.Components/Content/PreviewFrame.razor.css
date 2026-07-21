@@ -6,64 +6,6 @@
     margin: 1.5rem 0;
 }
 
-.preview-tabs {
-    display: flex;
-    align-items: center;
-    gap: 0.15rem;
-    padding: 0.35rem 0.4rem;
-    background: color-mix(in oklch, var(--card) 55%, var(--background));
-    border-bottom: 1px solid var(--border);
-}
-
-.preview-tab {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0.35rem 0.7rem;
-    background: transparent;
-    border: 0;
-    border-radius: calc(var(--radius) - 3px);
-    color: var(--muted-foreground);
-    font-family: inherit;
-    font-size: 0.8125rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: color 150ms, background 150ms;
-}
-.preview-tab:hover { color: var(--foreground); }
-.preview-tab.active {
-    color: var(--foreground);
-    background: var(--muted);
-}
-.preview-tab svg { width: 0.875rem; height: 0.875rem; }
-
-.preview-spacer { flex: 1; }
-
-.preview-copy {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    padding: 0.3rem 0.55rem 0.3rem 0.5rem;
-    background: transparent;
-    border: 1px solid transparent;
-    border-radius: calc(var(--radius) - 3px);
-    color: var(--muted-foreground);
-    font-family: inherit;
-    font-size: 0.75rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: color 150ms, background 150ms, border-color 150ms;
-}
-.preview-copy:hover {
-    color: var(--foreground);
-    background: var(--muted);
-    border-color: var(--border);
-}
-.preview-copy.copied { color: var(--success, oklch(0.723 0.219 149.579)); }
-.preview-copy svg { width: 0.8125rem; height: 0.8125rem; }
-
-.preview-body { position: relative; }
-
 .preview-render {
     display: flex;
     align-items: center;
@@ -78,6 +20,16 @@
             color-mix(in oklch, var(--foreground) 2.5%, transparent) 1px,
             transparent 1px, transparent 8px);
 }
+
+.preview-code-wrap {
+    position: relative;
+    border-top: 1px solid var(--border);
+    background: color-mix(in oklch, var(--card) 55%, var(--background));
+    overflow: hidden;
+    transition: max-height 300ms ease;
+}
+.preview-frame.collapsed .preview-code-wrap { max-height: 8.5rem; }
+.preview-frame.expanded  .preview-code-wrap { max-height: none; }
 
 .preview-code {
     margin: 0;
@@ -97,3 +49,71 @@
     font-size: inherit !important;
     color: inherit !important;
 }
+
+.preview-fade {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(
+        to bottom,
+        transparent 0%,
+        color-mix(in oklch, var(--card) 40%, transparent) 35%,
+        var(--card) 75%);
+    pointer-events: none;
+}
+
+.preview-expand {
+    pointer-events: auto;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: calc(var(--radius) - 2px);
+    color: var(--foreground);
+    padding: 0.45rem 1rem;
+    font-family: inherit;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    cursor: pointer;
+    box-shadow: 0 1px 2px color-mix(in oklch, var(--foreground) 8%, transparent);
+    transition: background 150ms, border-color 150ms;
+}
+.preview-expand:hover {
+    background: var(--muted);
+    border-color: color-mix(in oklch, var(--border) 60%, var(--foreground));
+}
+
+.preview-code-actions {
+    position: absolute;
+    top: 0.55rem;
+    right: 0.6rem;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    z-index: 1;
+}
+
+.preview-copy,
+.preview-collapse {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.3rem 0.55rem;
+    background: color-mix(in oklch, var(--card) 92%, var(--foreground));
+    border: 1px solid var(--border);
+    border-radius: calc(var(--radius) - 3px);
+    color: var(--muted-foreground);
+    font-family: inherit;
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color 150ms, background 150ms, border-color 150ms;
+}
+.preview-copy:hover,
+.preview-collapse:hover {
+    color: var(--foreground);
+    background: var(--muted);
+    border-color: color-mix(in oklch, var(--border) 60%, var(--foreground));
+}
+.preview-copy.copied { color: var(--success, oklch(0.723 0.219 149.579)); }
+.preview-copy svg { width: 0.8125rem; height: 0.8125rem; }
