@@ -23,9 +23,7 @@
     padding: 0.65rem 0.9rem;
     color: var(--muted-foreground);
     font-weight: 500;
-    font-size: 0.75rem;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
+    font-size: 0.78rem;
     white-space: nowrap;
 }
 
@@ -60,10 +58,8 @@
     background: color-mix(in oklch, var(--destructive, oklch(0.577 0.245 27.325)) 12%, transparent);
     color: var(--destructive, oklch(0.577 0.245 27.325));
     border-radius: calc(var(--radius) - 4px);
-    font-size: 0.68rem;
+    font-size: 0.72rem;
     font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
     white-space: nowrap;
 }
 

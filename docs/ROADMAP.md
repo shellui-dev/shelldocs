@@ -164,22 +164,46 @@ Ships to `ShellDocs.Components`.
 - `PrevNextNav` — auto-derived from nav graph adjacency, rendered at page bottom
 - `DocsBreadcrumb` — composes ShellUI's `<Breadcrumb>` with docs presets
 
-### `feat/content-primitives`
+### ✅ `feat/content-primitives` — shipped
 Ships to `ShellDocs.Components`.
 
-- `DocsTabs` — multi-tab code containers (`npm` / `yarn` / `pnpm` / `standalone` / `bash` presets)
-- `Callout` — Info / Warning / Tip / Danger box (may reuse ShellUI `<Alert>` with docs styling wrapper)
-- `LinkCard` — card-shaped link with title / description / icon for "Next steps" grids
-- `FileTree` — static folder / file visualization
-- `Steps` — vertical numbered steps for onboarding flows
+- `<CodeGroup>` / `<CodeTab>` — multi-tab code containers with cross-page `SyncKey` sync (`npm` / `pnpm` / `yarn`, etc.)
+- `<Callout>` (Info / Warning / Danger / Tip) with per-variant icon
+- `<Card>` / `<CardGrid>` / `<LinkCard>` — responsive card grid + anchor-shaped link card
+- `<FileTree>` / `<FileTreeItem>` — recursive project-layout diagram with `IsFolder`, `Highlight`, `Comment`
+- `<Steps>` / `<Step>` — CSS-counter numbered ordered list with a badge-on-rail spine
+- Preview-frame overhaul: dropped tabs for a fumadocs-style stacked preview + collapsed code teaser with "View Code" expand — both panels stay mounted, killing the whole class of tab-switch state loss
+- `SlotRenderer` gains recursive nested-markup rendering (`ChildContentRaw` threading, `Dedent` for Markdig 4-space-indent trap) and per-property type coercion for `bool` / `int` / enum attribute values
 
-### `feat/api-reference-primitives`
+### ✅ `feat/api-reference-primitives` — shipped
 Ships to `ShellDocs.Components`.
 
-- `TypeTable` — props table with `<TypeRow Name Type Default Description />` child components
-- `ComponentPreview` — live component render by name + prop dictionary, source-view toggle
-- Uses `<DynamicComponent>` for runtime component rendering
-- Type registry from `ShellDocs.Markdown` reused
+- `<TypeTable>` / `<TypeRow Name Type Default Description Required />` — hand-authored props reference table via `CascadingValue` registration
+- `<ComponentPreview Component="Foo" ...props>` — declarative-prop cousin of `razor:preview`; resolves target by name through `TypeRegistry`, forwards attrs via `CaptureUnmatchedValues` with the same per-type coercion `SlotRenderer` uses, reconstructs source view from the resolved prop dict (self-closing form when no body)
+- `SlotRenderer.Coerce` + `GetParameterProps` bumped to `internal` so `ComponentPreview` can drive the same conversion path
+
+### ✅ `feat/consumer-registration-dx` — shipped
+Ships to `ShellDocs.Components` + `ShellDocs.Templates` + `ShellDocs.CLI` + `ShellDocs.Markdown`.
+
+**Registration (`ShellDocs.Components`)**
+- `ShellDocsOptions.RegisterComponentsFromAssembly<TMarker>()` — assembly-scan overload that walks the marker's assembly for public, concrete, non-generic `ComponentBase` subclasses and registers each. Kills the "hand-type `RegisterComponent<T>()` for every ShellUI component" tax for consumers.
+- `RegisterComponentsFromAssembly(Assembly, Func<Type, bool>?)` — explicit form with a filter predicate for finer control (namespace narrowing, opt-in subsets, etc.)
+- `[ShellDocsIgnore]` attribute — opt-out marker for public components that shouldn't be reachable from markdown authoring (e.g. render-machinery components that live in the same assembly)
+- `RegisterComponent(Type)` runtime overload alongside the existing generic form
+- `RegisterComponent<T>(string tagName)` + `RegisterComponent(Type, string tagName)` — alias overloads that expose a component under a different markdown-facing tag (e.g. `<Btn>` for `ShellUI.Button`); backed by a per-type `ComponentAliases` dictionary that `BuildTypeRegistry` consults before falling back to `type.Name`
+- **Dogfooded on ourselves:** `AddShellDocs` now scans `ShellDocs.Components.Content` via this API instead of the old explicit-list `RegisterComponent<Callout>(); .RegisterComponent<Card>(); …` block, so a new primitive dropped under `Content/` auto-appears without a maintainer edit to `ServiceCollectionExtensions.cs`. `MarkdownContent` and `PreviewFrame` opt out via `[ShellDocsIgnore]`.
+
+**Content scaffolding (`ShellDocs.Templates` + `ShellDocs.CLI`)**
+- `shelldocs add <template> <name> [--dir] [--force]` — CLI command that scaffolds a starter `.md` page from a template into `content/`. Templates:
+  - `component <Name>` → `content/docs/components/<slug>.md` — frontmatter + intro + `razor:preview` block + empty `<TypeTable>` + Notes
+  - `guide <slug>` → `content/docs/guides/<slug>.md` — frontmatter + intro + `<Steps>` skeleton
+  - `page <slug>` → `content/docs/<slug>.md` — blank frontmatter + H1
+- Slugifies PascalCase inputs (`MyBigCard` → `my-big-card.md`) and TitleCases kebab inputs (`getting-started` → "Getting Started"). Refuses to overwrite unless `--force`.
+- `PageTemplates` static class in `ShellDocs.Templates` holds the three template bodies — same access pattern as the existing `StarterPageTemplate`.
+- Replaces the placeholder `new` command stub in `Program.cs`.
+
+**Authoring fix (`ShellDocs.Markdown`)**
+- `SlotExtractor.ReplaceComponentTags` no longer `.Trim()`s the raw child content of inline component tags. The Trim was stripping the first line's indent and defeating `SlotRenderer.Dedent` — Markdig then interpreted the remaining 4-space-indented lines as an indented code block. Symptom was the same "literal `<pre>` around placeholder divs" bug that had already been fixed for `razor:preview` fences; the inline-tag code path was still hitting it.
 
 ### `feat/animation-polish`
 Ships to `ShellDocs.Components`.
@@ -197,7 +221,7 @@ Ships to `ShellDocs.Components`.
 - Version bump, notes, NuGet push
 - Ready for dogfood via shellui.dev
 
-**Milestone:** ShellDocs is feature-complete for a full-featured docs site. Real content authoring can begin.
+**Milestone:** ShellDocs is feature-complete for a full-featured docs site. Real content authoring can begin. Remaining Phase 2 work: `feat/animation-polish` (nice-to-have) and the `0.2.0-alpha` NuGet cut.
 
 ---
 

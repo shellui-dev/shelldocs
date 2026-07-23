@@ -21,7 +21,7 @@ internal class Program
     {
         var root = new RootCommand("ShellDocs — the docs framework for .NET.");
         root.Subcommands.Add(CreateInitCommand());
-        root.Subcommands.Add(CreateNewCommand());
+        root.Subcommands.Add(CreateAddCommand());
         root.Subcommands.Add(CreateDevCommand());
         root.Subcommands.Add(CreateBuildCommand());
         root.Subcommands.Add(CreatePreviewCommand());
@@ -69,15 +69,22 @@ internal class Program
         return cmd;
     }
 
-    private static Command CreateNewCommand()
+    private static Command CreateAddCommand()
     {
-        var kind = new Argument<string>("kind") { Description = "Template kind: page, component-page." };
-        var name = new Argument<string>("name") { Description = "File name for the new page." };
-        var cmd = new Command("new", "Scaffold a new doc page from a template.") { kind, name };
-        cmd.SetAction(pr =>
+        var template = new Argument<string>("template") { Description = "Template: component, guide, page." };
+        var name = new Argument<string>("name") { Description = "Name of the new page (PascalCase for component, kebab-case for guide/page)." };
+        var dir = new Option<string>("--dir")
         {
-            AnsiConsole.MarkupLine($"[yellow]shelldocs new {pr.GetValue(kind)} {pr.GetValue(name)}[/] — not yet implemented (feat/cli-init).");
-        });
+            Description = "Project directory (default: current dir).",
+            DefaultValueFactory = _ => Directory.GetCurrentDirectory()
+        };
+        var force = new Option<bool>("--force") { Description = "Overwrite an existing file with the same name." };
+        var cmd = new Command("add", "Scaffold a new doc page from a template into content/.") { template, name, dir, force };
+        cmd.SetAction(pr => AddCommand.Run(
+            pr.GetValue(template) ?? "",
+            pr.GetValue(name) ?? "",
+            pr.GetValue(dir) ?? Directory.GetCurrentDirectory(),
+            pr.GetValue(force)));
         return cmd;
     }
 

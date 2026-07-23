@@ -117,7 +117,12 @@ internal class SlotExtractor
                     cursor = open.Index + open.Length;
                     continue;
                 }
-                childRaw = text.Substring(open.Index + open.Length, closeStart - (open.Index + open.Length)).Trim();
+                /* Preserve original indentation — SlotRenderer.Dedent normalizes
+                   the common leading whitespace before feeding to Markdig, and
+                   Trim()-ing here would strip the first line's indent and defeat
+                   that (Markdig would then treat the remaining 4-space-indented
+                   lines as an indented code block). */
+                childRaw = text.Substring(open.Index + open.Length, closeStart - (open.Index + open.Length));
                 endIndex = closeEnd;
             }
 
