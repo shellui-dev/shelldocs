@@ -39,9 +39,7 @@ public static class ScaffoldTemplates
     public static string DocsPageRazor => """
         @page "/docs/{*Path:nonfile}"
         @layout DocsLayout
-        @using Microsoft.AspNetCore.Components.Sections
         @using ShellDocs.Components
-        @using ShellDocs.Components.Chrome
         @using ShellDocs.Components.Content
         @using ShellDocs.Components.Layouts
         @using ShellDocs.Core
@@ -54,11 +52,6 @@ public static class ScaffoldTemplates
         @if (_document is not null)
         {
             <MarkdownContent Document="_document" />
-            <PrevNextNav Prev="_prev" Next="_next" />
-
-            <SectionContent SectionName="docs-toc">
-                <TableOfContents Headings="_document.Headings" />
-            </SectionContent>
         }
         else
         {
@@ -74,8 +67,6 @@ public static class ScaffoldTemplates
 
             private RenderedDocument? _document;
             private string _title = "";
-            private NavigationNode? _prev;
-            private NavigationNode? _next;
 
             protected override void OnParametersSet()
             {
@@ -85,14 +76,11 @@ public static class ScaffoldTemplates
                 {
                     _document = Renderer.RenderFile(node.Path);
                     _title = node.Title + " — Docs";
-                    (_prev, _next) = Graph.GetPrevNext(node);
                 }
                 else
                 {
                     _document = null;
                     _title = "Not found";
-                    _prev = null;
-                    _next = null;
                 }
             }
         }
