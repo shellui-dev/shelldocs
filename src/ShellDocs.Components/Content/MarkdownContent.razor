@@ -1,6 +1,7 @@
 @attribute [ShellDocsIgnore]
 @inject MarkdownRenderer Renderer
 @inject IJSRuntime JS
+@inject DocsPageState PageState
 
 <div class="shelldocs-prose">
     @if (_parts is null)
@@ -40,6 +41,7 @@
     {
         var doc = Document ?? (Markdown is not null ? Renderer.Render(Markdown) : null);
         _parts = doc is null ? null : SlotSplitter.Split(doc);
+        PageState.SetDocument(doc);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
