@@ -1,0 +1,30 @@
+@namespace ShellDocs.Components.Chrome
+@inject ShellDocsOptions Options
+
+@if (!string.IsNullOrWhiteSpace(Options.LogoSvg))
+{
+    <span class="brand-logo-svg" style="height: @Height" aria-label="@Alt" role="img">
+        @((MarkupString)Options.LogoSvg)
+    </span>
+}
+else if (HasUrlLogo)
+{
+    var light = Options.LogoLight ?? Options.LogoDark!;
+    var dark = Options.LogoDark ?? Options.LogoLight!;
+
+    <img class="brand-logo brand-logo-light" src="@light" alt="@Alt" style="height: @Height" />
+    @if (!string.Equals(light, dark, StringComparison.Ordinal))
+    {
+        <img class="brand-logo brand-logo-dark" src="@dark" alt="@Alt" style="height: @Height" />
+    }
+}
+else
+{
+    <span class="brand-logo-dot"></span>
+}
+
+@code {
+    private bool HasUrlLogo => !string.IsNullOrEmpty(Options.LogoLight) || !string.IsNullOrEmpty(Options.LogoDark);
+    private string Alt => Options.LogoAlt ?? Options.SiteName ?? "";
+    private string Height => Options.LogoHeight.ToString(System.Globalization.CultureInfo.InvariantCulture) + "rem";
+}
