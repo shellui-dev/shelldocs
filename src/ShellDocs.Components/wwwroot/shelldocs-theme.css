@@ -193,3 +193,26 @@ pre.shiki,
 pre.shiki span { color: var(--shiki-light); }
 :root.dark pre.shiki,
 :root.dark pre.shiki span { color: var(--shiki-dark); }
+
+/* View-transitions — the browser diffs old vs new page and cross-fades
+   automatically when Blazor enhanced navigation swaps the DOM. Progressive:
+   Chromium supports today; other engines just no-op the pseudo rules. */
+@view-transition { navigation: auto; }
+::view-transition-old(root),
+::view-transition-new(root) { animation-duration: 180ms; animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
+
+/* Global reduced-motion guard — respects the OS preference so animations
+   collapse to instant while transitions still fire (kept at 0.01ms so JS
+   `transitionend` handlers still trigger). */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+    ::view-transition-old(root),
+    ::view-transition-new(root) { animation: none !important; }
+}
