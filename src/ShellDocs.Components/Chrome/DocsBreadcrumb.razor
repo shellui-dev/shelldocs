@@ -1,0 +1,40 @@
+@inject DocsPageState PageState
+@implements IDisposable
+@using ShellDocs.Core
+
+@if (PageState.Breadcrumbs.Count > 1)
+{
+    <nav class="docs-breadcrumb" aria-label="Breadcrumb">
+        <ol class="docs-breadcrumb-list">
+            @for (var i = 0; i < PageState.Breadcrumbs.Count; i++)
+            {
+                var node = PageState.Breadcrumbs[i];
+                var isLast = i == PageState.Breadcrumbs.Count - 1;
+                <li class="docs-breadcrumb-item">
+                    @if (isLast)
+                    {
+                        <span class="docs-breadcrumb-current" aria-current="page">@node.Title</span>
+                    }
+                    else
+                    {
+                        @if (!string.IsNullOrEmpty(node.Url))
+                        {
+                            <a class="docs-breadcrumb-link" href="@node.Url">@node.Title</a>
+                        }
+                        else
+                        {
+                            <span class="docs-breadcrumb-section">@node.Title</span>
+                        }
+                        <svg class="docs-breadcrumb-sep" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+                    }
+                </li>
+            }
+        </ol>
+    </nav>
+}
+
+@code {
+    protected override void OnInitialized() => PageState.OnChange += Rerender;
+    private void Rerender() => InvokeAsync(StateHasChanged);
+    public void Dispose() => PageState.OnChange -= Rerender;
+}

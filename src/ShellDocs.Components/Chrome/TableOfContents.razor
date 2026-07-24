@@ -1,4 +1,6 @@
 @inject IJSRuntime JS
+@inject DocsPageState PageState
+@implements IDisposable
 @implements IAsyncDisposable
 @using ShellDocs.Core
 
@@ -30,11 +32,16 @@
     private IJSObjectReference? _handle;
     private string _sig = "";
 
-    protected override void OnParametersSet()
+    protected override void OnInitialized() => PageState.OnChange += OnPageChanged;
+
+    protected override void OnParametersSet() => Refresh();
+
+    private void OnPageChanged() => InvokeAsync(() => { Refresh(); StateHasChanged(); });
+
+    private void Refresh()
     {
-        _items = (Headings ?? Array.Empty<Heading>())
-            .Where(h => h.Level == 2 || h.Level == 3)
-            .ToList();
+        var source = Headings ?? PageState.Document?.Headings ?? Array.Empty<Heading>();
+        _items = source.Where(h => h.Level == 2 || h.Level == 3).ToList();
     }
 
     protected override async Task OnAfterRenderAsync(bool _)
@@ -58,6 +65,8 @@
     }
 
     private Task Scroll(string id) => JS.InvokeVoidAsync("shelldocsToc.scrollTo", id).AsTask();
+
+    public void Dispose() => PageState.OnChange -= OnPageChanged;
 
     public async ValueTask DisposeAsync()
     {
