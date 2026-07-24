@@ -5,7 +5,7 @@
 <div class="docs-sidebar-header">
     <div class="docs-sidebar-brand-row">
         <a class="docs-sidebar-brand" href="/">
-            <span class="docs-sidebar-logo-dot"></span>
+            <BrandLogo />
             <span class="docs-sidebar-brand-name">@(!string.IsNullOrEmpty(Options.SiteName) ? Options.SiteName : "Docs")</span>
         </a>
         <button type="button" class="docs-sidebar-collapse" @onclick="Collapse.Toggle" aria-label="Collapse sidebar" title="Collapse sidebar">

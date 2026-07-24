@@ -55,14 +55,6 @@
 }
 .docs-header-brand:hover { opacity: 0.85; }
 
-.docs-header-logo-dot {
-    width: 1.125rem;
-    height: 1.125rem;
-    border-radius: 4px;
-    background: var(--foreground);
-    flex-shrink: 0;
-}
-
 .docs-header-brand-name { font-weight: 600; letter-spacing: -0.01em; }
 
 .docs-header-nav {
