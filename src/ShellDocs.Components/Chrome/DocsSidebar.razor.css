@@ -8,6 +8,9 @@
 
 .sidebar-tree {
     flex: 1;
+    /* flex items default to `min-height: auto` (intrinsic content size), so
+       without this the tree grows past the parent instead of scrolling. */
+    min-height: 0;
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
