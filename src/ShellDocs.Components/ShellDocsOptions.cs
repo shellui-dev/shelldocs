@@ -10,6 +10,13 @@ public class ShellDocsOptions
     public string SiteName { get; set; } = "";
     public string? SiteTagline { get; set; }
     public string? GitHubRepo { get; set; }
+
+    public string? LogoLight { get; set; }
+    public string? LogoDark { get; set; }
+    public string? LogoAlt { get; set; }
+    public double LogoHeight { get; set; } = 1.375;
+    // Rendered as MarkupString — must be trusted content the consumer authored, not user input.
+    public string? LogoSvg { get; set; }
     public ShellDocsTheme Theme { get; set; } = ShellDocsTheme.Shadcn;
     public DocsLayoutVariant LayoutVariant { get; set; } = DocsLayoutVariant.TopNav;
 
@@ -114,6 +121,22 @@ public class ShellDocsOptions
     public ShellDocsOptions AddPackage(string id, string title, string description, string rootUrl, string? iconPath = null)
     {
         Packages.Add(new DocsPackage(id, title, description, rootUrl, iconPath));
+        return this;
+    }
+
+    public ShellDocsOptions SetLogo(string url, string? alt = null)
+    {
+        LogoLight = url;
+        LogoDark = url;
+        if (alt is not null) LogoAlt = alt;
+        return this;
+    }
+
+    public ShellDocsOptions SetLogo(string lightUrl, string darkUrl, string? alt = null)
+    {
+        LogoLight = lightUrl;
+        LogoDark = darkUrl;
+        if (alt is not null) LogoAlt = alt;
         return this;
     }
 
