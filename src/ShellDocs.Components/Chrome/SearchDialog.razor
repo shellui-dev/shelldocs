@@ -53,6 +53,10 @@
                                 {
                                     <span class="search-result-section">@r.Entry.Section</span>
                                 }
+                                @if (!string.IsNullOrEmpty(r.Snippet))
+                                {
+                                    <span class="search-result-snippet">@r.Snippet</span>
+                                }
                             </span>
                         </button>
                     }
@@ -158,47 +162,78 @@
         if (_highlightedIndex >= _results.Count) _highlightedIndex = 0;
     }
 
-    /* Naive fuzzy score: substring hit boosts by big margin, then per-word
-       token overlap. Good enough for the ~100-entry indexes docs sites have. */
     private static IEnumerable<Scored> Rank(string query, IReadOnlyList<SearchEntry> entries)
     {
         if (string.IsNullOrWhiteSpace(query))
         {
-            return entries.Take(20).Select(e => new Scored(e, 0));
+            return entries.Take(20).Select(e => new Scored(e, 0, null));
         }
         var q = query.Trim().ToLowerInvariant();
         var tokens = q.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         return entries
-            .Select(e => new Scored(e, Score(e, q, tokens)))
+            .Select(e => Evaluate(e, q, tokens))
             .Where(s => s.Score > 0)
             .OrderByDescending(s => s.Score);
     }
 
-    private static int Score(SearchEntry e, string q, string[] tokens)
+    private static Scored Evaluate(SearchEntry e, string q, string[] tokens)
     {
         var title = e.Title.ToLowerInvariant();
         var desc  = (e.Description ?? "").ToLowerInvariant();
         var sec   = (e.Section ?? "").ToLowerInvariant();
+        var body  = (e.Body ?? "").ToLowerInvariant();
         var score = 0;
-        // Exact substring in title: massive boost.
-        if (title.Contains(q)) score += 100;
-        if (title.StartsWith(q)) score += 50;
-        if (sec.Contains(q))   score += 20;
-        if (desc.Contains(q))  score += 10;
-        // Per-token AND — every token must appear somewhere.
+        var bodyHit = false;
+
+        if (title.Contains(q))    score += 100;
+        if (title.StartsWith(q))  score += 50;
+        if (sec.Contains(q))      score += 20;
+        if (desc.Contains(q))     score += 10;
+        if (body.Contains(q))     { score += 6; bodyHit = true; }
+
         foreach (var t in tokens)
         {
-            if (title.Contains(t)) score += 8;
-            else if (sec.Contains(t)) score += 4;
-            else if (desc.Contains(t)) score += 2;
-            else return 0; // hard reject: token missing
+            if (title.Contains(t))      score += 8;
+            else if (sec.Contains(t))   score += 4;
+            else if (desc.Contains(t))  score += 2;
+            else if (body.Contains(t))  { score += 1; bodyHit = true; }
+            else return new Scored(e, 0, null); // hard reject: token missing everywhere
         }
-        // Pages rank slightly higher than headings when otherwise-equal.
+
         if (e.Kind == SearchEntryKind.Page) score += 2;
-        return score;
+
+        // Only surface a snippet when the match came from the body (title/desc
+        // is already shown; snippet is only useful for otherwise-hidden matches).
+        var snippet = bodyHit && !string.IsNullOrEmpty(e.Body)
+            ? BuildSnippet(e.Body!, tokens)
+            : null;
+
+        return new Scored(e, score, snippet);
     }
 
-    private record Scored(SearchEntry Entry, int Score);
+    /* Center the snippet on the first token match, ~150 chars, with ellipses
+       when trimmed. Case-preserving. */
+    private static string? BuildSnippet(string body, string[] tokens)
+    {
+        var lower = body.ToLowerInvariant();
+        var hit = -1;
+        foreach (var t in tokens)
+        {
+            var idx = lower.IndexOf(t, StringComparison.Ordinal);
+            if (idx >= 0 && (hit < 0 || idx < hit)) hit = idx;
+        }
+        if (hit < 0) return null;
+
+        const int radius = 75;
+        var start = Math.Max(0, hit - radius);
+        var end = Math.Min(body.Length, hit + radius);
+        var snippet = body[start..end].Trim();
+        if (start > 0) snippet = "… " + snippet;
+        if (end < body.Length) snippet += " …";
+        return snippet;
+    }
+
+    private record Scored(SearchEntry Entry, int Score, string? Snippet);
 
     public void Dispose()
     {
