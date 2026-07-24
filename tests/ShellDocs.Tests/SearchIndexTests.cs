@@ -75,4 +75,26 @@ public class SearchIndexTests : IDisposable
         var page = index.Entries.First(e => e.Kind == SearchEntryKind.Page);
         Assert.Equal("Get started with ShellDocs", page.Description);
     }
+
+    [Fact]
+    public void FromGraph_PageEntryCarriesExtractedBody()
+    {
+        WritePage("intro.md", "Introduction",
+            bodyHeadings: "## Setup\n\nRun the CLI to scaffold a new project.");
+        var graph = NavigationGraphBuilder.Build(_root);
+        var index = SearchIndex.FromGraph(graph);
+        var page = index.Entries.First(e => e.Kind == SearchEntryKind.Page);
+        Assert.NotNull(page.Body);
+        Assert.Contains("Run the CLI", page.Body);
+    }
+
+    [Fact]
+    public void FromGraph_HeadingEntriesHaveNullBody()
+    {
+        WritePage("intro.md", "Introduction", bodyHeadings: "## Setup\n\nBody prose.");
+        var graph = NavigationGraphBuilder.Build(_root);
+        var index = SearchIndex.FromGraph(graph);
+        var heading = index.Entries.First(e => e.Kind == SearchEntryKind.Heading);
+        Assert.Null(heading.Body);
+    }
 }
