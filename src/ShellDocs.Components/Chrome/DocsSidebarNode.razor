@@ -23,7 +23,18 @@ else if (Node.Kind == NodeKind.Section)
                 </div>
             }
         }
-        @if (!_isToggleable || _isOpen)
+        @if (_isToggleable)
+        {
+            <div class="sidebar-section-shell" data-open="@(_isOpen ? "true" : "false")">
+                <div class="sidebar-section-items">
+                    @foreach (var child in Node.Children)
+                    {
+                        <DocsSidebarNode Node="child" Depth="@(Depth + 1)" CurrentPath="@CurrentPath" />
+                    }
+                </div>
+            </div>
+        }
+        else
         {
             <div class="sidebar-section-items">
                 @foreach (var child in Node.Children)
