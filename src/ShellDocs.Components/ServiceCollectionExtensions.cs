@@ -19,6 +19,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<SearchState>();
         services.AddScoped<SidebarCollapseState>();
         services.AddScoped<CodeGroupSyncState>();
+        services.AddScoped<DocsPageState>();
 
         /* Auto-register the shipped content primitives so `razor:preview` blocks
            in markdown can reference <Callout>, <Card>, <Steps>, <FileTree> etc.

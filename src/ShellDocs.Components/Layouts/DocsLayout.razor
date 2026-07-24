@@ -44,11 +44,13 @@
         }
         <main class="docs-main">
             <div class="docs-content">
+                <DocsBreadcrumb />
                 @Body
+                <PrevNextNav />
             </div>
         </main>
         <aside class="docs-toc-slot" aria-label="On this page">
-            <SectionOutlet SectionName="docs-toc" />
+            <TableOfContents />
         </aside>
     </div>
 </div>

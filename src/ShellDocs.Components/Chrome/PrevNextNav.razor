@@ -1,33 +1,40 @@
+@inject DocsPageState PageState
+@implements IDisposable
 @using ShellDocs.Core
 
-@if (Prev is not null || Next is not null)
+@{
+    var prev = Prev ?? PageState.Prev;
+    var next = Next ?? PageState.Next;
+}
+
+@if (prev is not null || next is not null)
 {
     <nav class="prevnext" aria-label="Previous and next">
-        @if (Prev is not null)
+        @if (prev is not null)
         {
-            <a class="prevnext-card prev" href="@Prev.Url">
+            <a class="prevnext-card prev" href="@prev.Url">
                 <span class="prevnext-hint">
                     <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-                    <span>@Prev.Title</span>
+                    <span>@prev.Title</span>
                 </span>
-                @if (!string.IsNullOrEmpty(Prev.Description))
+                @if (!string.IsNullOrEmpty(prev.Description))
                 {
-                    <span class="prevnext-desc">@Prev.Description</span>
+                    <span class="prevnext-desc">@prev.Description</span>
                 }
             </a>
         }
         else { <span class="prevnext-placeholder" aria-hidden="true"></span> }
 
-        @if (Next is not null)
+        @if (next is not null)
         {
-            <a class="prevnext-card next" href="@Next.Url">
+            <a class="prevnext-card next" href="@next.Url">
                 <span class="prevnext-hint">
-                    <span>@Next.Title</span>
+                    <span>@next.Title</span>
                     <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                 </span>
-                @if (!string.IsNullOrEmpty(Next.Description))
+                @if (!string.IsNullOrEmpty(next.Description))
                 {
-                    <span class="prevnext-desc">@Next.Description</span>
+                    <span class="prevnext-desc">@next.Description</span>
                 }
             </a>
         }
@@ -38,4 +45,8 @@
 @code {
     [Parameter] public NavigationNode? Prev { get; set; }
     [Parameter] public NavigationNode? Next { get; set; }
+
+    protected override void OnInitialized() => PageState.OnChange += Rerender;
+    private void Rerender() => InvokeAsync(StateHasChanged);
+    public void Dispose() => PageState.OnChange -= Rerender;
 }
