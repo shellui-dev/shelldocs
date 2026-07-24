@@ -33,6 +33,17 @@ builder.Services.AddShellDocs(o =>
     o.AddNavLink("Showcase", "/showcase");
     o.AddNavLink("Blog", "/blog");
 
+    o.AddPackage("shelldocs",           "ShellDocs",           "The docs framework itself.",        "/docs/introduction",
+        "M12 2 4 6v6c0 5 3.5 9.5 8 10 4.5-.5 8-5 8-10V6z");
+    o.AddPackage("shelldocs.markdown",  "ShellDocs.Markdown",  "Markdig extensions, slots, MDX.",   "/docs/markdown",
+        "M4 4h16v16H4z M4 9h16 M9 4v16");
+    o.AddPackage("shelldocs.core",      "ShellDocs.Core",      "Navigation graph + content model.", "/docs/core",
+        "M12 2 2 7l10 5 10-5-10-5z M2 17l10 5 10-5 M2 12l10 5 10-5");
+    o.AddPackage("shelldocs.cli",       "ShellDocs.CLI",       "Scaffold, build, publish.",         "/docs/cli",
+        "m8 6-6 6 6 6 M16 6l6 6-6 6");
+    o.AddPackage("shelldocs.components","ShellDocs.Components","Layouts, header, sidebar, TOC.",    "/docs/components",
+        "M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z");
+
     // Callout, Card, Steps, FileTree, CodeGroup, LinkCard etc. are
     // auto-registered by AddShellDocs — no extra work needed here.
 });
