@@ -1,6 +1,5 @@
 @page "/docs/{*Path:nonfile}"
 @layout DocsLayout
-@using Microsoft.AspNetCore.Components.Sections
 @inject NavigationGraph Graph
 @inject MarkdownRenderer Renderer
 
@@ -9,11 +8,6 @@
 @if (_document is not null)
 {
     <MarkdownContent Document="_document" />
-    <PrevNextNav Prev="_prev" Next="_next" />
-
-    <SectionContent SectionName="docs-toc">
-        <TableOfContents Headings="_document.Headings" />
-    </SectionContent>
 }
 else
 {
@@ -35,8 +29,6 @@ else
 
     private RenderedDocument? _document;
     private string _title = "";
-    private NavigationNode? _prev;
-    private NavigationNode? _next;
 
     protected override void OnParametersSet()
     {
@@ -46,14 +38,11 @@ else
         {
             _document = Renderer.RenderFile(node.Path);
             _title = node.Title + " — ShellDocs";
-            (_prev, _next) = Graph.GetPrevNext(node);
         }
         else
         {
             _document = null;
             _title = "Not found — ShellDocs";
-            _prev = null;
-            _next = null;
         }
     }
 }
