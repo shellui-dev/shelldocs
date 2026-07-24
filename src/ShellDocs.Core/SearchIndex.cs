@@ -4,8 +4,8 @@ namespace ShellDocs.Core;
 
 /* An in-memory search index built from the navigation graph. Each entry
    represents one searchable thing — a page, or a heading within a page.
-   Client-side fuzzy match runs against Title + Description + Section over the
-   wire; body-text indexing lands with the search-index.json build step. */
+   Page entries carry a trimmed plain-text body so client-side match can
+   find hits that aren't in the title/description surface. */
 public sealed class SearchIndex
 {
     public IReadOnlyList<SearchEntry> Entries { get; }
@@ -28,7 +28,8 @@ public sealed class SearchIndex
                 Title: node.Title,
                 Description: node.Description,
                 Section: section,
-                Kind: SearchEntryKind.Page));
+                Kind: SearchEntryKind.Page,
+                Body: ExtractBodyFromFile(node.Path)));
 
             // Prefer headings already extracted at render time; otherwise pull
             // them from the source markdown ourselves so the index isn't blank
@@ -75,6 +76,12 @@ public sealed class SearchIndex
         return list;
     }
 
+    private static string? ExtractBodyFromFile(string? path)
+    {
+        if (string.IsNullOrEmpty(path) || !File.Exists(path)) return null;
+        return MarkdownPlainText.Extract(File.ReadAllText(path));
+    }
+
     private static string Slugify(string text)
     {
         var lowered = text.ToLowerInvariant();
@@ -97,6 +104,7 @@ public record SearchEntry(
     string Title,
     string? Description,
     string? Section,
-    SearchEntryKind Kind);
+    SearchEntryKind Kind,
+    string? Body = null);
 
 public enum SearchEntryKind { Page, Heading }
