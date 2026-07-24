@@ -14,6 +14,8 @@ public class ShellDocsOptions
     public DocsLayoutVariant LayoutVariant { get; set; } = DocsLayoutVariant.TopNav;
 
     public List<NavLink> PrimaryNav { get; } = new();
+    // 0 or 1 entries hides the sidebar package selector entirely.
+    public List<DocsPackage> Packages { get; } = new();
     public List<Type> RegisteredComponents { get; } = new();
     /* Per-type tag alias — when a type appears here, BuildTypeRegistry uses this
        string as the markdown-facing tag name instead of the type's short name.
@@ -109,6 +111,12 @@ public class ShellDocsOptions
         return this;
     }
 
+    public ShellDocsOptions AddPackage(string id, string title, string description, string rootUrl, string? iconPath = null)
+    {
+        Packages.Add(new DocsPackage(id, title, description, rootUrl, iconPath));
+        return this;
+    }
+
     internal TypeRegistry BuildTypeRegistry()
     {
         var registry = new TypeRegistry();
@@ -125,6 +133,9 @@ public class ShellDocsOptions
 
 public record NavLink(string Label, string Href, List<NavMenuItem>? Children = null);
 public record NavMenuItem(string Label, string Href, string? Description = null, string? IconSvg = null);
+
+// IconPath is a raw SVG `d` attribute value on a 24×24 viewBox — not a URL.
+public record DocsPackage(string Id, string Title, string Description, string RootUrl, string? IconPath = null);
 
 public enum ShellDocsTheme
 {
