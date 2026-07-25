@@ -25,7 +25,9 @@ public static class ScaffoldTemplates
         ## Live components
 
         ```razor:preview
-        <Callout Title="Nice" Text="This block is a live Blazor component rendered from markdown." />
+        <Callout Variant="info" Title="Live component">
+        This block is a live Blazor component rendered from markdown.
+        </Callout>
         ```
         """;
 

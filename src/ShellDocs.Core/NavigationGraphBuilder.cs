@@ -59,11 +59,40 @@ public static class NavigationGraphBuilder
         }
 
         var result = new List<NavigationNode>();
+        var consumedSlugs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var consumedFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var entry in meta.Pages)
         {
-            var node = ResolveEntry(entry, slugToNode, folderNameToChildren, root, urlPrefix);
+            var node = ResolveEntry(entry, slugToNode, folderNameToChildren, root, urlPrefix, consumedSlugs, consumedFolders);
             if (node is not null) result.Add(node);
         }
+
+        /* meta.json controls ORDERING for anything it lists; presence is
+           driven by the file tree. Files or subfolders the meta didn't
+           mention get appended at the end (alphabetically) so a page dropped
+           via `shelldocs add` or by hand appears immediately, without the
+           consumer touching meta.json. */
+        foreach (var (name, tuple) in folderNameToChildren.OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase))
+        {
+            if (consumedFolders.Contains(name)) continue;
+            var section = new NavigationNode
+            {
+                Title = TitleFromFolderName(name),
+                Kind = NodeKind.Section,
+                Path = tuple.folderPath
+            };
+            LinkChildren(section, tuple.children);
+            result.Add(section);
+        }
+        foreach (var page in slugToNode
+            .Where(kv => !consumedSlugs.Contains(kv.Key))
+            .Select(kv => kv.Value)
+            .OrderBy(n => n.Order)
+            .ThenBy(n => n.Title, StringComparer.OrdinalIgnoreCase))
+        {
+            result.Add(page);
+        }
+
         return result;
     }
 
@@ -72,14 +101,21 @@ public static class NavigationGraphBuilder
         Dictionary<string, NavigationNode> slugToNode,
         Dictionary<string, (string folderPath, List<NavigationNode> children)> folderNameToChildren,
         string root,
-        string urlPrefix)
+        string urlPrefix,
+        HashSet<string> consumedSlugs,
+        HashSet<string> consumedFolders)
     {
         switch (entry)
         {
             case MetaJsonPageRef pageRef:
-                if (slugToNode.TryGetValue(pageRef.Slug, out var page)) return page;
+                if (slugToNode.TryGetValue(pageRef.Slug, out var page))
+                {
+                    consumedSlugs.Add(pageRef.Slug);
+                    return page;
+                }
                 if (folderNameToChildren.TryGetValue(pageRef.Slug, out var folder))
                 {
+                    consumedFolders.Add(pageRef.Slug);
                     var section = new NavigationNode
                     {
                         Title = TitleFromFolderName(pageRef.Slug),
@@ -103,7 +139,7 @@ public static class NavigationGraphBuilder
                 var subChildren = new List<NavigationNode>();
                 foreach (var e in sub.Pages)
                 {
-                    var child = ResolveEntry(e, slugToNode, folderNameToChildren, root, urlPrefix);
+                    var child = ResolveEntry(e, slugToNode, folderNameToChildren, root, urlPrefix, consumedSlugs, consumedFolders);
                     if (child is not null) subChildren.Add(child);
                 }
                 LinkChildren(subNode, subChildren);
