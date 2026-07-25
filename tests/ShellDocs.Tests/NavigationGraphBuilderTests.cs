@@ -140,6 +140,67 @@ public class NavigationGraphBuilderTests : IDisposable
     }
 
     [Fact]
+    public void Build_MdFileNotInMetaJson_IsAppendedAfterExplicitOrdering()
+    {
+        // Meta lists only `alpha`, but `bravo.md` exists on disk.
+        // Bravo should surface at the end, not silently disappear (the
+        // `shelldocs add` DX gap fix).
+        WriteMd("alpha.md", "Alpha");
+        WriteMd("bravo.md", "Bravo");
+        WriteMeta("", """{ "pages": ["alpha"] }""");
+
+        var graph = NavigationGraphBuilder.Build(_root);
+        var titles = graph.Root.Children.Select(c => c.Title).ToList();
+
+        Assert.Equal(new[] { "Alpha", "Bravo" }, titles);
+    }
+
+    [Fact]
+    public void Build_SubfolderNotInMetaJson_AppearsAsSectionAfterExplicitOrdering()
+    {
+        WriteMd("intro.md", "Intro");
+        WriteMd("components/button.md", "Button");
+        WriteMeta("", """{ "pages": ["intro"] }""");
+
+        var graph = NavigationGraphBuilder.Build(_root);
+        var titles = graph.Root.Children.Select(c => c.Title).ToList();
+
+        Assert.Equal(new[] { "Intro", "Components" }, titles);
+    }
+
+    [Fact]
+    public void Build_UnreferencedItems_AreAlphabetical()
+    {
+        WriteMd("first.md", "First");   // in meta
+        WriteMd("charlie.md", "Charlie"); // not in meta
+        WriteMd("alpha.md", "Alpha");     // not in meta
+        WriteMd("bravo.md", "Bravo");     // not in meta
+        WriteMeta("", """{ "pages": ["first"] }""");
+
+        var graph = NavigationGraphBuilder.Build(_root);
+        var titles = graph.Root.Children.Select(c => c.Title).ToList();
+
+        Assert.Equal(new[] { "First", "Alpha", "Bravo", "Charlie" }, titles);
+    }
+
+    [Fact]
+    public void Build_ExplicitOrderingIsPreserved_ForItemsInMetaJson()
+    {
+        // Verify the auto-append doesn't break the existing "meta.json controls
+        // ordering for explicitly-listed items" contract.
+        WriteMd("alpha.md", "Alpha");
+        WriteMd("bravo.md", "Bravo");
+        WriteMd("charlie.md", "Charlie");
+        WriteMeta("", """{ "pages": ["charlie", "alpha"] }""");
+
+        var graph = NavigationGraphBuilder.Build(_root);
+        var titles = graph.Root.Children.Select(c => c.Title).ToList();
+
+        // Charlie + Alpha in the meta-specified order, THEN Bravo appended.
+        Assert.Equal(new[] { "Charlie", "Alpha", "Bravo" }, titles);
+    }
+
+    [Fact]
     public void Build_ThrowsOnMissingContentRoot()
     {
         Assert.Throws<DirectoryNotFoundException>(
