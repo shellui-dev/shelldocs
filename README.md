@@ -2,7 +2,7 @@
 
 **The docs framework for .NET.** Beautiful, animated, Cmd+K-searchable documentation sites, powered by Blazor and Tailwind. Compose with ShellUI (or any Blazor component library) — like fumadocs composes with shadcn/ui.
 
-> Status: **`0.1.0-alpha` in progress.** Not yet published to NuGet. See [ROADMAP](docs/ROADMAP.md).
+> Status: **`0.1.0-alpha`** — first public release. See [CHANGELOG](CHANGELOG.md) and [ROADMAP](docs/ROADMAP.md). Publish steps live in [docs/RELEASING.md](docs/RELEASING.md).
 
 ## Why ShellDocs
 
