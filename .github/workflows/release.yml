@@ -44,6 +44,33 @@ jobs:
       - name: List produced packages
         run: ls -la nupkgs/
 
+      # ─── Pre-push safety: refuse if the version is already on nuget.org ───
+      # NuGet locks version numbers permanently after first publish. Without
+      # this check, `--skip-duplicate` in the push step would silently no-op
+      # the upload of a fresh binary when the version already exists — burned
+      # us once (see CHANGELOG 0.1.0-alpha → 0.1.1-alpha). Fails loud so the
+      # human bumps Directory.Build.props before re-tagging.
+      - name: Verify version is not already published
+        if: github.event_name == 'push' || inputs.dry_run == false
+        run: |
+          version=$(grep -oE '<Version>[^<]+' Directory.Build.props | head -1 | sed 's/<Version>//')
+          echo "Directory.Build.props version: $version"
+          if [ -z "$version" ]; then
+            echo "ERROR: could not read Version from Directory.Build.props"
+            exit 1
+          fi
+          for pkg in ShellDocs.CLI ShellDocs.Components ShellDocs.Core ShellDocs.Markdown ShellDocs.Templates ShellDocs.Tokens; do
+            lower=$(echo "$pkg" | tr '[:upper:]' '[:lower:]')
+            existing=$(curl -sf "https://api.nuget.org/v3-flatcontainer/${lower}/index.json" 2>/dev/null | grep -oE '"[^"]*"' | tr -d '"' || echo "")
+            if echo "$existing" | grep -Fxq "$version"; then
+              echo "ERROR: $pkg $version is already published on nuget.org."
+              echo "NuGet does not allow overwriting a published version."
+              echo "Bump <Version> in Directory.Build.props and re-tag."
+              exit 1
+            fi
+          done
+          echo "OK — $version is not yet on nuget.org for any of the 6 packages. Proceeding."
+
       # Runs immediately before push — the temp API key is valid only 1 hour.
       # `user` is the nuget.org profile name (NOT email, NOT the GH org name),
       # kept as a secret so it never lives in the workflow file.

@@ -20,7 +20,10 @@ namespace ShellDocs.CLI.Commands;
    Both modes are idempotent. */
 internal static class InitCommand
 {
-    private const string ShellDocsVersion = "0.1.0-alpha";
+    // Bump with <Version> in Directory.Build.props on every release. Determines
+    // which ShellDocs.* versions the scaffold references. If stale, consumers
+    // scaffolding via a new CLI get old packages that lack the fresh CLI's fixes.
+    private const string ShellDocsVersion = "0.1.1-alpha";
 
     public static int Run(string? path, string dir, bool attach, bool yes, string theme)
     {
@@ -252,6 +255,29 @@ internal static class InitCommand
     {
         AddPackageIfMissing(csproj, "ShellDocs.Components", ShellDocsVersion, changes);
         AddPackageIfMissing(csproj, "ShellDocs.Tokens",     ShellDocsVersion, changes);
+        AddContentCopyIfMissing(csproj, changes);
+    }
+
+    // Adds a Content Update item for content markdown/meta.json so
+    // `dotnet publish` copies the markdown corpus into the publish output.
+    // Without this, ContentRoot resolves fine under `dotnet run` (source dir)
+    // but the published site has no content to render.
+    internal static void AddContentCopyIfMissing(string csproj, List<string> changes)
+    {
+        var xml = File.ReadAllText(csproj);
+        if (new Regex(@"<Content\s+Update=""content/", RegexOptions.IgnoreCase).IsMatch(xml))
+            return;
+
+        var closing = xml.LastIndexOf("</Project>", StringComparison.OrdinalIgnoreCase);
+        if (closing < 0) return;
+
+        var block =
+            $"  <ItemGroup>{Environment.NewLine}" +
+            $"    <Content Update=\"content/**/*.md;content/**/meta.json\" CopyToOutputDirectory=\"PreserveNewest\" />{Environment.NewLine}" +
+            $"  </ItemGroup>{Environment.NewLine}{Environment.NewLine}";
+
+        File.WriteAllText(csproj, xml.Insert(closing, block));
+        changes.Add($"added [cyan]content copy-to-output[/] to {Path.GetFileName(csproj)}");
     }
 
     private static void ScaffoldContent(string root, List<string> changes)

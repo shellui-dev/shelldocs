@@ -4,6 +4,20 @@ All notable changes to ShellDocs land here. Format follows [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [0.1.1-alpha] — 2026-07-25
+
+First point-release after the dogfood smoke of `0.1.0-alpha`. Three consumer-blocking fixes plus release-workflow hardening.
+
+### Fixed
+
+- **`NavigationGraphBuilder` now auto-includes `.md` files not referenced in `meta.json`.** Previously, when `meta.json` existed, ONLY the entries in its `pages` array made it into the nav — every other file on disk was silently dropped. `shelldocs add component Button` created `content/docs/components/button.md` on disk but the URL 404'd and the page never appeared in the sidebar until the consumer hand-edited `meta.json`. Fix: `meta.json` now controls ORDERING of explicitly-listed items; presence is driven by the file tree. Unreferenced files/folders get appended alphabetically after the explicit ordering. Backward-compatible — consumers who list everything explicitly get their exact ordering preserved verbatim before the auto-appended tail.
+- **`shelldocs init` scaffold no longer emits a broken `<Callout Text=...>` example.** The intro-page template referenced a `Text` prop that doesn't exist on `<Callout>`; the current API is `Variant` + `Title` + `ChildContent`. Every new consumer running `dotnet run` on their fresh scaffold saw an empty callout as the first thing on their site. Template updated to `<Callout Variant="info" Title="Live component">body content</Callout>`.
+- **`shelldocs init` now inserts a Content Update itemgroup so `dotnet publish` copies the markdown corpus.** Previously worked on `dotnet run` (resolves ContentRoot to source) but silently broke first deploy — the published output had zero markdown, so every `/docs/*` route 404'd. New `AddContentCopyIfMissing` helper adds `<Content Update="content/**/*.md;content/**/meta.json" CopyToOutputDirectory="PreserveNewest" />` to the consumer's csproj. Idempotent, runs in both CREATE and ATTACH modes.
+
+### Hardened (release infrastructure)
+
+- **Release workflow pre-push existence check.** New step queries `nuget.org/v3-flatcontainer` for each of the 6 package IDs at the tag's version before invoking `dotnet nuget push`. If any version already exists on nuget.org, the workflow **fails loud** with a "bump `Directory.Build.props` and re-tag" message. `--skip-duplicate` stays in the push step (still useful for resuming a workflow re-run that partially completed), but the pre-check catches the "you forgot to bump the version number" case explicitly instead of silently no-op'ing.
+
 ## [0.1.0-alpha] — 2026-07-25
 
 First public release. The whole Phase 1 target is shipped, plus most of Phase 2's primitives + consumer DX polish. See [ROADMAP.md](docs/ROADMAP.md).
@@ -95,5 +109,6 @@ Published to NuGet:
 - `<TypeTable>` is hand-authored today; XML-doc auto-generation ships in `ShellDocs.Xml` (Phase 4)
 - No `<DocsBreadcrumb>` opt-out — currently hides when the trail has ≤ 1 node, otherwise always renders
 
-[Unreleased]: https://github.com/shellui-dev/shelldocs/compare/v0.1.0-alpha...HEAD
+[Unreleased]: https://github.com/shellui-dev/shelldocs/compare/v0.1.1-alpha...HEAD
+[0.1.1-alpha]: https://github.com/shellui-dev/shelldocs/releases/tag/v0.1.1-alpha
 [0.1.0-alpha]: https://github.com/shellui-dev/shelldocs/releases/tag/v0.1.0-alpha
