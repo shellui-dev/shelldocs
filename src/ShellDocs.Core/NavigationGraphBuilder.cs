@@ -18,12 +18,13 @@ public static class NavigationGraphBuilder
             Path = abs
         };
 
-        var children = BuildFolder(abs, abs, urlPrefix: "");
+        var hidden = new List<NavigationNode>();
+        var children = BuildFolder(abs, abs, urlPrefix: "", hidden);
         LinkChildren(rootNode, children);
-        return new NavigationGraph(rootNode);
+        return new NavigationGraph(rootNode, hidden);
     }
 
-    private static List<NavigationNode> BuildFolder(string folder, string root, string urlPrefix)
+    private static List<NavigationNode> BuildFolder(string folder, string root, string urlPrefix, List<NavigationNode> hidden)
     {
         var meta = ReadMeta(folder);
         var mdFiles = Directory.GetFiles(folder, "*.md", SearchOption.TopDirectoryOnly);
@@ -36,7 +37,7 @@ public static class NavigationGraphBuilder
 
         var folderNameToChildren = subfolders.ToDictionary(
             path => System.IO.Path.GetFileName(path),
-            path => (folderPath: path, children: BuildFolder(path, root, CombineUrl(urlPrefix, System.IO.Path.GetFileName(path)))),
+            path => (folderPath: path, children: BuildFolder(path, root, CombineUrl(urlPrefix, System.IO.Path.GetFileName(path)), hidden)),
             StringComparer.OrdinalIgnoreCase);
 
         // No meta.json: alphabetical ordering, subfolders inline as sections.
@@ -61,6 +62,32 @@ public static class NavigationGraphBuilder
         var result = new List<NavigationNode>();
         var consumedSlugs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var consumedFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        // Pages/folders in meta.hidden route (URLs still resolve) but never
+        // appear in the sidebar tree. Seeded into consumed sets so both the
+        // explicit-render loop and the auto-append loop skip them; the actual
+        // nodes get pushed into `hidden` so the graph can still index their URLs.
+        foreach (var slug in meta.Hidden)
+        {
+            consumedSlugs.Add(slug);
+            consumedFolders.Add(slug);
+            if (slugToNode.TryGetValue(slug, out var hiddenPage))
+                hidden.Add(hiddenPage);
+            if (folderNameToChildren.TryGetValue(slug, out var hiddenFolder))
+            {
+                // Wrap the folder's children in a section node so the graph's
+                // Index() walk (which recurses .Children) reaches every page.
+                var section = new NavigationNode
+                {
+                    Title = TitleFromFolderName(slug),
+                    Kind = NodeKind.Section,
+                    Path = hiddenFolder.folderPath
+                };
+                LinkChildren(section, hiddenFolder.children);
+                hidden.Add(section);
+            }
+        }
+
         foreach (var entry in meta.Pages)
         {
             var node = ResolveEntry(entry, slugToNode, folderNameToChildren, root, urlPrefix, consumedSlugs, consumedFolders);
@@ -108,6 +135,10 @@ public static class NavigationGraphBuilder
         switch (entry)
         {
             case MetaJsonPageRef pageRef:
+                // Hidden entries were pre-seeded into these sets; skip so a
+                // slug listed in both `hidden` and `pages` stays hidden.
+                if (consumedSlugs.Contains(pageRef.Slug) || consumedFolders.Contains(pageRef.Slug))
+                    return null;
                 if (slugToNode.TryGetValue(pageRef.Slug, out var page))
                 {
                     consumedSlugs.Add(pageRef.Slug);
