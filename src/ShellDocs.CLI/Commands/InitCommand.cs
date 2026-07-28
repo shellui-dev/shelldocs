@@ -23,7 +23,7 @@ internal static class InitCommand
     // Bump with <Version> in Directory.Build.props on every release. Determines
     // which ShellDocs.* versions the scaffold references. If stale, consumers
     // scaffolding via a new CLI get old packages that lack the fresh CLI's fixes.
-    private const string ShellDocsVersion = "0.1.1-alpha";
+    private const string ShellDocsVersion = "0.1.2-alpha";
 
     public static int Run(string? path, string dir, bool attach, bool yes, string theme)
     {

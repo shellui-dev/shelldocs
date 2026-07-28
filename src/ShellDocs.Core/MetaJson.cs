@@ -11,6 +11,12 @@ public class MetaJson
     [JsonPropertyName("pages")]
     public List<MetaJsonEntry> Pages { get; set; } = new();
 
+    // Slugs of pages or subfolders that should route (URLs resolve) but not
+    // appear in the sidebar tree. Useful for landing pages reached only via
+    // the package selector, private drafts, or archived content.
+    [JsonPropertyName("hidden")]
+    public List<string> Hidden { get; set; } = new();
+
     private static readonly JsonSerializerOptions Options = new()
     {
         PropertyNameCaseInsensitive = true,
