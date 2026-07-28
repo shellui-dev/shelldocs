@@ -1,92 +1,72 @@
 # ShellDocs
 
-**The docs framework for .NET.** Beautiful, animated, Cmd+K-searchable documentation sites, powered by Blazor and Tailwind. Compose with ShellUI (or any Blazor component library) — like fumadocs composes with shadcn/ui.
+**The docs framework for .NET.** Beautiful, animated, `Cmd+K`-searchable documentation sites. Powered by Blazor, styled with Tailwind-shaped design tokens, composable with any Blazor component library. The fumadocs / shadcn pattern, ported to .NET.
 
-> Status: **`0.1.0-alpha`** — first public release. See [CHANGELOG](CHANGELOG.md) and [ROADMAP](docs/ROADMAP.md). Publish steps live in [docs/RELEASING.md](docs/RELEASING.md).
-
-## Why ShellDocs
-
-Every .NET UI library ends up hand-rolling their own docs site. MudBlazor, Radzen, AvaloniaUI — each spent months rebuilding a sidebar, a search box, a code block, a theme toggle, from scratch. None of it is reusable.
-
-ShellDocs is the "just use this" answer. It's the docs framework for the whole .NET ecosystem.
-
-- **Markdown authoring** with YAML frontmatter, inline Razor tags, and live component previews (`` ```razor:preview ``)
-- **File-based routing** — drop a `.md` in `content/` and it's a page
-- **Cmd+K search** with a build-time client-side index — no backend needed
-- **Blazor-native** — components render as real Razor, not iframes, not screenshots
-- **Composable with any Blazor component library** — ShellUI, MudBlazor, Radzen, your own
-- **Tailwind CSS v4** — same aesthetic as ShellUI + shadcn, same theme tokens for interop
-- **Animated** — page transitions, sidebar collapses, scroll-spy, `prefers-reduced-motion` aware
-- **Static site output** — deploy to GitHub Pages, Vercel, Netlify, Cloudflare, anywhere
+> `0.1.2-alpha` on nuget.org. See [CHANGELOG](CHANGELOG.md) and [ROADMAP](docs/ROADMAP.md). Docs at [shelldocs.dev](https://shelldocs.dev).
 
 ## Quick start
 
 ```bash
-# Create a new Blazor WASM app
-dotnet new blazorwasm -n MyDocs
-cd MyDocs
+# Install the CLI (once)
+dotnet tool install -g ShellDocs.CLI --prerelease
 
-# Install the ShellDocs CLI
-dotnet tool install -g ShellDocs.CLI
+# Scaffold a site (creates docs/MyDocs.Docs/)
+shelldocs init MyDocs
 
-# Initialize the docs site
-shelldocs init
+# Add pages
+shelldocs add component Button
+shelldocs add guide getting-started
 
-# Author content in Markdown
-shelldocs new page introduction
-
-# Develop with hot-reload
+# Run with hot reload
+cd docs/MyDocs.Docs
 shelldocs dev
 
-# Ship it
-shelldocs build
+# Ship
+shelldocs build --output publish
 ```
 
-## Coexists with ShellUI (and any Blazor UI library)
+That's a working docs site. See [shelldocs.dev/docs/getting-started/quick-start](https://shelldocs.dev/docs/getting-started/quick-start) for the walkthrough.
 
-ShellDocs uses the same Tailwind v4 setup and CSS variable contract as ShellUI. Both libraries share the same theme tokens (`--background`, `--foreground`, `--primary`, `--border`, `--radius`, etc.), so you can drop them into the same page and they compose seamlessly — the fumadocs + shadcn pattern, ported to .NET.
+## What you get
 
-```razor
-@* Your docs page — ShellUI components inline in Markdown *@
-<Button Variant="ButtonVariant.Default">A ShellUI button</Button>
-<Callout Type="Tip">A ShellDocs callout</Callout>
-```
-
-Under the hood ShellDocs takes a hard dependency on `ShellUI.Components` for base primitives (`Button`, `Dialog`, `Command`, `Sidebar`, etc.). Zero style clash.
+- **Markdown-first authoring.** YAML frontmatter, fenced code blocks with Shiki, live-rendered `razor:preview` examples, inline Razor component tags mid-prose.
+- **Auto-wired navigation.** File-based routing. Drop a `.md` in `content/docs/` and it becomes a page. Sidebar, breadcrumb, prev/next, TOC — all derived from the tree.
+- **`Cmd+K` search.** Client-side substring scoring against title, description, section, and body text. Snippet extraction for body-only hits. Zero backend, zero external service.
+- **Blazor-native.** Components render as real Razor. Full JS interop, hot reload, all the tooling you already have.
+- **Composable.** Bring your own component library (ShellUI, MudBlazor, Radzen, hand-rolled). One-line assembly-scan registration:
+  ```csharp
+  o.RegisterComponentsFromAssembly<MyLib.Button>();
+  ```
+- **Static site output.** `shelldocs build` produces static HTML ready for GitHub Pages, Vercel, Netlify, Cloudflare, anywhere. Base-href rewrite + SPA 404 fallback included.
 
 ## Package family
 
 | Package | Purpose |
 |---|---|
-| [`ShellDocs.CLI`](src/ShellDocs.CLI) | Global tool — `shelldocs init`, `shelldocs new`, `shelldocs dev`, `shelldocs build` |
-| [`ShellDocs.Components`](src/ShellDocs.Components) | RCL — `DocsLayout`, `DocsSidebar`, `CodeBlock`, `SearchDialog`, `TableOfContents`, etc. |
-| [`ShellDocs.Markdown`](src/ShellDocs.Markdown) | Markdig pipeline — frontmatter, `razor:preview` fences, inline Razor tags |
-| [`ShellDocs.Core`](src/ShellDocs.Core) | Navigation graph, search index model, routing helpers. Blazor-agnostic. |
-| [`ShellDocs.Templates`](src/ShellDocs.Templates) | Content used by `ShellDocs.CLI` scaffolding |
+| [`ShellDocs.CLI`](src/ShellDocs.CLI) | Global tool. `shelldocs init`, `add`, `dev`, `build` |
+| [`ShellDocs.Components`](src/ShellDocs.Components) | RCL. Chrome (layout, sidebar, header, search) + content primitives (Callout, Card, Steps, CodeGroup, FileTree, TypeTable, ComponentPreview) |
+| [`ShellDocs.Markdown`](src/ShellDocs.Markdown) | Markdig pipeline. Frontmatter parser, `razor:preview` fence extractor, inline Razor tag extractor, per-property type coercion |
+| [`ShellDocs.Core`](src/ShellDocs.Core) | Navigation graph, search index, plain-text extraction. No UI |
+| [`ShellDocs.Tokens`](src/ShellDocs.Tokens) | Design-system CSS variables. shadcn-compatible names for interop with ShellUI and Tailwind-shaped design systems |
+| [`ShellDocs.Templates`](src/ShellDocs.Templates) | Starter markdown + Program.cs snippets emitted by `shelldocs init` |
 
-Optional / v2:
+## Docs
 
-- **`ShellDocs.Xml`** — extract `<TypeTable>` from XML doc comments
-- **`ShellDocs.Themes.Fuma`**, **`ShellDocs.Themes.Nextra`** — theme presets
-- **`ShellDocs.OpenApi`** — OpenAPI spec → API reference pages
+- [shelldocs.dev](https://shelldocs.dev) : full documentation site (built with ShellDocs itself)
+- [docs/DESIGN.md](docs/DESIGN.md) : product positioning, primitive inventory, ecosystem story
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) : package boundaries, service registration, markdown pipeline, navigation graph, search
+- [docs/ROADMAP.md](docs/ROADMAP.md) : branch-by-branch delivery plan
+- [docs/RELEASING.md](docs/RELEASING.md) : how a maintainer cuts a NuGet release (Trusted Publishing)
 
-## Documentation
+## Related
 
-- [Design](docs/DESIGN.md) — what ShellDocs is, positioning, primitives, ecosystem story
-- [Roadmap](docs/ROADMAP.md) — branch-by-branch implementation plan
-- [Architecture](docs/ARCHITECTURE.md) — technical architecture: package boundaries, service registration, markdown pipeline, navigation graph, search index
-
-Once we ship `0.2.0-alpha`, official docs will live at **[shelldocs.dev](https://shelldocs.dev)** (dogfooded on ShellDocs itself).
-
-## Related projects
-
-- [ShellUI](https://github.com/shellui-dev/shellui) — the Blazor component library ShellDocs is built with
-- [shellui.dev](https://github.com/shellui-dev/shellui.dev) *(coming soon)* — ShellUI's own docs site, built with ShellDocs
+- [shellui-dev/shellui](https://github.com/shellui-dev/shellui) : the Blazor component library ShellDocs' authors are building alongside
+- [shellui-dev/shelldocs-docs](https://github.com/shellui-dev/shelldocs-docs) : source for [shelldocs.dev](https://shelldocs.dev), consuming ShellDocs from NuGet like any other user
 
 ## Contributing
 
-`0.1.0-alpha` is scaffolding-first — architecture and API surface are still moving. Once we hit `0.2.0-alpha`, we'll open up contributions with a proper `CONTRIBUTING.md`.
+The alpha is API-fluid : we're taking freedom to break minor versions until `1.0`. Bug reports and dogfood-driven fixes welcome via issues. A proper `CONTRIBUTING.md` lands with the `0.2.0-alpha` cut.
 
 ## License
 
-[MIT](LICENSE) — do whatever you want, no warranty.
+[MIT](LICENSE). Do whatever you want, no warranty.
