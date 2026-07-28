@@ -4,6 +4,26 @@ All notable changes to ShellDocs land here. Format follows [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [0.1.2-alpha] — 2026-07-28
+
+Dogfood-driven addition. Surfaced while building shelldocs.dev: the framework had no way to route to a page without also showing it in the sidebar. Fine for typical docs, blocker for landing pages reached via the sidebar package selector (they'd render redundantly in the sidebar tree AND be the dropdown target).
+
+### Added
+
+- **`meta.json` `hidden` array.** New optional field alongside `title` / `pages`. Slugs listed there route (URLs resolve, direct links + package-selector navigation work) but never appear in the sidebar tree. Takes precedence over `pages` — a slug listed in both stays hidden.
+  ```json
+  {
+    "title": "Documentation",
+    "pages": ["introduction", "getting-started"],
+    "hidden": ["components", "cli", "markdown"]
+  }
+  ```
+- **`NavigationGraph` constructor gains an optional `hiddenPages` parameter.** Hidden pages get indexed into the URL lookup but are excluded from `_flatPages` (so `GetPrevNext` skips them) and never appear as `Root.Children` (so sidebar tree and `Flatten()` skip them). Not intended for direct consumer use — `NavigationGraphBuilder.Build()` produces the collection during folder walking.
+
+### Test coverage
+
+Four new `NavigationGraphBuilderTests`: hidden slug excluded from sidebar but URL resolves, hidden folder excluded from sidebar but child URLs resolve, `hidden` takes precedence over `pages`, hidden slug excluded from auto-append.
+
 ## [0.1.1-alpha] — 2026-07-25
 
 First point-release after the dogfood smoke of `0.1.0-alpha`. Three consumer-blocking fixes plus release-workflow hardening.
@@ -109,6 +129,7 @@ Published to NuGet:
 - `<TypeTable>` is hand-authored today; XML-doc auto-generation ships in `ShellDocs.Xml` (Phase 4)
 - No `<DocsBreadcrumb>` opt-out — currently hides when the trail has ≤ 1 node, otherwise always renders
 
-[Unreleased]: https://github.com/shellui-dev/shelldocs/compare/v0.1.1-alpha...HEAD
+[Unreleased]: https://github.com/shellui-dev/shelldocs/compare/v0.1.2-alpha...HEAD
+[0.1.2-alpha]: https://github.com/shellui-dev/shelldocs/releases/tag/v0.1.2-alpha
 [0.1.1-alpha]: https://github.com/shellui-dev/shelldocs/releases/tag/v0.1.1-alpha
 [0.1.0-alpha]: https://github.com/shellui-dev/shelldocs/releases/tag/v0.1.0-alpha
