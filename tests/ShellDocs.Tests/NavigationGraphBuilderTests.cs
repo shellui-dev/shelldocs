@@ -140,6 +140,75 @@ public class NavigationGraphBuilderTests : IDisposable
     }
 
     [Fact]
+    public void Build_HiddenSlug_IsExcludedFromSidebar_ButUrlStillResolves()
+    {
+        WriteMd("visible.md", "Visible");
+        WriteMd("secret.md", "Secret");
+        WriteMeta("", """{ "pages": ["visible"], "hidden": ["secret"] }""");
+
+        var graph = NavigationGraphBuilder.Build(_root);
+        var titles = graph.Root.Children.Select(c => c.Title).ToList();
+
+        // Sidebar shows only visible (secret excluded despite being on disk).
+        Assert.Equal(new[] { "Visible" }, titles);
+
+        // But secret's URL still resolves (the whole point of `hidden` vs
+        // deleting the file: the dropdown/direct link still works).
+        var secretNode = graph.ResolveByUrl("/secret");
+        Assert.NotNull(secretNode);
+        Assert.Equal("Secret", secretNode!.Title);
+    }
+
+    [Fact]
+    public void Build_HiddenFolder_IsExcludedFromSidebar_ButChildUrlsResolve()
+    {
+        WriteMd("visible.md", "Visible");
+        WriteMd("packages/components.md", "Components");
+        WriteMd("packages/cli.md", "CLI");
+        WriteMeta("", """{ "pages": ["visible"], "hidden": ["packages"] }""");
+
+        var graph = NavigationGraphBuilder.Build(_root);
+        var titles = graph.Root.Children.Select(c => c.Title).ToList();
+
+        // Sidebar has no "Packages" section.
+        Assert.Equal(new[] { "Visible" }, titles);
+
+        // But child URLs still route via ResolveByUrl.
+        Assert.NotNull(graph.ResolveByUrl("/packages/components"));
+        Assert.NotNull(graph.ResolveByUrl("/packages/cli"));
+    }
+
+    [Fact]
+    public void Build_HiddenTakesPrecedenceOverPages()
+    {
+        // A slug listed in BOTH hidden and pages: hidden wins.
+        WriteMd("alpha.md", "Alpha");
+        WriteMd("beta.md", "Beta");
+        WriteMeta("", """{ "pages": ["alpha", "beta"], "hidden": ["beta"] }""");
+
+        var graph = NavigationGraphBuilder.Build(_root);
+        var titles = graph.Root.Children.Select(c => c.Title).ToList();
+
+        Assert.Equal(new[] { "Alpha" }, titles);
+        Assert.NotNull(graph.ResolveByUrl("/beta"));
+    }
+
+    [Fact]
+    public void Build_HiddenSlug_IsAlsoExcludedFromAutoAppend()
+    {
+        // No `pages` array. Without hidden support, auto-append would surface
+        // secret alongside visible. With hidden, secret still hidden.
+        WriteMd("visible.md", "Visible");
+        WriteMd("secret.md", "Secret");
+        WriteMeta("", """{ "hidden": ["secret"] }""");
+
+        var graph = NavigationGraphBuilder.Build(_root);
+        var titles = graph.Root.Children.Select(c => c.Title).ToList();
+
+        Assert.Equal(new[] { "Visible" }, titles);
+    }
+
+    [Fact]
     public void Build_MdFileNotInMetaJson_IsAppendedAfterExplicitOrdering()
     {
         // Meta lists only `alpha`, but `bravo.md` exists on disk.
