@@ -4,6 +4,22 @@ All notable changes to ShellDocs land here. Format follows [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [0.1.3-alpha] — 2026-08-12
+
+Dogfood-driven fixes. Surfaced while writing the per-primitive / per-command / authoring pages on shelldocs.dev (30+ new sidebar entries pushed the tree past viewport height for the first time). One user-visible bug, one visual polish, both landed against the sidebar chrome.
+
+### Fixed
+
+- **`.docs-sidebar` no longer pushes its footer off-screen when the tree scrolls.** In `DocsLayoutVariant.Sidebar`, once the sidebar tree grew tall enough to need internal scrolling, the footer (GitHub link + theme toggle) disappeared below the visible area of the floating sidebar card. Root cause: `DocsSidebar.razor.css` set `height: 100%` on the nav, which in a flex-column parent resolves against the parent's full content box (header + nav) instead of the remaining space, overriding the `flex: 1; min-height: 0` sizing from `DocsLayout.razor.css`. Removed the `height: 100%` and added `min-height: 0` in its place — footer now stays pinned to the bottom of the slot regardless of tree depth.
+
+### Added
+
+- **Broader `SidebarIcons` coverage.** Hand-curated icon map grew from ~20 entries to ~50. New titles covered: `Authoring`, `CLI` (+ `Cli` alias for auto-title-cased folder names), `Packages`, `Configuration`, `Project Structure`, `Quick Start`, `Frontmatter`, `Fenced Code`, `Razor Preview`, `Inline Component Tags`, `Navigation`, plus PascalCase and space-separated variants of every content primitive (`CardGrid`/`Card Grid`, `LinkCard`/`Link Card`, `Steps`, `FileTree`/`File Tree`, `TypeTable`/`Type Table`, `CodeGroup`, `PreviewFrame`/`Preview Frame`, `ComponentPreview`/`Component Preview`) and the four CLI command names (`shelldocs init`/`add`/`dev`/`build` + bare `Init`/`Add`/`Dev`/`Build`). Longer-term this is the argument for `ShellUI.Icons` ([SHELLUI_ICONS.md](docs/SHELLUI_ICONS.md)) — hand maps don't scale. Short-term this closes the visual gap where categories a mature consumer's site actually uses rendered without an icon while the framework's own vocabulary had one.
+
+### Docs
+
+- **`docs/SHELLUI_DOGFOOD_FIXES.md`** now tracked in git. Three entries logged from the shelldocs.dev writing session (the two fixes above, plus one still-open item: `TitleFromFolderName` doesn't uppercase acronyms — `cli/` → `Cli`, `api/` → `Api`. Worked around on the consumer via explicit `meta.json.title`; framework-level fix — either a built-in acronym set or a `ShellDocsOptions.KnownAcronyms` hook — still open).
+
 ## [0.1.2-alpha] — 2026-07-28
 
 Dogfood-driven addition. Surfaced while building shelldocs.dev: the framework had no way to route to a page without also showing it in the sidebar. Fine for typical docs, blocker for landing pages reached via the sidebar package selector (they'd render redundantly in the sidebar tree AND be the dropdown target).
