@@ -21,6 +21,50 @@
             transparent 1px, transparent 8px);
 }
 
+.preview-error {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.85rem;
+    max-width: 44rem;
+    padding: 1rem 1.15rem;
+    background: color-mix(in oklch, var(--error, oklch(0.637 0.237 25.331)) 12%, var(--card));
+    border: 1px solid color-mix(in oklch, var(--error, oklch(0.637 0.237 25.331)) 35%, var(--border));
+    border-radius: calc(var(--radius) - 2px);
+    color: var(--foreground);
+    text-align: left;
+}
+.preview-error-icon {
+    width: 1.15rem;
+    height: 1.15rem;
+    flex-shrink: 0;
+    color: var(--error, oklch(0.637 0.237 25.331));
+    margin-top: 0.1rem;
+}
+.preview-error-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+}
+.preview-error-title {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+}
+.preview-error-message {
+    font-size: 0.8125rem;
+    color: var(--muted-foreground);
+    line-height: 1.5;
+    word-break: break-word;
+}
+.preview-error-message code {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    background: color-mix(in oklch, var(--foreground) 8%, transparent);
+    padding: 0.05rem 0.3rem;
+    border-radius: 3px;
+}
+
 .preview-code-wrap {
     position: relative;
     border-top: 1px solid var(--border);
