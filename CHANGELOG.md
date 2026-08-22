@@ -4,6 +4,31 @@ All notable changes to ShellDocs land here. Format follows [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [0.1.4-alpha] — 2026-08-22
+
+Second dogfood batch. `0.1.3-alpha` pinned the sidebar footer to a fixed slot but only under the desktop Sidebar variant — footer still floated mid-sidebar on TopNav / mobile drawer / short-tree cases. 
+
+### Fixed
+
+- **Sidebar footer now pins to the bottom in every layout context.** The `0.1.3-alpha` fix only worked in the desktop Sidebar variant — the `flex: 1; min-height: 0` sizing that lets the nav fill its slot was scoped to `.docs-shell-sidebar .docs-sidebar-slot > nav` inside a `@media (min-width: 1024px)` block. On the TopNav variant, the mobile drawer, or any Sidebar site whose tree is shorter than the slot, the nav still collapsed to intrinsic content size and the footer (GitHub link + theme toggle) sat wherever the tree ended, mid-sidebar. Moved `flex: 1; min-height: 0` onto `.docs-sidebar` itself and made `.docs-sidebar-slot` `display: flex; flex-direction: column` in every context. Footer pins hard to the bottom regardless of variant / viewport / item count.
+- **`razor:preview` fences with an unknown outer tag now render a visible error in the frame instead of falling back to a plain code block silently.** Previously `SlotExtractor.TryBuildPreviewSlot` returned `null` when the fence's first tag didn't resolve to a registered component; the fence rendered as regular fenced code with only a build-log warning. Authors chasing "why isn't my icon rendering" would hunt for a nonexistent component bug. Now the same case emits a `PreviewSlot` with `ComponentType = null` and an `Error` message; `PreviewFrame` renders a red-tinted error panel in the render region naming the unknown tag and pointing at `o.RegisterComponent<T>()` / `o.RegisterComponentsFromAssembly<TMarker>()`. Build-log warning still emitted. `PreviewSlot.ComponentType` is now nullable — technically a source-breaking change for callers pattern-matching on it, though external consumers of that type are ~none in the alpha window. [SHELLDOCS_FIXES.md #4]
+
+### Added
+
+- **`RegisterComponentsFromAssembly<TMarker>(string namespacePrefix)` overload.** Registering only components under a specific namespace from a big assembly no longer needs a `Func<Type, bool>` — the common "register everything under my Components namespace" case reads as:
+  ```csharp
+  o.RegisterComponentsFromAssembly<Marker>("ShellIcons.Icons");
+  ```
+  instead of the lambda form. The `Func` overload stays for anything more complex.
+- **`shelldocs init` scaffolded `Program.cs` now surfaces the `LayoutVariant` knob.** Commented-out `// o.LayoutVariant = DocsLayoutVariant.Sidebar;` line right in the `AddShellDocs(...)` block, plus the `RegisterComponentsFromAssembly` hint. First-time consumers no longer have to grep `ShellDocs.Components/Layouts/DocsLayout.razor` to discover the sidebar-variant option exists. [SHELLDOCS_FIXES.md #3]
+
+### Not fixed this batch
+
+Three items from SHELLDOCS_FIXES.md deferred; they need spec-level work rather than a patch:
+
+- **#1 / #2 — `shelldocs build` produces no `index.html`, and `init`/`build` render-mode mismatch.** The scaffolded project is Server-interactive but `build` prints "publish kind: static (Blazor WASM)" and copies the resulting `wwwroot/` — which for a Server-interactive project has no `index.html`, no `_framework/dotnet.js`, no runtime blob. Output is unusable as a static site (blocks GH Pages / Cloudflare / Netlify deploys). Two viable paths (server-side prerender walk of the nav graph, or scaffold WASM Standalone by default) — either is a substantial change to `BuildCommand` and/or `InitCommand`. Design work needs to happen before this lands. Consumers workaround: `dotnet run` locally, skip `shelldocs build`.
+- **#5 — Markdig mangles inline HTML wrappers between component slots in `razor:preview`.** Plain `<span style="color:…">` around a registered component tag inside a preview loses its parent-child relationship after Markdig's inline pass, because SlotExtractor lifts component tags before Markdig sees them. Documented workaround: use registered wrapper components with their own attribute props instead of raw inline HTML. Framework fix would need SlotExtractor to lift-and-preserve trivial wrappers (`<span>`, `<a>`, `<button>`) around component tags.
+
 ## [0.1.3-alpha] — 2026-08-12
 
 Dogfood-driven fixes. Surfaced while writing the per-primitive / per-command / authoring pages on shelldocs.dev (30+ new sidebar entries pushed the tree past viewport height for the first time). One user-visible bug, one visual polish, both landed against the sidebar chrome.
