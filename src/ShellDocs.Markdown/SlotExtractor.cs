@@ -165,10 +165,10 @@ internal class SlotExtractor
         {
             /* Unknown component. Emit an error PreviewSlot so PreviewFrame can
                render a visible "Unknown component <X>" panel in the browser.
-               The pre-fix behavior returned null here, which caused the whole
+               Returning null here (the pre-fix behavior) caused the whole
                fence to render as a plain code block — silent failure that sent
-               authors hunting for a nonexistent component bug (dogfood log,
-               SHELLDOCS_FIXES.md #4). Warning still emitted for build logs. */
+               authors hunting for a nonexistent component bug. Warning still
+               emitted for build logs. */
             var msg = $"Unknown component <{name}>. Register it via `o.RegisterComponent<{name}>()` or `o.RegisterComponentsFromAssembly<TMarker>()`.";
             warnings.Add($"razor:preview references unknown component <{name}>.");
             return new PreviewSlot(NewSlotId(), null, attrs, code, "razor", childContentRaw, Error: msg);
