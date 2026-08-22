@@ -18,8 +18,9 @@ public record ComponentSlot(
 
 public record PreviewSlot(
     string Id,
-    Type ComponentType,
+    Type? ComponentType,
     IReadOnlyDictionary<string, string> Parameters,
     string Code,
     string Language,
-    string? ChildContentRaw = null) : Slot(Id);
+    string? ChildContentRaw = null,
+    string? Error = null) : Slot(Id);
