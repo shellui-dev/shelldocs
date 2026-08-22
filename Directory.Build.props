@@ -18,7 +18,7 @@
 
   <!-- Package metadata (applies to any project with IsPackable=true) -->
   <PropertyGroup>
-    <Version>0.1.3-alpha</Version>
+    <Version>0.1.4-alpha</Version>
     <Authors>ShellUI</Authors>
     <Company>ShellUI</Company>
     <Copyright>Copyright © 2026 ShellUI</Copyright>

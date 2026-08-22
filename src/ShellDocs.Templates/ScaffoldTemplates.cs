@@ -180,8 +180,17 @@ public static class ScaffoldTemplates
             o.ContentRoot = System.IO.Path.Combine(builder.Environment.ContentRootPath, "content");
             o.SiteName = "{{siteName}}";
             o.GitHubRepo = "{{githubRepo}}";
+
+            // Layout: TopNav (default) = classic header + sidebar.
+            // Sidebar = floating sidebar card, no top header (shadcn / fumadocs look).
+            // o.LayoutVariant = DocsLayoutVariant.Sidebar;
+
             o.AddNavLink("Docs", "/docs/introduction");
-            // o.RegisterComponent<MyComponent>();  // for razor:preview blocks
+
+            // Register your own components so authors can drop them into
+            // markdown as `<MyComponent />` or inside a razor:preview fence:
+            //   o.RegisterComponent<MyComponent>();
+            //   o.RegisterComponentsFromAssembly<MyMarker>();
         });
         """;
 

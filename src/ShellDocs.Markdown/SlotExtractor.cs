@@ -146,17 +146,11 @@ internal class SlotExtractor
 
         var name = open.Groups["name"].Value;
         var type = _registry.Resolve(name);
-        if (type is null)
-        {
-            warnings.Add($"razor:preview references unknown component <{name}>.");
-            return null;
-        }
-
         var attrs = ParseAttributes(open.Groups["attrs"].Value);
 
-        // Extract inner ChildContent for non-self-closing tags. e.g.
-        //   <CardGrid>...<Card /> <Card />...</CardGrid>
-        // The inner text is what ends up injected as a RenderFragment at render time.
+        /* Extract inner ChildContent for non-self-closing tags even in the
+           error case — Copy button in the error state should still hand back
+           the exact source the author authored. */
         string? childContentRaw = null;
         if (!open.Groups["self"].Success)
         {
@@ -165,6 +159,19 @@ internal class SlotExtractor
             {
                 childContentRaw = code.Substring(open.Index + open.Length, range.Start - (open.Index + open.Length));
             }
+        }
+
+        if (type is null)
+        {
+            /* Unknown component. Emit an error PreviewSlot so PreviewFrame can
+               render a visible "Unknown component <X>" panel in the browser.
+               The pre-fix behavior returned null here, which caused the whole
+               fence to render as a plain code block — silent failure that sent
+               authors hunting for a nonexistent component bug (dogfood log,
+               SHELLDOCS_FIXES.md #4). Warning still emitted for build logs. */
+            var msg = $"Unknown component <{name}>. Register it via `o.RegisterComponent<{name}>()` or `o.RegisterComponentsFromAssembly<TMarker>()`.";
+            warnings.Add($"razor:preview references unknown component <{name}>.");
+            return new PreviewSlot(NewSlotId(), null, attrs, code, "razor", childContentRaw, Error: msg);
         }
 
         return new PreviewSlot(NewSlotId(), type, attrs, code, "razor", childContentRaw);

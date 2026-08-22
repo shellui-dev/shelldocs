@@ -114,13 +114,17 @@ public class MarkdownRendererTests
     }
 
     [Fact]
-    public void Render_UnregisteredTagInPreview_SkipsWithWarning()
+    public void Render_UnregisteredTagInPreview_EmitsErrorSlotAndWarning()
     {
+        
         var md = "```razor:preview\n<Missing />\n```";
         var renderer = new MarkdownRenderer();
         var doc = renderer.Render(md);
 
-        Assert.Empty(doc.Slots);
+        var slot = Assert.IsType<PreviewSlot>(Assert.Single(doc.Slots));
+        Assert.Null(slot.ComponentType);
+        Assert.NotNull(slot.Error);
+        Assert.Contains("Missing", slot.Error);
         Assert.NotEmpty(renderer.LastWarnings);
     }
 

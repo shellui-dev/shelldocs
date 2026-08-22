@@ -43,6 +43,8 @@
     transform: translateX(-100%);
     transition: transform 260ms cubic-bezier(0.16, 1, 0.3, 1);
     z-index: 45;
+    display: flex;
+    flex-direction: column;
 }
 .docs-sidebar-slot.open {
     transform: translateX(0);
@@ -133,10 +135,10 @@
         max-width: 1500px;
         grid-template-columns: var(--sidebar-width) 1fr;
     }
-    /* Sidebar = the floating card */
+    /* Sidebar = the floating card. `display: flex; flex-direction: column`
+       already comes from the base .docs-sidebar-slot rule — we only override
+       the card chrome + positioning here. */
     .docs-shell-sidebar .docs-sidebar-slot {
-        display: flex;
-        flex-direction: column;
         position: sticky;
         top: 0.85rem;
         height: calc(100vh - 1.85rem);
@@ -147,11 +149,8 @@
         margin-right: 0;
         overflow: hidden;
     }
-    /* DocsSidebar's own <nav> must flex-fill so its footer (theme toggle) sticks to the bottom */
-    .docs-shell-sidebar .docs-sidebar-slot > nav {
-        flex: 1;
-        min-height: 0;
-    }
+    /* nav `flex: 1; min-height: 0` moved to the base .docs-sidebar rule so it
+       applies in every layout context, not just desktop Sidebar variant. */
     /* Content = flush to page bg, no border, no shadow */
     .docs-shell-sidebar .docs-main {
         padding: 1.5rem 0 4rem;

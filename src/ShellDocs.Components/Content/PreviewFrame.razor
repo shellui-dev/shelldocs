@@ -4,8 +4,22 @@
 
 <div class="preview-frame @(_expanded ? "expanded" : "collapsed")">
     <div class="preview-render">
-        <DynamicComponent Type="Preview!.ComponentType"
-                          Parameters="BuildParameters(Preview!.Parameters, Preview!.ChildContentRaw)" />
+        @if (Preview!.ComponentType is not null)
+        {
+            <DynamicComponent Type="Preview!.ComponentType"
+                              Parameters="BuildParameters(Preview!.Parameters, Preview!.ChildContentRaw)" />
+        }
+        else
+        {
+           
+            <div class="preview-error" role="alert">
+                <svg class="preview-error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                <div class="preview-error-body">
+                    <div class="preview-error-title">razor:preview error</div>
+                    <div class="preview-error-message">@(Preview!.Error ?? "Unknown error.")</div>
+                </div>
+            </div>
+        }
     </div>
     <div class="preview-code-wrap">
         <pre class="preview-code language-razor" @ref="_codeEl"><code class="language-razor">@Preview!.Code</code></pre>
@@ -72,6 +86,9 @@
 
     [Inject] private IJSRuntime JS { get; set; } = default!;
 
+    /* Only called from the render-region branch guarded by
+       `Preview!.ComponentType is not null`, so the ! here is a safe assertion
+       — never dereferenced when the tag was unknown. */
     private IDictionary<string, object> BuildParameters(IReadOnlyDictionary<string, string> attrs, string? childContentRaw) =>
-        SlotRenderer.BuildParameters(Renderer, Preview!.ComponentType, attrs, childContentRaw);
+        SlotRenderer.BuildParameters(Renderer, Preview!.ComponentType!, attrs, childContentRaw);
 }

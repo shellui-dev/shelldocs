@@ -72,6 +72,24 @@ public class ShellDocsOptions
     public ShellDocsOptions RegisterComponentsFromAssembly<TMarker>(Func<Type, bool>? filter = null)
         => RegisterComponentsFromAssembly(typeof(TMarker).Assembly, filter);
 
+    
+    public ShellDocsOptions RegisterComponentsFromAssembly<TMarker>(string namespacePrefix)
+    {
+        if (string.IsNullOrEmpty(namespacePrefix))
+            throw new ArgumentException("namespacePrefix must be non-empty.", nameof(namespacePrefix));
+        return RegisterComponentsFromAssembly(typeof(TMarker).Assembly,
+            t => t.Namespace is not null && t.Namespace.StartsWith(namespacePrefix, StringComparison.Ordinal));
+    }
+
+    public ShellDocsOptions RegisterComponentsFromAssembly(Assembly assembly, string namespacePrefix)
+    {
+        if (assembly is null) throw new ArgumentNullException(nameof(assembly));
+        if (string.IsNullOrEmpty(namespacePrefix))
+            throw new ArgumentException("namespacePrefix must be non-empty.", nameof(namespacePrefix));
+        return RegisterComponentsFromAssembly(assembly,
+            t => t.Namespace is not null && t.Namespace.StartsWith(namespacePrefix, StringComparison.Ordinal));
+    }
+
     public ShellDocsOptions RegisterComponentsFromAssembly(Assembly assembly, Func<Type, bool>? filter = null)
     {
         if (assembly is null) throw new ArgumentNullException(nameof(assembly));

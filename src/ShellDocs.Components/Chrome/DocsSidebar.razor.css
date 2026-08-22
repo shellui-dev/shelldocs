@@ -1,11 +1,7 @@
 .docs-sidebar {
     display: flex;
     flex-direction: column;
-    /* No `height: 100%` — the parent .docs-sidebar-slot in the sidebar-variant
-       layout already sizes us via `flex: 1; min-height: 0`. Adding height: 100%
-       fights that: it makes this nav match the WHOLE slot height (header
-       included), which pushes the footer (theme + gh links) past the visible
-       area whenever the tree gets tall enough to scroll. */
+    flex: 1;
     min-height: 0;
     font-size: 0.8125rem;
     padding: 0.85rem 0.75rem 0 1rem;
