@@ -4,6 +4,25 @@ All notable changes to ShellDocs land here. Format follows [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [0.1.5-alpha] — 2026-08-22
+
+The `shelldocs build` output is now a real static site. Previously it copied `publish/wwwroot/` 1:1 — fine on paper, useless in practice for a Blazor Server scaffold, which produces no `index.html`, no client-side runtime, nothing a static host can serve at the root URL. Deploying the output to GH Pages / Cloudflare Pages / Netlify silently returned a blank shell. Now every URL the site knows about is prerendered at build time and the framework's static assets are merged on top.
+
+### Fixed
+
+- **`shelldocs build` produces a fully static site deployable to GH Pages / Cloudflare Pages / Netlify without a .NET host.** Previously the CLI ran `dotnet publish` and copied `wwwroot/` verbatim — which, for a Blazor Server scaffold (what `shelldocs init` produces by default), contains only static assets and no HTML entrypoint. Visiting the deployed root returned an empty page; deep links 404'd. New flow: publish → launch the published app on a loopback ephemeral port → walk `NavigationGraph.AllUrls` to enumerate every route (visible + hidden) plus `/` → `HttpClient.GetAsync` each URL → save the rendered HTML to `<output>/<url>/index.html`. Then merge `publish/wwwroot/` (`_content/`, `_framework/blazor.web.js`, `app.css`, `favicon.png`, tokens CSS) on top. Result is a directory any dumb file host can serve; every URL is a real HTML file with content in the response body. Server scaffold unchanged — the prerender happens entirely inside `shelldocs build`.
+- **`--base-href` now rewrites `<base href>` in every prerendered HTML file, not just the root `index.html`.** The pre-fix pass only touched one file, so subpath deploys (GH user-repo pages at `/repo/`) worked for the home page but broke every deep-linked doc route (assets 404'd because the deep-linked pages still had `<base href="/">`). New pass walks `<output>/**/*.html` and rewrites every occurrence.
+
+### Added
+
+- **`NavigationGraph.AllUrls`** — public enumeration of every indexed URL (visible + hidden). Needed by the new prerender walk so hidden pages still land in the static output (they route at runtime and would 404 on the static site otherwise). Trivial addition, no API break.
+- **`PrerenderRunner`** internal helper in `ShellDocs.CLI` — encapsulates the subprocess launch + readiness poll + URL walk + file save. Kept out of `BuildCommand` so the orchestration reads linearly. Guarantees subprocess cleanup on every exit path (finally + `ProcessExit` + `CancelKeyPress`).
+
+### Known limitations
+
+- **URL discovery is content-folder-based, not runtime-based.** `PrerenderRunner` walks URLs via `NavigationGraphBuilder.Build(contentRoot)` — same logic the running app uses — so file-based routes are complete. Custom routes registered outside `content/` (bespoke `@page` directives) won't be prerendered and will need to be added manually. Not a regression from `0.1.4-alpha` behavior (which prerendered nothing).
+- **Interactive server components at request time.** The prerendered HTML is a snapshot of the initial render; hydration on the client picks up from there via `<script src="_framework/blazor.web.js">`. Deep-linking to a page hits the static HTML; the theme toggle, search, tabs, code copy work via the shipped `shelldocs.js` on top. Full Blazor Server interactivity (SignalR-backed component state) doesn't survive the static build — but a docs site doesn't need it.
+
 ## [0.1.4-alpha] — 2026-08-22
 
 `0.1.3-alpha` pinned the sidebar footer to a fixed slot but only under the desktop Sidebar variant — footer still floated mid-sidebar on TopNav, mobile drawer, and short-tree cases. This release covers that plus three primitive-DX improvements.
