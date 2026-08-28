@@ -258,14 +258,29 @@ internal static class InitCommand
         AddContentCopyIfMissing(csproj, changes);
     }
 
-    // Adds a Content Update item for content markdown/meta.json so
-    // `dotnet publish` copies the markdown corpus into the publish output.
-    // Without this, ContentRoot resolves fine under `dotnet run` (source dir)
-    // but the published site has no content to render.
+    // Split-rule .md/.json copy so both `dotnet run` and `dotnet publish`
+    // carry content. Two rules because the Web SDK auto-includes .json (need
+    // Update, not Include — Include triggers NETSDK1022) but not .md.
+    // Migrates the pre-0.1.5-alpha broken single-Update form on re-run.
     internal static void AddContentCopyIfMissing(string csproj, List<string> changes)
     {
         var xml = File.ReadAllText(csproj);
-        if (new Regex(@"<Content\s+Update=""content/", RegexOptions.IgnoreCase).IsMatch(xml))
+
+        var brokenSingleUpdate = new Regex(
+            @"<Content\s+Update=""content/\*\*/\*\.md;content/\*\*/meta\.json""\s+CopyToOutputDirectory=""PreserveNewest""\s*/>",
+            RegexOptions.IgnoreCase);
+        if (brokenSingleUpdate.IsMatch(xml))
+        {
+            var replacement =
+                @"<Content Include=""content/**/*.md"" CopyToOutputDirectory=""PreserveNewest"" CopyToPublishDirectory=""PreserveNewest"" />" +
+                Environment.NewLine +
+                @"    <Content Update=""content/**/meta.json"" CopyToOutputDirectory=""PreserveNewest"" CopyToPublishDirectory=""PreserveNewest"" />";
+            File.WriteAllText(csproj, brokenSingleUpdate.Replace(xml, replacement));
+            changes.Add($"migrated [cyan]content copy rules[/] in {Path.GetFileName(csproj)} (fixes empty publish/content/)");
+            return;
+        }
+
+        if (new Regex(@"<Content\s+Include=""content/\*\*/\*\.md""", RegexOptions.IgnoreCase).IsMatch(xml))
             return;
 
         var closing = xml.LastIndexOf("</Project>", StringComparison.OrdinalIgnoreCase);
@@ -273,11 +288,12 @@ internal static class InitCommand
 
         var block =
             $"  <ItemGroup>{Environment.NewLine}" +
-            $"    <Content Update=\"content/**/*.md;content/**/meta.json\" CopyToOutputDirectory=\"PreserveNewest\" />{Environment.NewLine}" +
+            $"    <Content Include=\"content/**/*.md\" CopyToOutputDirectory=\"PreserveNewest\" CopyToPublishDirectory=\"PreserveNewest\" />{Environment.NewLine}" +
+            $"    <Content Update=\"content/**/meta.json\" CopyToOutputDirectory=\"PreserveNewest\" CopyToPublishDirectory=\"PreserveNewest\" />{Environment.NewLine}" +
             $"  </ItemGroup>{Environment.NewLine}{Environment.NewLine}";
 
         File.WriteAllText(csproj, xml.Insert(closing, block));
-        changes.Add($"added [cyan]content copy-to-output[/] to {Path.GetFileName(csproj)}");
+        changes.Add($"added [cyan]content copy rules[/] to {Path.GetFileName(csproj)}");
     }
 
     private static void ScaffoldContent(string root, List<string> changes)
