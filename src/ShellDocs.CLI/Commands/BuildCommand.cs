@@ -1,17 +1,10 @@
 using System.Diagnostics;
 using System.Text.RegularExpressions;
+using ShellDocs.Core;
 using Spectre.Console;
 
 namespace ShellDocs.CLI.Commands;
 
-/* `shelldocs build` — `dotnet publish -c Release` then post-process the
-   output for static hosts (GH Pages / Cloudflare / S3). Detects the
-   published `wwwroot/` for Blazor WASM projects and copies it to --output;
-   for server projects, copies the whole publish directory instead.
-
-   Post-processing:
-   - --base-href rewrites <base href="/" /> in index.html (for GH Pages subpaths).
-   - --spa-fallback copies index.html to 404.html (GH Pages SPA-routing trick). */
 internal static class BuildCommand
 {
     public static int Run(string dir, string output, string? baseHref, bool spaFallback)
@@ -24,6 +17,14 @@ internal static class BuildCommand
             return 1;
         }
 
+        var contentRoot = Path.Combine(root, "content");
+        if (!Directory.Exists(contentRoot))
+        {
+            AnsiConsole.MarkupLine($"[red]error:[/] no [yellow]content/[/] directory found under [yellow]{root}[/]");
+            AnsiConsole.MarkupLine("[dim]shelldocs build needs a docs project with content/ so it can enumerate URLs to prerender.[/]");
+            return 1;
+        }
+
         var outputAbs = Path.GetFullPath(Path.Combine(root, output));
         var publishStage = Path.Combine(root, "obj", "shelldocs-publish");
 
@@ -33,32 +34,71 @@ internal static class BuildCommand
         if (spaFallback)           AnsiConsole.MarkupLine("[dim]spa fallback:[/] [cyan]index.html → 404.html[/]");
         AnsiConsole.WriteLine();
 
-        // 1. dotnet publish to a scratch dir
         var publishExit = RunPublish(csproj, publishStage);
         if (publishExit != 0) return publishExit;
 
-        // 2. Locate static payload: wwwroot for WASM, whole dir for Server
-        var wwwroot = Path.Combine(publishStage, "wwwroot");
-        var source = Directory.Exists(wwwroot) ? wwwroot : publishStage;
-        var kind = Directory.Exists(wwwroot) ? "static (Blazor WASM)" : "server (needs a .NET host)";
-        AnsiConsole.MarkupLine($"[dim]publish kind:[/] [cyan]{kind}[/]");
+        // Belt-and-suspenders: mirror source content/ into publish. Consumer
+        // csprojs using `<Content Update="content/...">` don't actually copy
+        // .md files (Update is the wrong verb; see InitCommand notes), which
+        // would leave the running app with an empty NavigationGraph and every
+        // prerendered page as "Page not found."
+        var publishContent = Path.Combine(publishStage, "content");
+        if (!Directory.Exists(publishContent))
+        {
+            AnsiConsole.MarkupLine("[dim]content:[/] publish output has no content/ — mirroring from source");
+            CopyDirectoryOverwriting(contentRoot, publishContent);
+        }
 
-        // 3. Copy to output (clean first so stale files never linger)
+        // Home ("/") is served by Home.razor and isn't part of NavigationGraph.
+        var urls = new List<string> { "/" };
+        try
+        {
+            var graph = NavigationGraphBuilder.Build(contentRoot);
+            urls.AddRange(graph.AllUrls);
+        }
+        catch (Exception ex)
+        {
+            AnsiConsole.MarkupLine($"[red]error:[/] failed to read content/ nav graph: {ex.Message}");
+            return 1;
+        }
+        AnsiConsole.MarkupLine($"[dim]prerender:[/] discovered [cyan]{urls.Count}[/] URL(s) from content/");
+
         if (Directory.Exists(outputAbs)) Directory.Delete(outputAbs, recursive: true);
-        CopyDirectory(source, outputAbs);
+        Directory.CreateDirectory(outputAbs);
 
-        // 4. Post-process
-        var indexHtml = Path.Combine(outputAbs, "index.html");
-        if (baseHref is not null && File.Exists(indexHtml))
+        var result = PrerenderRunner.Run(publishStage, csproj, urls, outputAbs);
+        if (!result.Success)
         {
-            RewriteBaseHref(indexHtml, baseHref);
-        }
-        if (spaFallback && File.Exists(indexHtml))
-        {
-            File.Copy(indexHtml, Path.Combine(outputAbs, "404.html"), overwrite: true);
+            AnsiConsole.MarkupLine("[red]error:[/] prerender did not complete cleanly. Output may be incomplete.");
+            return 1;
         }
 
-        // Cleanup scratch
+        var wwwroot = Path.Combine(publishStage, "wwwroot");
+        if (Directory.Exists(wwwroot))
+        {
+            CopyDirectoryMerging(wwwroot, outputAbs);
+            AnsiConsole.MarkupLine($"[dim]assets:[/] copied [cyan]wwwroot/[/] into output");
+        }
+        else
+        {
+            AnsiConsole.MarkupLine("[yellow]warn:[/] publish/wwwroot/ not found — output may be missing framework assets");
+        }
+
+        if (baseHref is not null)
+        {
+            var patched = RewriteBaseHrefInAllHtml(outputAbs, baseHref);
+            AnsiConsole.MarkupLine($"[dim]base-href:[/] rewrote [cyan]{patched}[/] HTML file(s)");
+        }
+        if (spaFallback)
+        {
+            var rootIndex = Path.Combine(outputAbs, "index.html");
+            if (File.Exists(rootIndex))
+            {
+                File.Copy(rootIndex, Path.Combine(outputAbs, "404.html"), overwrite: true);
+                AnsiConsole.MarkupLine("[dim]spa fallback:[/] wrote 404.html");
+            }
+        }
+
         try { Directory.Delete(publishStage, recursive: true); } catch { }
 
         AnsiConsole.WriteLine();
@@ -68,10 +108,8 @@ internal static class BuildCommand
 
     private static int RunPublish(string csproj, string publishDir)
     {
-        var psi = new ProcessStartInfo("dotnet")
-        {
-            UseShellExecute = false,
-        };
+        AnsiConsole.MarkupLine($"[dim]$[/] [cyan]dotnet publish -c Release -o {publishDir}[/]");
+        var psi = new ProcessStartInfo("dotnet") { UseShellExecute = false };
         psi.ArgumentList.Add("publish");
         psi.ArgumentList.Add(csproj);
         psi.ArgumentList.Add("-c");
@@ -89,8 +127,22 @@ internal static class BuildCommand
         return proc.ExitCode;
     }
 
-    // Recursive directory copy — no built-in in .NET stdlib.
-    internal static void CopyDirectory(string source, string dest)
+    // Never overwrites — protects prerendered HTML sitting in the output tree.
+    internal static void CopyDirectoryMerging(string source, string dest)
+    {
+        Directory.CreateDirectory(dest);
+        foreach (var file in Directory.GetFiles(source))
+        {
+            var target = Path.Combine(dest, Path.GetFileName(file));
+            if (!File.Exists(target)) File.Copy(file, target);
+        }
+        foreach (var subdir in Directory.GetDirectories(source))
+        {
+            CopyDirectoryMerging(subdir, Path.Combine(dest, Path.GetFileName(subdir)));
+        }
+    }
+
+    internal static void CopyDirectoryOverwriting(string source, string dest)
     {
         Directory.CreateDirectory(dest);
         foreach (var file in Directory.GetFiles(source))
@@ -99,22 +151,29 @@ internal static class BuildCommand
         }
         foreach (var subdir in Directory.GetDirectories(source))
         {
-            CopyDirectory(subdir, Path.Combine(dest, Path.GetFileName(subdir)));
+            CopyDirectoryOverwriting(subdir, Path.Combine(dest, Path.GetFileName(subdir)));
         }
     }
 
-    /* Rewrites <base href="..." /> in index.html. `baseHref` should include
-       leading + trailing slashes ("/repo-name/"). Handles single, double,
-       and no-quote variants. */
-    internal static void RewriteBaseHref(string indexHtml, string baseHref)
+    // `baseHref` must include leading + trailing slashes ("/repo-name/").
+    internal static int RewriteBaseHrefInAllHtml(string outputDir, string baseHref)
     {
-        var html = File.ReadAllText(indexHtml);
-        var patched = Regex.Replace(
-            html,
-            @"<base\s+href\s*=\s*(""[^""]*""|'[^']*'|[^\s>]+)\s*/?>",
-            $"<base href=\"{baseHref}\" />",
-            RegexOptions.IgnoreCase);
-        File.WriteAllText(indexHtml, patched);
+        var count = 0;
+        foreach (var html in Directory.EnumerateFiles(outputDir, "*.html", SearchOption.AllDirectories))
+        {
+            var original = File.ReadAllText(html);
+            var patched = Regex.Replace(
+                original,
+                @"<base\s+href\s*=\s*(""[^""]*""|'[^']*'|[^\s>]+)\s*/?>",
+                $"<base href=\"{baseHref}\" />",
+                RegexOptions.IgnoreCase);
+            if (patched != original)
+            {
+                File.WriteAllText(html, patched);
+                count++;
+            }
+        }
+        return count;
     }
 
     private static string? FindCsproj(string dir)

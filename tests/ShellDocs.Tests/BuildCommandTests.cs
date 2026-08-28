@@ -3,10 +3,6 @@ using Xunit;
 
 namespace ShellDocs.Tests;
 
-/* We don't shell out to `dotnet publish` in tests (slow + fragile). We test
-   the two deterministic post-processing helpers in isolation: RewriteBaseHref
-   and the recursive CopyDirectory. Everything else in BuildCommand.Run is
-   glue around Process.Start, which is best verified by hand. */
 public class BuildCommandTests : IDisposable
 {
     private readonly string _tempDir;
@@ -22,8 +18,8 @@ public class BuildCommandTests : IDisposable
             .FirstOrDefault(a => a.GetName().Name == "shelldocs")
             ?? Assembly.Load("shelldocs");
         var type = cli.GetType("ShellDocs.CLI.Commands.BuildCommand", throwOnError: true)!;
-        _rewrite = type.GetMethod("RewriteBaseHref", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)!;
-        _copy    = type.GetMethod("CopyDirectory",   BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)!;
+        _rewrite = type.GetMethod("RewriteBaseHrefInAllHtml", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)!;
+        _copy    = type.GetMethod("CopyDirectoryMerging",    BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)!;
     }
 
     public void Dispose()
@@ -31,10 +27,10 @@ public class BuildCommandTests : IDisposable
         try { Directory.Delete(_tempDir, recursive: true); } catch { }
     }
 
-    private void RewriteBaseHref(string indexPath, string href) =>
-        _rewrite.Invoke(null, new object[] { indexPath, href });
+    private int RewriteBaseHrefInAllHtml(string outputDir, string href) =>
+        (int)_rewrite.Invoke(null, new object[] { outputDir, href })!;
 
-    private void CopyDirectory(string source, string dest) =>
+    private void CopyDirectoryMerging(string source, string dest) =>
         _copy.Invoke(null, new object[] { source, dest });
 
     [Theory]
@@ -46,7 +42,8 @@ public class BuildCommandTests : IDisposable
     {
         var path = Path.Combine(_tempDir, "index.html");
         File.WriteAllText(path, $"<html><head>{original}</head></html>");
-        RewriteBaseHref(path, href);
+        var count = RewriteBaseHrefInAllHtml(_tempDir, href);
+        Assert.Equal(1, count);
         Assert.Contains(expected, File.ReadAllText(path));
     }
 
@@ -56,7 +53,7 @@ public class BuildCommandTests : IDisposable
         var path = Path.Combine(_tempDir, "index.html");
         var input = "<html><head><title>App</title><base href=\"/\" /><meta /></head><body></body></html>";
         File.WriteAllText(path, input);
-        RewriteBaseHref(path, "/x/");
+        RewriteBaseHrefInAllHtml(_tempDir, "/x/");
         var output = File.ReadAllText(path);
         Assert.Contains("<title>App</title>", output);
         Assert.Contains("<meta />", output);
@@ -64,7 +61,27 @@ public class BuildCommandTests : IDisposable
     }
 
     [Fact]
-    public void CopyDirectory_CopiesNestedFiles()
+    public void RewriteBaseHref_WalksAllHtmlFilesRecursively()
+    {
+        var root = Path.Combine(_tempDir, "index.html");
+        var docs = Path.Combine(_tempDir, "docs", "introduction", "index.html");
+        var deep = Path.Combine(_tempDir, "docs", "cli", "build", "index.html");
+        Directory.CreateDirectory(Path.GetDirectoryName(docs)!);
+        Directory.CreateDirectory(Path.GetDirectoryName(deep)!);
+        File.WriteAllText(root, "<html><base href=\"/\" /></html>");
+        File.WriteAllText(docs, "<html><base href=\"/\" /></html>");
+        File.WriteAllText(deep, "<html><base href=\"/\" /></html>");
+
+        var count = RewriteBaseHrefInAllHtml(_tempDir, "/repo/");
+
+        Assert.Equal(3, count);
+        Assert.Contains("<base href=\"/repo/\" />", File.ReadAllText(root));
+        Assert.Contains("<base href=\"/repo/\" />", File.ReadAllText(docs));
+        Assert.Contains("<base href=\"/repo/\" />", File.ReadAllText(deep));
+    }
+
+    [Fact]
+    public void CopyDirectoryMerging_CopiesNestedFiles()
     {
         var src = Path.Combine(_tempDir, "src");
         var dst = Path.Combine(_tempDir, "dst");
@@ -73,7 +90,7 @@ public class BuildCommandTests : IDisposable
         File.WriteAllText(Path.Combine(src, "sub", "mid.txt"), "mid");
         File.WriteAllText(Path.Combine(src, "sub", "deep", "leaf.txt"), "leaf");
 
-        CopyDirectory(src, dst);
+        CopyDirectoryMerging(src, dst);
 
         Assert.Equal("root", File.ReadAllText(Path.Combine(dst, "root.txt")));
         Assert.Equal("mid",  File.ReadAllText(Path.Combine(dst, "sub", "mid.txt")));
@@ -81,17 +98,35 @@ public class BuildCommandTests : IDisposable
     }
 
     [Fact]
-    public void CopyDirectory_OverwritesExistingFiles()
+    public void CopyDirectoryMerging_DoesNotOverwriteExistingFiles()
+    {
+        // Prerendered HTML in output/ must survive the wwwroot merge on top.
+        var src = Path.Combine(_tempDir, "src");
+        var dst = Path.Combine(_tempDir, "dst");
+        Directory.CreateDirectory(src);
+        Directory.CreateDirectory(dst);
+        File.WriteAllText(Path.Combine(src, "index.html"), "asset-version");
+        File.WriteAllText(Path.Combine(dst, "index.html"), "prerendered-version");
+
+        CopyDirectoryMerging(src, dst);
+
+        Assert.Equal("prerendered-version", File.ReadAllText(Path.Combine(dst, "index.html")));
+    }
+
+    [Fact]
+    public void CopyDirectoryMerging_CopiesMissingFilesEvenWhenSomeExist()
     {
         var src = Path.Combine(_tempDir, "src");
         var dst = Path.Combine(_tempDir, "dst");
         Directory.CreateDirectory(src);
         Directory.CreateDirectory(dst);
-        File.WriteAllText(Path.Combine(src, "a.txt"), "new");
-        File.WriteAllText(Path.Combine(dst, "a.txt"), "old");
+        File.WriteAllText(Path.Combine(src, "a.txt"), "src-a");
+        File.WriteAllText(Path.Combine(src, "b.txt"), "src-b");
+        File.WriteAllText(Path.Combine(dst, "a.txt"), "dst-a");
 
-        CopyDirectory(src, dst);
+        CopyDirectoryMerging(src, dst);
 
-        Assert.Equal("new", File.ReadAllText(Path.Combine(dst, "a.txt")));
+        Assert.Equal("dst-a", File.ReadAllText(Path.Combine(dst, "a.txt")));
+        Assert.Equal("src-b", File.ReadAllText(Path.Combine(dst, "b.txt")));
     }
 }

@@ -63,6 +63,10 @@ public class NavigationGraph
         return FlattenFrom(Root);
     }
 
+    // Visible + hidden pages. Static prerender needs both — hidden pages
+    // still route at runtime.
+    public IEnumerable<string> AllUrls => _byUrl.Keys;
+
     private static IEnumerable<NavigationNode> FlattenFrom(NavigationNode node)
     {
         yield return node;
