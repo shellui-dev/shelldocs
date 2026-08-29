@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Rendering;
 using ShellDocs.Markdown;
@@ -82,15 +83,92 @@ internal static class SlotRenderer
         }
         if (!string.IsNullOrWhiteSpace(childContentRaw))
         {
-            dict["ChildContent"] = FromMarkup(renderer, childContentRaw);
+            // Route direct-child tags whose name matches a RenderFragment
+            // param (other than ChildContent) into that named slot. Any
+            // remaining text becomes ChildContent. Lets authors write
+            // <Alert><Icon><svg/></Icon>Body</Alert> and have <Icon>'s
+            // inner content routed to Alert.Icon instead of being flattened
+            // into the ChildContent stream.
+            var slotNames = props
+                .Where(kv => kv.Key != "ChildContent" && typeof(RenderFragment).IsAssignableFrom(kv.Value.PropertyType))
+                .Select(kv => kv.Key)
+                .ToHashSet(StringComparer.Ordinal);
+
+            var remaining = childContentRaw;
+            if (slotNames.Count > 0)
+            {
+                foreach (var slotName in slotNames)
+                {
+                    var extracted = ExtractNamedSlot(remaining, slotName);
+                    if (extracted.Content is not null)
+                    {
+                        dict[slotName] = FromMarkup(renderer, extracted.Content);
+                        remaining = extracted.Remaining;
+                    }
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(remaining))
+                dict["ChildContent"] = FromMarkup(renderer, remaining);
+
             /* If the target declares a ChildContentSource [Parameter] (as
                ComponentPreview does for reconstructing its source view),
                pass the raw markup through unchanged in addition to the
-               RenderFragment above. */
+               RenderFragments above. */
             if (props.ContainsKey("ChildContentSource"))
                 dict["ChildContentSource"] = childContentRaw;
         }
         return dict;
+    }
+
+    // Finds `<TagName>...</TagName>` (balanced) or `<TagName />` in `text`
+    // and returns its inner content + `text` with that occurrence removed.
+    // Only the first occurrence is extracted; multi-instance named slots
+    // aren't a common pattern.
+    private static (string? Content, string Remaining) ExtractNamedSlot(string text, string tagName)
+    {
+        var open = Regex.Match(text, $@"<{Regex.Escape(tagName)}(?<attrs>\s[^>]*?)?\s*(?<self>/)?>");
+        if (!open.Success) return (null, text);
+
+        if (open.Groups["self"].Success)
+        {
+            // Self-closing → empty content, remove the tag.
+            var head = text.Substring(0, open.Index);
+            var tail = text.Substring(open.Index + open.Length);
+            return ("", head + tail);
+        }
+
+        // Find matching close, tracking nested opens of the same name.
+        var closeName = Regex.Escape(tagName);
+        var scanFrom = open.Index + open.Length;
+        var depth = 1;
+        var openRe = new Regex($@"<{closeName}(\s[^>]*?)?\s*(?<self>/)?>");
+        var closeRe = new Regex($@"</{closeName}\s*>");
+        while (depth > 0)
+        {
+            var nextOpen = openRe.Match(text, scanFrom);
+            var nextClose = closeRe.Match(text, scanFrom);
+            if (!nextClose.Success) return (null, text);
+            if (nextOpen.Success && nextOpen.Index < nextClose.Index)
+            {
+                if (!nextOpen.Groups["self"].Success) depth++;
+                scanFrom = nextOpen.Index + nextOpen.Length;
+            }
+            else
+            {
+                depth--;
+                if (depth == 0)
+                {
+                    var innerStart = open.Index + open.Length;
+                    var inner = text.Substring(innerStart, nextClose.Index - innerStart);
+                    var head = text.Substring(0, open.Index);
+                    var tail = text.Substring(nextClose.Index + nextClose.Length);
+                    return (inner, head + tail);
+                }
+                scanFrom = nextClose.Index + nextClose.Length;
+            }
+        }
+        return (null, text);
     }
 
     private static readonly Dictionary<Type, Dictionary<string, PropertyInfo>> _propCache = new();
