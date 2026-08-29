@@ -10,6 +10,10 @@ public class ShellDocsOptions
     public string SiteName { get; set; } = "";
     public string? SiteTagline { get; set; }
     public string? GitHubRepo { get; set; }
+    // Absolute base URL, e.g. "https://shelldocs.dev". Consumed by
+    // `shelldocs build` to emit sitemap.xml, robots.txt, and og:url meta.
+    // Skip those artifacts silently when unset.
+    public string? SiteUrl { get; set; }
 
     public string? LogoLight { get; set; }
     public string? LogoDark { get; set; }
