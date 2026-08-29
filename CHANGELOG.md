@@ -4,6 +4,33 @@ All notable changes to ShellDocs land here. Format follows [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [0.1.6-alpha] — 2026-08-22
+
+Three authoring / SEO features that stack together to make writing per-component docs and shipping a public site substantially less manual.
+
+### Added
+
+- **`<AutoTypeTable Component="Name" />` primitive.** Renders a full props table for any registered component by reflecting on its `[Parameter]` properties. Reads type (compact C#-ish rendering including nullability and generic args), default (from `[DefaultValue]` or from instantiating the type and reading the property), required flag (from `[EditorRequired]`), and description (from XML doc `<summary>` on the property, loaded from the sidecar `<Assembly>.xml` next to the DLL). Replaces the "hand-copy every prop into `<TypeRow>`" pattern that every consumer was doing today. Existing `<TypeTable>` / `<TypeRow>` stay for cases where hand curation is preferable.
+- **Named `RenderFragment` slots in `razor:preview` fences and inline component tags.** Direct-child tags whose name matches a target component's `[Parameter] RenderFragment` prop now route into that named slot instead of being flattened into `ChildContent`. Authors can finally write compositional previews:
+  ```razor
+  <Alert Title="Heads up">
+    <Icon><svg>…</svg></Icon>
+    Body text.
+    <Footer>Small print.</Footer>
+  </Alert>
+  ```
+  and have `<Icon>` render into `Alert.Icon`, `<Footer>` into `Alert.Footer`, and the leftover text into `Alert.ChildContent`. Unblocks previewing every ShellUI-shaped component that uses named slots (Alert, Card, Sheet, Drawer, Tabs, Accordion, Dialog).
+- **`shelldocs build --site-url <https://example.com>` emits sitemap.xml + robots.txt + `og:*` meta tags on every prerendered page.** Sitemap enumerates every URL discovered by the prerender walk (visible + hidden). Robots allows all and points at the sitemap. Per-page `<meta property="og:title">` / `og:description` / `og:url` / `og:type` injected before `</head>` from the nav-graph node's title + description. All three artifacts are silently skipped when `--site-url` is unset — no accidental broken sitemaps in local dev builds.
+- **`ShellDocsOptions.SiteUrl`** — declared symmetrically with the CLI flag for consumers who prefer configuration-side declaration (currently informational; `shelldocs build --site-url` remains the mechanism the CLI consumes).
+
+### Changed
+
+- **`SlotRenderer.BuildParameters`** now walks the target's `[Parameter]` props once to extract `RenderFragment` names before falling back to the pre-fix `ChildContent`-only behavior. Backwards compatible — no named-slot tags in child content → identical output to before.
+
+### Notes
+
+`XmlDocIndex` caches per-assembly load once; concurrent consumer requests share the parsed dictionary. XML docs are optional — a component whose assembly ships without an `.xml` file just renders em-dash descriptions.
+
 ## [0.1.5-alpha] — 2026-08-22
 
 The `shelldocs build` output is now a real static site. Previously it copied `publish/wwwroot/` 1:1 — fine on paper, useless in practice for a Blazor Server scaffold, which produces no `index.html`, no client-side runtime, nothing a static host can serve at the root URL. Deploying the output to GH Pages / Cloudflare Pages / Netlify silently returned a blank shell. Now every URL the site knows about is prerendered at build time and the framework's static assets are merged on top.

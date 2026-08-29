@@ -1,0 +1,148 @@
+@namespace ShellDocs.Components.Content
+@using System.ComponentModel
+@using System.Reflection
+@using Microsoft.AspNetCore.Components
+@using ShellDocs.Markdown
+@inject TypeRegistry Registry
+
+@if (_target is null)
+{
+    <div class="type-table-wrap">
+        <table class="type-table">
+            <tbody>
+                <tr><td colspan="4" class="type-table-empty">Unknown component: <code>@Component</code></td></tr>
+            </tbody>
+        </table>
+    </div>
+}
+else
+{
+    <div class="type-table-wrap">
+        <table class="type-table">
+            <thead>
+                <tr>
+                    <th class="type-table-col-name">Prop</th>
+                    <th class="type-table-col-type">Type</th>
+                    <th class="type-table-col-default">Default</th>
+                    <th class="type-table-col-desc">Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (_rows.Count == 0)
+                {
+                    <tr><td colspan="4" class="type-table-empty">No [Parameter] props on <code>@Component</code>.</td></tr>
+                }
+                else
+                {
+                    @foreach (var row in _rows)
+                    {
+                        <tr>
+                            <td class="type-table-name">
+                                <code>@row.Name</code>
+                                @if (row.Required) { <span class="type-table-required" title="Required">Required</span> }
+                            </td>
+                            <td class="type-table-type"><code>@row.Type</code></td>
+                            <td class="type-table-default">
+                                @if (!string.IsNullOrEmpty(row.Default)) { <code>@row.Default</code> }
+                                else { <span class="type-table-muted">—</span> }
+                            </td>
+                            <td class="type-table-desc">
+                                @if (!string.IsNullOrEmpty(row.Description)) { @row.Description }
+                                else { <span class="type-table-muted">—</span> }
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public string? Component { get; set; }
+
+    private Type? _target;
+    private List<TypeRowInfo> _rows = new();
+
+    protected override void OnParametersSet()
+    {
+        _target = Component is null ? null : Registry.Resolve(Component);
+        _rows = _target is null ? new() : BuildRows(_target);
+    }
+
+    private static List<TypeRowInfo> BuildRows(Type target)
+    {
+        var rows = new List<TypeRowInfo>();
+        object? instance = null;
+        try { instance = Activator.CreateInstance(target); } catch { }
+
+        foreach (var prop in target.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+        {
+            if (prop.GetCustomAttribute<ParameterAttribute>() is null) continue;
+
+            var name = prop.Name;
+            var type = FormatType(prop.PropertyType);
+            var required = prop.GetCustomAttribute<EditorRequiredAttribute>() is not null;
+            var def = ReadDefault(prop, instance);
+            var desc = XmlDocIndex.SummaryFor(prop);
+            rows.Add(new TypeRowInfo(name, type, def, desc, required));
+        }
+        return rows;
+    }
+
+    // Compact C#-ish rendering: `string`, `string?`, `int`, `bool`, `RenderFragment?`,
+    // `IReadOnlyDictionary<string, object>?`. Enough signal for docs without dragging
+    // the full reflection namespace tree.
+    private static string FormatType(Type t)
+    {
+        var underlying = Nullable.GetUnderlyingType(t);
+        if (underlying is not null) return FormatType(underlying) + "?";
+        if (t == typeof(string)) return "string";
+        if (t == typeof(bool)) return "bool";
+        if (t == typeof(int)) return "int";
+        if (t == typeof(long)) return "long";
+        if (t == typeof(double)) return "double";
+        if (t == typeof(decimal)) return "decimal";
+        if (!t.IsValueType && t.Name == "String") return "string";
+
+        var isRefNullable = !t.IsValueType;
+        var name = ShortName(t);
+        if (t.IsGenericType)
+        {
+            var args = string.Join(", ", t.GetGenericArguments().Select(FormatType));
+            name = ShortName(t.GetGenericTypeDefinition()).Split('`')[0] + "<" + args + ">";
+        }
+        return isRefNullable ? name + "?" : name;
+    }
+
+    private static string ShortName(Type t) => t.Name;
+
+    private static string? ReadDefault(PropertyInfo prop, object? instance)
+    {
+        // Explicit [DefaultValue("...")] wins.
+        var dva = prop.GetCustomAttribute<DefaultValueAttribute>();
+        if (dva is not null) return FormatValue(dva.Value);
+
+        if (instance is null) return null;
+        object? value;
+        try { value = prop.GetValue(instance); }
+        catch { return null; }
+        if (value is null) return null;
+
+        // RenderFragment defaults are opaque — render as em-dash by returning null.
+        if (value is RenderFragment) return null;
+        var formatted = FormatValue(value);
+        // A `string.Empty` from an initializer isn't a meaningful default to show.
+        if (formatted == "\"\"") return null;
+        return formatted;
+    }
+
+    private static string FormatValue(object? v)
+    {
+        if (v is null) return "null";
+        if (v is string s) return "\"" + s + "\"";
+        if (v is bool b) return b ? "true" : "false";
+        if (v.GetType().IsEnum) return v.GetType().Name + "." + v;
+        return v.ToString() ?? "";
+    }
+}

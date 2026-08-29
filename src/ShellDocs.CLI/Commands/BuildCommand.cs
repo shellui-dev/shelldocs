@@ -7,7 +7,7 @@ namespace ShellDocs.CLI.Commands;
 
 internal static class BuildCommand
 {
-    public static int Run(string dir, string output, string? baseHref, bool spaFallback)
+    public static int Run(string dir, string output, string? baseHref, bool spaFallback, string? siteUrl = null)
     {
         var root = Path.GetFullPath(dir);
         var csproj = FindCsproj(root);
@@ -27,11 +27,13 @@ internal static class BuildCommand
 
         var outputAbs = Path.GetFullPath(Path.Combine(root, output));
         var publishStage = Path.Combine(root, "obj", "shelldocs-publish");
+        var normalizedSiteUrl = siteUrl?.TrimEnd('/');
 
         AnsiConsole.MarkupLine($"[dim]shelldocs build →[/] [cyan]{Path.GetFileName(csproj)}[/]");
         AnsiConsole.MarkupLine($"[dim]output:[/] [cyan]{outputAbs}[/]");
-        if (baseHref is not null)  AnsiConsole.MarkupLine($"[dim]base href:[/] [cyan]{baseHref}[/]");
-        if (spaFallback)           AnsiConsole.MarkupLine("[dim]spa fallback:[/] [cyan]index.html → 404.html[/]");
+        if (baseHref is not null)         AnsiConsole.MarkupLine($"[dim]base href:[/] [cyan]{baseHref}[/]");
+        if (spaFallback)                  AnsiConsole.MarkupLine("[dim]spa fallback:[/] [cyan]index.html → 404.html[/]");
+        if (normalizedSiteUrl is not null) AnsiConsole.MarkupLine($"[dim]site url:[/] [cyan]{normalizedSiteUrl}[/]");
         AnsiConsole.WriteLine();
 
         var publishExit = RunPublish(csproj, publishStage);
@@ -51,9 +53,10 @@ internal static class BuildCommand
 
         // Home ("/") is served by Home.razor and isn't part of NavigationGraph.
         var urls = new List<string> { "/" };
+        NavigationGraph? graph = null;
         try
         {
-            var graph = NavigationGraphBuilder.Build(contentRoot);
+            graph = NavigationGraphBuilder.Build(contentRoot);
             urls.AddRange(graph.AllUrls);
         }
         catch (Exception ex)
@@ -97,6 +100,14 @@ internal static class BuildCommand
                 File.Copy(rootIndex, Path.Combine(outputAbs, "404.html"), overwrite: true);
                 AnsiConsole.MarkupLine("[dim]spa fallback:[/] wrote 404.html");
             }
+        }
+
+        if (normalizedSiteUrl is not null && graph is not null)
+        {
+            WriteSitemap(outputAbs, normalizedSiteUrl, urls);
+            WriteRobots(outputAbs, normalizedSiteUrl);
+            var ogCount = InjectOgMeta(outputAbs, normalizedSiteUrl, graph);
+            AnsiConsole.MarkupLine($"[dim]seo:[/] sitemap.xml + robots.txt + og meta on [cyan]{ogCount}[/] page(s)");
         }
 
         try { Directory.Delete(publishStage, recursive: true); } catch { }
@@ -180,5 +191,70 @@ internal static class BuildCommand
     {
         var matches = Directory.GetFiles(dir, "*.csproj", SearchOption.TopDirectoryOnly);
         return matches.Length == 0 ? null : matches[0];
+    }
+
+    internal static void WriteSitemap(string outputDir, string siteUrl, IReadOnlyList<string> urls)
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+        sb.AppendLine("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">");
+        foreach (var url in urls.Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            var abs = siteUrl + (url.StartsWith('/') ? url : "/" + url);
+            sb.Append("  <url><loc>").Append(System.Net.WebUtility.HtmlEncode(abs)).AppendLine("</loc></url>");
+        }
+        sb.AppendLine("</urlset>");
+        File.WriteAllText(Path.Combine(outputDir, "sitemap.xml"), sb.ToString());
+    }
+
+    internal static void WriteRobots(string outputDir, string siteUrl)
+    {
+        var body = $"User-agent: *{Environment.NewLine}Allow: /{Environment.NewLine}Sitemap: {siteUrl}/sitemap.xml{Environment.NewLine}";
+        File.WriteAllText(Path.Combine(outputDir, "robots.txt"), body);
+    }
+
+    // Injects og:title / og:description / og:url / og:type into each prerendered
+    // HTML file's <head>, using titles + descriptions from the nav graph. Skips
+    // pages the graph doesn't know about (e.g. root "/" home page).
+    internal static int InjectOgMeta(string outputDir, string siteUrl, NavigationGraph graph)
+    {
+        var count = 0;
+        foreach (var url in graph.AllUrls)
+        {
+            var node = graph.ResolveByUrl(url);
+            if (node is null) continue;
+            var htmlPath = UrlToHtmlPath(outputDir, url);
+            if (!File.Exists(htmlPath)) continue;
+
+            var html = File.ReadAllText(htmlPath);
+            var absUrl = siteUrl + (url.StartsWith('/') ? url : "/" + url);
+            var meta = BuildOgBlock(node.Title, node.Description, absUrl);
+
+            var headClose = html.IndexOf("</head>", StringComparison.OrdinalIgnoreCase);
+            if (headClose < 0) continue;
+            var patched = html.Insert(headClose, meta);
+            File.WriteAllText(htmlPath, patched);
+            count++;
+        }
+        return count;
+    }
+
+    private static string BuildOgBlock(string? title, string? description, string absUrl)
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.Append("    <meta property=\"og:type\" content=\"article\" />").Append(Environment.NewLine);
+        sb.Append("    <meta property=\"og:url\" content=\"").Append(System.Net.WebUtility.HtmlEncode(absUrl)).Append("\" />").Append(Environment.NewLine);
+        if (!string.IsNullOrWhiteSpace(title))
+            sb.Append("    <meta property=\"og:title\" content=\"").Append(System.Net.WebUtility.HtmlEncode(title)).Append("\" />").Append(Environment.NewLine);
+        if (!string.IsNullOrWhiteSpace(description))
+            sb.Append("    <meta property=\"og:description\" content=\"").Append(System.Net.WebUtility.HtmlEncode(description)).Append("\" />").Append(Environment.NewLine);
+        return sb.ToString();
+    }
+
+    private static string UrlToHtmlPath(string outputDir, string url)
+    {
+        var trimmed = url.Trim('/');
+        if (string.IsNullOrEmpty(trimmed)) return Path.Combine(outputDir, "index.html");
+        return Path.Combine(outputDir, Path.Combine(trimmed.Split('/')), "index.html");
     }
 }

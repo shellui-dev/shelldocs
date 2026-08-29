@@ -131,16 +131,21 @@ internal class Program
         {
             Description = "Copy index.html → 404.html so client-side routes survive on GH Pages."
         };
+        var siteUrl = new Option<string?>("--site-url")
+        {
+            Description = "Absolute site URL (e.g. \"https://shelldocs.dev\"). Enables sitemap.xml, robots.txt, and og: meta tags."
+        };
         var cmd = new Command("build", "Produce a static site ready for GH Pages / Cloudflare / S3.")
         {
-            dir, output, baseHref, spaFallback
+            dir, output, baseHref, spaFallback, siteUrl
         };
         cmd.SetAction(pr =>
             BuildCommand.Run(
                 pr.GetValue(dir) ?? Directory.GetCurrentDirectory(),
                 pr.GetValue(output) ?? "publish",
                 pr.GetValue(baseHref),
-                pr.GetValue(spaFallback)));
+                pr.GetValue(spaFallback),
+                pr.GetValue(siteUrl)));
         return cmd;
     }
 
