@@ -3,9 +3,10 @@
 @using System.Text
 @using ShellDocs.Markdown
 @inject TypeRegistry Registry
-@inject IJSRuntime JS
 
-<div class="component-preview @(_showSource ? "expanded" : "collapsed")">
+@* Source-view expand/collapse + copy handled by shelldocs.js — same JS
+   delegation that PreviewFrame uses. Works on static-prerender deploys. *@
+<div class="component-preview collapsed">
     <div class="component-preview-render">
         @if (_target is not null && _targetParams is not null)
         {
@@ -19,29 +20,17 @@
         }
     </div>
     <div class="component-preview-source-wrap">
-        <pre class="component-preview-source language-razor" @ref="_sourceEl"><code class="language-razor">@_source</code></pre>
-        @if (!_showSource)
-        {
-            <div class="component-preview-fade">
-                <button type="button" class="component-preview-expand" @onclick="Show">View source</button>
-            </div>
-        }
-        else
-        {
-            <div class="component-preview-actions">
-                <button type="button" class="component-preview-copy @(_copied ? "copied" : "")" @onclick="Copy" aria-label="Copy source">
-                    @if (_copied)
-                    {
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                    }
-                    else
-                    {
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                    }
-                </button>
-                <button type="button" class="component-preview-hide" @onclick="Hide">Hide</button>
-            </div>
-        }
+        <pre class="component-preview-source language-razor"><code class="language-razor">@_source</code></pre>
+        <div class="component-preview-fade">
+            <button type="button" class="component-preview-expand" data-preview-toggle="expand">View source</button>
+        </div>
+        <div class="component-preview-actions">
+            <button type="button" class="component-preview-copy" data-preview-copy aria-label="Copy source">
+                <svg class="icon-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                <svg class="icon-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </button>
+            <button type="button" class="component-preview-hide" data-preview-toggle="collapse">Hide</button>
+        </div>
     </div>
 </div>
 
@@ -57,10 +46,6 @@
     private Type? _target;
     private IDictionary<string, object>? _targetParams;
     private string? _source;
-    private bool _showSource;
-    private bool _copied;
-    private bool _highlighted;
-    private ElementReference _sourceEl;
 
     protected override void OnParametersSet()
     {
@@ -107,32 +92,5 @@
             sb.Append('>').Append(body).Append("</").Append(Component).Append('>');
         }
         return sb.ToString();
-    }
-
-    private void Show() => _showSource = true;
-    private void Hide() => _showSource = false;
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender && !_highlighted && _source is not null)
-        {
-            _highlighted = true;
-            try { await JS.InvokeVoidAsync("shelldocsHighlightElement", _sourceEl); } catch { }
-        }
-    }
-
-    private async Task Copy()
-    {
-        if (_source is null) return;
-        try
-        {
-            await JS.InvokeVoidAsync("navigator.clipboard.writeText", _source);
-            _copied = true;
-            StateHasChanged();
-            await Task.Delay(1400);
-            _copied = false;
-            StateHasChanged();
-        }
-        catch { }
     }
 }
