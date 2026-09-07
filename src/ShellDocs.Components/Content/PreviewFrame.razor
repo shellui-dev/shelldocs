@@ -2,7 +2,10 @@
 @attribute [ShellDocsIgnore]
 @inject MarkdownRenderer Renderer
 
-<div class="preview-frame @(_expanded ? "expanded" : "collapsed")">
+@* Expand/collapse of the source region is handled by shelldocs.js — delegated
+   click on [data-preview-toggle] toggles the expanded/collapsed class on the
+   ancestor .preview-frame. Works without a live Blazor runtime. *@
+<div class="preview-frame collapsed">
     <div class="preview-render">
         @if (Preview!.ComponentType is not null)
         {
@@ -11,7 +14,6 @@
         }
         else
         {
-           
             <div class="preview-error" role="alert">
                 <svg class="preview-error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                 <div class="preview-error-body">
@@ -22,69 +24,22 @@
         }
     </div>
     <div class="preview-code-wrap">
-        <pre class="preview-code language-razor" @ref="_codeEl"><code class="language-razor">@Preview!.Code</code></pre>
-        @if (!_expanded)
-        {
-            <div class="preview-fade">
-                <button type="button" class="preview-expand" @onclick="Expand">View Code</button>
-            </div>
-        }
-        else
-        {
-            <div class="preview-code-actions">
-                <button type="button" class="preview-copy @(_copied ? "copied" : "")" @onclick="Copy" aria-label="Copy code">
-                    @if (_copied)
-                    {
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                    }
-                    else
-                    {
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                    }
-                </button>
-                <button type="button" class="preview-collapse" @onclick="Collapse">Collapse</button>
-            </div>
-        }
+        <pre class="preview-code language-razor"><code class="language-razor">@Preview!.Code</code></pre>
+        <div class="preview-fade">
+            <button type="button" class="preview-expand" data-preview-toggle="expand">View Code</button>
+        </div>
+        <div class="preview-code-actions">
+            <button type="button" class="preview-copy" data-preview-copy aria-label="Copy code">
+                <svg class="icon-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                <svg class="icon-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </button>
+            <button type="button" class="preview-collapse" data-preview-toggle="collapse">Collapse</button>
+        </div>
     </div>
 </div>
 
 @code {
     [Parameter, EditorRequired] public PreviewSlot Preview { get; set; } = default!;
-
-    private bool _expanded;
-    private bool _copied;
-    private bool _highlighted;
-    private ElementReference _codeEl;
-
-    private void Expand() => _expanded = true;
-    private void Collapse() => _expanded = false;
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        /* Highlight once; the highlighted DOM stays put whether collapsed or
-           expanded (max-height clips it visually, no diff churn). */
-        if (firstRender && !_highlighted)
-        {
-            _highlighted = true;
-            try { await JS.InvokeVoidAsync("shelldocsHighlightElement", _codeEl); } catch { }
-        }
-    }
-
-    private async Task Copy()
-    {
-        try
-        {
-            await JS.InvokeVoidAsync("navigator.clipboard.writeText", Preview.Code);
-            _copied = true;
-            StateHasChanged();
-            await Task.Delay(1400);
-            _copied = false;
-            StateHasChanged();
-        }
-        catch { }
-    }
-
-    [Inject] private IJSRuntime JS { get; set; } = default!;
 
     /* Only called from the render-region branch guarded by
        `Preview!.ComponentType is not null`, so the ! here is a safe assertion

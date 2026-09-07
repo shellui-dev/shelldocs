@@ -4,6 +4,31 @@ All notable changes to ShellDocs land here. Format follows [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [0.1.7-alpha] — 2026-09-06
+
+Fixes the interactivity gap the `0.1.5-alpha` static-prerender pipeline opened up. Four chrome interactions (sidebar section expand/collapse, package selector dropdown, TableOfContents scroll-spy, PreviewFrame source view) were written as ordinary interactive Razor components with `@onclick` handlers that mutate `[Parameter] bool` state and re-render via `StateHasChanged()`. Prerendered HTML captured only the initial state; on a static host with no Blazor runtime, every one of those interactions was dead on the deployed site.
+
+The `0.1.5-alpha` CHANGELOG glossed this as "SignalR-backed component state doesn't survive the static build — but a docs site doesn't need it." That was wrong. A docs site's primary navigation surface is the sidebar; if you can't expand a section, you can't reach the pages under it.
+
+### Fixed
+
+- **Sidebar section expand/collapse works on static-hosted builds.** `DocsSidebarNode.razor` no longer routes clicks through Blazor's `@onclick="Toggle"` + `_isOpen` state. Instead, `shelldocs.js` attaches a delegated `click` listener on `.sidebar-section-toggle` and flips `[data-open]` on the ancestor `.sidebar-section` and its `.sidebar-section-shell` child. The initial `[data-open]` value (from `OnParametersSet`'s active-path check) still comes from server rendering — so the ancestor of the current page pre-expands correctly on first paint. CSS unchanged; it already selected on `[data-open]` for both the chevron rotate and the grid-rows animation.
+- **Package selector dropdown opens/closes on static-hosted builds.** `PackageSelector.razor` always renders the `.pkg-menu` now (previously conditional on `_open`); CSS hides it under `display: none` unless `.pkg[data-open="true"]`. Delegated JS handler on `.pkg-trigger` flips `[data-open]`; outside-click closes any open menu. Options are plain `<a href={RootUrl}>` — native navigation, no Blazor round-trip.
+- **TableOfContents scroll-spy attaches on static-hosted builds.** Removed the `OnAfterRenderAsync` → `shelldocsToc.attach` invocation (which only fires with a live Blazor runtime). TOC list now emits `[data-toc-list]` + `[data-toc-ids="id1,id2,..."]`; `shelldocs.js` scans for these on `DOMContentLoaded` and after Blazor `enhancedload` and calls `shelldocsToc.attach` itself. Anchor click uses native `href="#id"` navigation.
+- **`PreviewFrame` and `ComponentPreview` source-view expand/collapse work on static-hosted builds.** Removed `@onclick="Expand"` / `Collapse` / `Show` / `Hide` and the `_expanded` / `_showSource` state fields. Buttons carry `data-preview-toggle="expand|collapse"`; `shelldocs.js` toggles the same `.expanded` / `.collapsed` classes the Blazor state used to toggle. The copy button follows the same pattern (`[data-preview-copy]`).
+
+### Notes
+
+Every one of these interactions still works under a live Blazor runtime — the DOM emits the same initial state Blazor's rendering produced; JS mutations happen on top. Delegated document-level click listeners survive Blazor's enhanced-nav DOM swap without re-attaching; only the TOC scroll-spy needs re-init on `enhancedload` because heading IDs change per page.
+
+### Removed
+
+- `DocsSidebarNode.Toggle()` method — click handling is JS-side now.
+- `PackageSelector._open` state, `Toggle()`, `Choose()`, `OnBlur()` — same reason; navigation is plain anchor.
+- `TableOfContents._handle` / `_sig` / `Scroll()` and the `IJSObjectReference` / `IAsyncDisposable` machinery — scroll-spy attaches from JS, scroll-to uses native anchor.
+- `PreviewFrame._expanded` / `_copied` / `_highlighted` / `_codeEl` / `Expand()` / `Collapse()` / `Copy()` — all JS-side.
+- `ComponentPreview._showSource` / `_copied` / `_highlighted` / `_sourceEl` / `Show()` / `Hide()` / `Copy()` — same.
+
 ## [0.1.6-alpha] — 2026-08-22
 
 Three authoring / SEO features that stack together to make writing per-component docs and shipping a public site substantially less manual.

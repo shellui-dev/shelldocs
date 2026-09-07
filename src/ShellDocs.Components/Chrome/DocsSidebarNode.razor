@@ -11,7 +11,10 @@ else if (Node.Kind == NodeKind.Section)
         {
             @if (_isToggleable)
             {
-                <button type="button" class="sidebar-section-label sidebar-section-toggle" @onclick="Toggle" aria-expanded="@_isOpen">
+                @* Click handling lives in shelldocs.js — delegated document
+                   listener flips data-open on the ancestor .sidebar-section.
+                   Works on both live-Blazor and static-prerender deploys. *@
+                <button type="button" class="sidebar-section-label sidebar-section-toggle" aria-expanded="@_isOpen">
                     @RenderLabelInner()
                     <svg class="sidebar-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
                 </button>
@@ -92,7 +95,8 @@ else
         _lastPath = CurrentPath;
     }
 
-    private void Toggle() => _isOpen = !_isOpen;
+    // Toggle handled by shelldocs.js — kept as a no-op just in case the
+    // Blazor lifecycle re-renders and needs the initial state stable.
 
     private static bool ContainsPath(NavigationNode node, string path)
     {

@@ -69,12 +69,18 @@
     box-shadow: 0 12px 32px -8px rgb(0 0 0 / 0.18), 0 4px 12px -4px rgb(0 0 0 / 0.06);
     padding: 0.35rem;
     z-index: 30;
-    display: flex;
+    /* Always rendered so shelldocs.js can toggle visibility via [data-open]
+       on the parent .pkg without needing a Blazor re-render. */
+    display: none;
     flex-direction: column;
     gap: 0.15rem;
     max-height: 22rem;
     overflow-y: auto;
 }
+.pkg[data-open="true"] .pkg-menu { display: flex; }
+
+/* Anchor variant of .pkg-option — same styling as the old <button> variant. */
+a.pkg-option { text-decoration: none; }
 
 .pkg-option {
     display: flex;
