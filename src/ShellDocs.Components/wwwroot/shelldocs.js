@@ -222,3 +222,126 @@ window.shelldocsToc = {
         }
     }
 };
+
+/* Chrome interactivity for static-host deploys. Without a live Blazor runtime,
+   component @onclick handlers never fire — sidebar sections don't expand, the
+   package selector dropdown doesn't open, the TOC scroll-spy never attaches,
+   the PreviewFrame "View Code" button is dead. This module wires each of those
+   to plain JS on top of the prerendered DOM. Same behavior, no runtime needed.
+
+   Delegated document-level click handlers so they survive Blazor enhanced-nav
+   DOM swaps without re-attaching. State lives on data-* attributes or on the
+   same CSS classes Blazor used to toggle — CSS unchanged. */
+window.shelldocsChrome = (function () {
+    // Sidebar section expand/collapse.
+    function onSidebarClick(e) {
+        var btn = e.target.closest('.sidebar-section-toggle');
+        if (!btn) return;
+        var section = btn.closest('.sidebar-section');
+        if (!section) return;
+        var open = section.getAttribute('data-open') === 'true';
+        var next = open ? 'false' : 'true';
+        section.setAttribute('data-open', next);
+        btn.setAttribute('aria-expanded', next);
+        var shell = section.querySelector(':scope > .sidebar-section-shell');
+        if (shell) shell.setAttribute('data-open', next);
+    }
+
+    // Package selector dropdown. Click trigger to open/close, click outside to close.
+    function onPackageClick(e) {
+        var trigger = e.target.closest('.pkg-trigger');
+        var openPkg = document.querySelector('.pkg[data-open="true"]');
+
+        if (trigger) {
+            var pkg = trigger.closest('.pkg');
+            if (!pkg) return;
+            var isOpen = pkg.getAttribute('data-open') === 'true';
+            if (openPkg && openPkg !== pkg) closePkg(openPkg);
+            pkg.setAttribute('data-open', isOpen ? 'false' : 'true');
+            trigger.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+            var chevron = pkg.querySelector('.pkg-chevron');
+            if (chevron) chevron.classList.toggle('open', !isOpen);
+            return;
+        }
+
+        if (openPkg && !e.target.closest('.pkg-menu')) closePkg(openPkg);
+    }
+
+    function closePkg(pkg) {
+        pkg.setAttribute('data-open', 'false');
+        var trigger = pkg.querySelector('.pkg-trigger');
+        if (trigger) trigger.setAttribute('aria-expanded', 'false');
+        var chevron = pkg.querySelector('.pkg-chevron');
+        if (chevron) chevron.classList.remove('open');
+    }
+
+    // PreviewFrame + ComponentPreview source expand/collapse + copy.
+    function onPreviewClick(e) {
+        var toggle = e.target.closest('[data-preview-toggle]');
+        if (toggle) {
+            var mode = toggle.getAttribute('data-preview-toggle');
+            var frame = toggle.closest('.preview-frame, .component-preview');
+            if (!frame) return;
+            var expand = mode === 'expand';
+            frame.classList.toggle('expanded', expand);
+            frame.classList.toggle('collapsed', !expand);
+            return;
+        }
+
+        var copy = e.target.closest('[data-preview-copy]');
+        if (copy) {
+            var frame = copy.closest('.preview-frame, .component-preview');
+            if (!frame) return;
+            var code = frame.querySelector('pre code');
+            if (!code) return;
+            var text = code.innerText;
+            var writeText = navigator.clipboard && navigator.clipboard.writeText
+                ? navigator.clipboard.writeText(text)
+                : Promise.reject(new Error('clipboard unavailable'));
+            writeText.then(function () {
+                copy.classList.add('copied');
+                setTimeout(function () { copy.classList.remove('copied'); }, 1400);
+            }).catch(function () { /* silent */ });
+        }
+    }
+
+    // TOC scroll-spy auto-attach. Called both at boot and on enhancedload
+    // (Blazor swaps the DOM on route change → previous handle is stale).
+    function initToc() {
+        document.querySelectorAll('[data-toc-list]').forEach(function (list) {
+            if (list.__tocHandle) {
+                try { list.__tocHandle.dispose(); } catch (e) {}
+                list.__tocHandle = null;
+            }
+            var raw = list.getAttribute('data-toc-ids') || '';
+            var ids = raw.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+            if (ids.length === 0) return;
+            list.__tocHandle = window.shelldocsToc.attach(list, ids);
+        });
+    }
+
+    var delegatesAttached = false;
+    function attachDelegates() {
+        if (delegatesAttached) return;
+        delegatesAttached = true;
+        document.addEventListener('click', onSidebarClick);
+        document.addEventListener('click', onPackageClick);
+        document.addEventListener('click', onPreviewClick);
+    }
+
+    function boot() {
+        attachDelegates();
+        initToc();
+    }
+
+    if (document.readyState !== 'loading') {
+        boot();
+    } else {
+        document.addEventListener('DOMContentLoaded', boot);
+    }
+    // Blazor enhanced-nav swaps DOM but leaves document-attached listeners intact.
+    // TOC needs re-attach because heading IDs change per page.
+    document.addEventListener('enhancedload', initToc);
+
+    return { initToc: initToc };
+})();
