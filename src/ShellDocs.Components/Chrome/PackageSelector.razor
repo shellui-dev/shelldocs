@@ -1,51 +1,50 @@
 @inject NavigationManager Nav
 @inject ShellDocsOptions Options
 
+@* Dropdown open/close handled by shelldocs.js — delegated click on
+   .pkg-trigger flips [data-open] on the .pkg root; outside-click closes.
+   Menu is always rendered; CSS hides it unless [data-open="true"]. *@
 @if (Options.Packages.Count > 1)
 {
-    <div class="pkg" @onfocusout="OnBlur">
-        <button type="button" class="pkg-trigger" @onclick="Toggle" aria-haspopup="listbox" aria-expanded="@_open">
+    <div class="pkg" data-open="false">
+        <button type="button" class="pkg-trigger" aria-haspopup="listbox" aria-expanded="false">
             <span class="pkg-mark">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
                     <path d="@(Selected.IconPath ?? DefaultIcon)"/>
                 </svg>
             </span>
             <span class="pkg-value">@Selected.Title</span>
-            <svg class="pkg-chevron @(_open ? "open" : "")" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg class="pkg-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="6 9 12 15 18 9"/>
             </svg>
         </button>
 
-        @if (_open)
-        {
-            <div class="pkg-menu" role="listbox">
-                @foreach (var pkg in Options.Packages)
-                {
-                    var isSel = pkg.Id == Selected.Id;
-                    <button type="button" class="pkg-option @(isSel ? "selected" : "")" role="option" aria-selected="@isSel" @onclick="() => Choose(pkg)">
-                        <span class="pkg-option-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="@(pkg.IconPath ?? DefaultIcon)"/>
-                            </svg>
-                        </span>
-                        <span class="pkg-option-body">
-                            <span class="pkg-option-title">@pkg.Title</span>
-                            <span class="pkg-option-desc">@pkg.Description</span>
-                        </span>
-                        @if (isSel)
-                        {
-                            <svg class="pkg-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                        }
-                    </button>
-                }
-            </div>
-        }
+        <div class="pkg-menu" role="listbox">
+            @foreach (var pkg in Options.Packages)
+            {
+                var isSel = pkg.Id == Selected.Id;
+                @* Plain <a> — native navigation, no Blazor round-trip. *@
+                <a class="pkg-option @(isSel ? "selected" : "")" role="option" aria-selected="@isSel" href="@pkg.RootUrl">
+                    <span class="pkg-option-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="@(pkg.IconPath ?? DefaultIcon)"/>
+                        </svg>
+                    </span>
+                    <span class="pkg-option-body">
+                        <span class="pkg-option-title">@pkg.Title</span>
+                        <span class="pkg-option-desc">@pkg.Description</span>
+                    </span>
+                    @if (isSel)
+                    {
+                        <svg class="pkg-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    }
+                </a>
+            }
+        </div>
     </div>
 }
 
 @code {
-    private bool _open;
-
     private const string DefaultIcon = "M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z M3.27 6.96 12 12.01l8.73-5.05 M12 22.08V12";
 
     // Longest RootUrl prefix wins — "/docs/components" beats "/docs" for "/docs/components/callout".
@@ -61,14 +60,4 @@
                 ?? Options.Packages[0];
         }
     }
-
-    private void Toggle() => _open = !_open;
-
-    private void Choose(DocsPackage pkg)
-    {
-        _open = false;
-        Nav.NavigateTo(pkg.RootUrl);
-    }
-
-    private void OnBlur(FocusEventArgs _) { /* closes via next click cycle */ }
 }
