@@ -48,7 +48,7 @@ internal class SlotExtractor
 
             if (lang == "razor:preview" || lang.StartsWith("razor:preview "))
             {
-                var preview = TryBuildPreviewSlot(body, warnings);
+                var preview = TryBuildPreviewSlot(body, warnings, PreviewLayout(lang));
                 if (preview is not null)
                 {
                     slots.Add(preview);
@@ -129,7 +129,14 @@ internal class SlotExtractor
         return result.ToString();
     }
 
-    private PreviewSlot? TryBuildPreviewSlot(string code, List<string> warnings)
+    // `razor:preview stretch` lets block-level examples fill the frame.
+    private static string? PreviewLayout(string lang)
+    {
+        var words = lang["razor:preview".Length..].Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return words.Contains("stretch", StringComparer.OrdinalIgnoreCase) ? "stretch" : null;
+    }
+
+    private PreviewSlot? TryBuildPreviewSlot(string code, List<string> warnings, string? layout)
     {
         var parser = new PreviewParser(_registry, warnings);
         var nodes = parser.Parse(code);
@@ -137,7 +144,7 @@ internal class SlotExtractor
         if (parser.FirstComponent is { } first)
         {
             return new PreviewSlot(NewSlotId(), first.ComponentType, first.Parameters, code, "razor",
-                first.ChildContentRaw, Nodes: nodes);
+                first.ChildContentRaw, Nodes: nodes, Layout: layout);
         }
 
         if (parser.FirstUnknown is { } unknown)

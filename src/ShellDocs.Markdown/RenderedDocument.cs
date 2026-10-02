@@ -18,6 +18,7 @@ public record ComponentSlot(
 
 // Nodes is the whole fence in order and is what PreviewFrame renders; the other
 // fields describe the first registered component (or the first unknown tag on Error).
+// Layout comes from the fence info string (```razor:preview stretch).
 public record PreviewSlot(
     string Id,
     Type? ComponentType,
@@ -26,7 +27,8 @@ public record PreviewSlot(
     string Language,
     string? ChildContentRaw = null,
     string? Error = null,
-    IReadOnlyList<PreviewNode>? Nodes = null) : Slot(Id);
+    IReadOnlyList<PreviewNode>? Nodes = null,
+    string? Layout = null) : Slot(Id);
 
 // Parsed razor:preview content. Component children stay raw (ChildContentRaw)
 // so they go through the same markdown + named-slot path as inline tags.

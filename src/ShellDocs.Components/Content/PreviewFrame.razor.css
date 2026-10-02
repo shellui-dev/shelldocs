@@ -29,6 +29,13 @@
             transparent 1px, transparent 8px);
 }
 
+/* Stretch: one column, children take the frame's width. */
+.preview-render[data-layout="stretch"] {
+    flex-direction: column;
+    align-items: stretch;
+    flex-wrap: nowrap;
+}
+
 .preview-error {
     display: flex;
     align-items: flex-start;
