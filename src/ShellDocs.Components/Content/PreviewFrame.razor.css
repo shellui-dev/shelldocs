@@ -18,6 +18,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    /* An example wider than the frame starts at the left edge instead of losing both sides. */
+    justify-content: safe center;
     gap: 1rem;
     flex-wrap: wrap;
     min-height: 12rem;
@@ -30,6 +32,12 @@
 }
 
 /* Stretch: one column, children take the frame's width. */
+/* Scroll: an example wider than the frame scrolls inside it instead of spilling
+   past it. A scroll box clips absolutely positioned popovers, so it's opt-in. */
+.preview-render[data-layout="scroll"] {
+    overflow-x: auto;
+}
+
 .preview-render[data-layout="stretch"] {
     flex-direction: column;
     align-items: stretch;
@@ -231,4 +239,6 @@
 
 @media (max-width: 480px) {
     .preview-tab span { display: none; }
+    /* Phones: give the example the width; 1.5rem a side leaves little room for an OTP row. */
+    .preview-render { padding: 1.5rem 0.75rem; min-height: 10rem; }
 }

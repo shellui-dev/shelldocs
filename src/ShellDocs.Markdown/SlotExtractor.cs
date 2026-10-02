@@ -129,11 +129,13 @@ internal class SlotExtractor
         return result.ToString();
     }
 
-    // `razor:preview stretch` lets block-level examples fill the frame.
+    // `razor:preview stretch` lets block-level examples fill the frame; `scroll` lets wide ones scroll.
     private static string? PreviewLayout(string lang)
     {
         var words = lang["razor:preview".Length..].Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        return words.Contains("stretch", StringComparer.OrdinalIgnoreCase) ? "stretch" : null;
+        if (words.Contains("stretch", StringComparer.OrdinalIgnoreCase)) return "stretch";
+        if (words.Contains("scroll", StringComparer.OrdinalIgnoreCase)) return "scroll";
+        return null;
     }
 
     private PreviewSlot? TryBuildPreviewSlot(string code, List<string> warnings, string? layout)
