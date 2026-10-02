@@ -4,6 +4,10 @@ All notable changes to ShellDocs land here. Format follows [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [0.1.10-alpha] — 2026-10-02
+
+Previews that look like the real thing (no page typography leaking in, Razor child content, stretch layout, generic components), redirects for folders, version roots and moved URLs, an optional frontmatter page header, and a theme that stays in sync with whatever flips it.
+
 ### Added
 
 - **Preview layout.** `razor:preview stretch` (fence info string), or `Layout="stretch"` on `<DemoPreview>` / `<ComponentPreview>` / `PreviewFrame`, lets block-level components (charts, inputs, tables) fill the frame instead of shrinking to their content. `center` stays the default.
@@ -338,7 +342,14 @@ Published to NuGet:
 - `<TypeTable>` is hand-authored today; XML-doc auto-generation ships in `ShellDocs.Xml` (Phase 4)
 - No `<DocsBreadcrumb>` opt-out — currently hides when the trail has ≤ 1 node, otherwise always renders
 
-[Unreleased]: https://github.com/shellui-dev/shelldocs/compare/v0.1.2-alpha...HEAD
+[Unreleased]: https://github.com/shellui-dev/shelldocs/compare/v0.1.10-alpha...HEAD
+[0.1.10-alpha]: https://github.com/shellui-dev/shelldocs/releases/tag/v0.1.10-alpha
+[0.1.9-alpha]: https://github.com/shellui-dev/shelldocs/releases/tag/v0.1.9-alpha
+[0.1.8-alpha]: https://github.com/shellui-dev/shelldocs/releases/tag/v0.1.8-alpha
+[0.1.7-alpha]: https://github.com/shellui-dev/shelldocs/releases/tag/v0.1.7-alpha
+[0.1.6-alpha]: https://github.com/shellui-dev/shelldocs/releases/tag/v0.1.6-alpha
+[0.1.5-alpha]: https://github.com/shellui-dev/shelldocs/releases/tag/v0.1.5-alpha
+[0.1.3-alpha]: https://github.com/shellui-dev/shelldocs/releases/tag/v0.1.3-alpha
 [0.1.2-alpha]: https://github.com/shellui-dev/shelldocs/releases/tag/v0.1.2-alpha
 [0.1.1-alpha]: https://github.com/shellui-dev/shelldocs/releases/tag/v0.1.1-alpha
 [0.1.0-alpha]: https://github.com/shellui-dev/shelldocs/releases/tag/v0.1.0-alpha
