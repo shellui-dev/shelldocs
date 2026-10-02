@@ -44,7 +44,12 @@ window.shelldocsSearch = (function () {
     window.shelldocsApplyTheme = applyTheme;
 })();
 
-// Swap <pre><code class="language-X"> for Shiki's output; data-shiki makes it idempotent.
+/* Shiki highlighting. The source <pre> belongs to Blazor (or to a markup block
+   Blazor tracks), so it is never replaced or edited: it gets [data-shiki="source"]
+   (hidden by CSS) and Shiki's output goes into a JS-owned sibling
+   [data-shiki-output]. Replacing the source used to leave Blazor updating a
+   detached node — stale code after navigation — and could throw on replaceChild.
+   Each pass re-renders an output whose source text changed and drops orphans. */
 
 function langOf(codeEl) {
     var cls = (codeEl.className || '').split(/\s+/);
@@ -54,9 +59,13 @@ function langOf(codeEl) {
     return null;
 }
 
+function shikiOutputOf(preEl) {
+    var next = preEl.nextElementSibling;
+    return next && next.hasAttribute('data-shiki-output') ? next : null;
+}
+
 function highlightOne(preEl) {
-    if (!preEl || !window.__shiki) return;
-    if (preEl.dataset.shiki === 'done') return;
+    if (!preEl || !window.__shiki || !preEl.parentNode || preEl.hasAttribute('data-shiki-output')) return;
     var code = preEl.querySelector('code');
     if (!code) return;
     var lang = langOf(code);
@@ -65,6 +74,9 @@ function highlightOne(preEl) {
     if (!window.__shiki.getLoadedLanguages().includes(lang)) return;
 
     var source = code.textContent;
+    var existing = shikiOutputOf(preEl);
+    if (existing && existing.__shikiSource === source) return;
+
     try {
         var html = window.__shiki.codeToHtml(source, {
             lang: lang,
@@ -73,20 +85,69 @@ function highlightOne(preEl) {
         });
         var tpl = document.createElement('template');
         tpl.innerHTML = html.trim();
-        var newPre = tpl.content.firstElementChild;
-        if (!newPre) return;
-        newPre.dataset.shiki = 'done';
-        preEl.parentNode.replaceChild(newPre, preEl);
+        var output = tpl.content.firstElementChild;
+        if (!output) return;
+        output.setAttribute('data-shiki-output', '');
+        output.__shikiSource = source;
+        if (existing) existing.parentNode.insertBefore(output, existing.nextSibling);
+        else preEl.parentNode.insertBefore(output, preEl.nextSibling);
+        if (existing) existing.remove();
+        preEl.setAttribute('data-shiki', 'source');
     } catch (e) { /* skip on grammar error */ }
+}
+
+function removeOrphanedShikiOutputs() {
+    document.querySelectorAll('[data-shiki-output]').forEach(function (output) {
+        var prev = output.previousElementSibling;
+        if (!prev || prev.getAttribute('data-shiki') !== 'source') output.remove();
+    });
 }
 
 window.shelldocsHighlight = function () {
     if (!window.__shiki) return;
-    document.querySelectorAll('pre:not([data-shiki]) > code[class*="language-"]')
+    removeOrphanedShikiOutputs();
+    document.querySelectorAll('pre:not([data-shiki-output]) > code[class*="language-"]')
         .forEach(function (code) { highlightOne(code.parentElement); });
 };
 
 window.shelldocsHighlightElement = function (preEl) { highlightOne(preEl); };
+
+/* Blazor updates the source text in place (e.g. navigating between pages that
+   reuse the same component) and adds new code on circuit swaps — re-run the
+   pass, batched per frame. Our own output insertions don't match the trigger. */
+(function () {
+    if (!window.MutationObserver) return;
+    var scheduled = false;
+    function schedule() {
+        if (scheduled) return;
+        scheduled = true;
+        requestAnimationFrame(function () { scheduled = false; window.shelldocsHighlight(); });
+    }
+    function touchesSource(node) {
+        var el = node.nodeType === 1 ? node : node.parentElement;
+        if (!el) return false;
+        if (el.closest && el.closest('pre[data-shiki="source"]')) return true;
+        return !!(el.matches && (el.matches('code[class*="language-"]') || el.querySelector('code[class*="language-"]')));
+    }
+    new MutationObserver(function (records) {
+        for (var r = 0; r < records.length; r++) {
+            var rec = records[r];
+            if (rec.type === 'characterData') {
+                if (touchesSource(rec.target)) return schedule();
+                continue;
+            }
+            for (var n = 0; n < rec.addedNodes.length; n++) {
+                if (touchesSource(rec.addedNodes[n])) return schedule();
+            }
+            if (rec.removedNodes.length) {
+                for (var m = 0; m < rec.removedNodes.length; m++) {
+                    var removed = rec.removedNodes[m];
+                    if (removed.nodeType === 1 && removed.getAttribute && removed.getAttribute('data-shiki') === 'source') return schedule();
+                }
+            }
+        }
+    }).observe(document.documentElement, { childList: true, characterData: true, subtree: true });
+})();
 
 window.shelldocsCopyCode = function (button) {
     var block = button.closest('.shelldocs-codeblock');
@@ -233,12 +294,14 @@ window.shelldocsChrome = (function () {
         if (shell) shell.setAttribute('data-open', next);
     }
 
-    // .pkg (PackageSelector) and .ver (VersionSelector): the trigger toggles
-    // [data-open]; outside click, Escape, or picking an option closes it.
-    var DROPDOWN = '.pkg, .ver';
-    var TRIGGER = '.pkg-trigger, .ver-trigger';
-    var MENU = '.pkg-menu, .ver-menu';
-    var OPTION = '.pkg-option, .ver-option';
+    // Dropdowns — .pkg (PackageSelector), .ver (VersionSelector), .preview-menu
+    // (preview ⋯ menu): the trigger toggles [data-open]; outside click, Escape,
+    // or picking an option closes it.
+    var DROPDOWN = '.pkg, .ver, .preview-menu';
+    var OPEN_DROPDOWN = '.pkg[data-open="true"], .ver[data-open="true"], .preview-menu[data-open="true"]';
+    var TRIGGER = '.pkg-trigger, .ver-trigger, .preview-menu-trigger';
+    var MENU = '.pkg-menu, .ver-menu, .preview-menu-list';
+    var OPTION = '.pkg-option, .ver-option, .preview-menu-item';
     var CHEVRON = '.pkg-chevron, .ver-chevron';
 
     function onDropdownClick(e) {
@@ -264,7 +327,7 @@ window.shelldocsChrome = (function () {
 
     function onDropdownKeydown(e) {
         if (e.key !== 'Escape') return;
-        var open = document.querySelector('.pkg[data-open="true"], .ver[data-open="true"]');
+        var open = document.querySelector(OPEN_DROPDOWN);
         if (!open) return;
         closeAllDropdowns(null);
         var trigger = open.querySelector(TRIGGER);
@@ -280,30 +343,47 @@ window.shelldocsChrome = (function () {
     }
 
     function closeAllDropdowns(except) {
-        document.querySelectorAll('.pkg[data-open="true"], .ver[data-open="true"]').forEach(function (d) {
+        document.querySelectorAll(OPEN_DROPDOWN).forEach(function (d) {
             if (d !== except) setDropdown(d, false);
         });
     }
 
+    /* Preview frames: Preview | Code tabs + copy. The chosen tab is remembered per
+       page + frame id, because Blazor replaces the prerendered DOM when an
+       interactive circuit starts — without this, a tab picked before then resets. */
+    var previewTabs = {};
+
+    function previewKey(frame) {
+        return frame.id ? location.pathname + '#' + frame.id : null;
+    }
+
+    function selectPreviewTab(frame, value, focus) {
+        frame.setAttribute('data-preview-tab', value);
+        frame.querySelectorAll('[data-preview-tab-target]').forEach(function (tab) {
+            var selected = tab.getAttribute('data-preview-tab-target') === value;
+            tab.setAttribute('aria-selected', selected ? 'true' : 'false');
+            tab.setAttribute('tabindex', selected ? '0' : '-1');
+            if (selected && focus) tab.focus();
+        });
+        var key = previewKey(frame);
+        if (key) previewTabs[key] = value;
+    }
+
     function onPreviewClick(e) {
-        var toggle = e.target.closest('[data-preview-toggle]');
-        if (toggle) {
-            var mode = toggle.getAttribute('data-preview-toggle');
-            var frame = toggle.closest('.preview-frame, .component-preview');
-            if (!frame) return;
-            var expand = mode === 'expand';
-            frame.classList.toggle('expanded', expand);
-            frame.classList.toggle('collapsed', !expand);
+        var tab = e.target.closest('[data-preview-tab-target]');
+        if (tab) {
+            var tabFrame = tab.closest('.preview-frame');
+            if (tabFrame) selectPreviewTab(tabFrame, tab.getAttribute('data-preview-tab-target'), false);
             return;
         }
 
         var copy = e.target.closest('[data-preview-copy]');
         if (copy) {
-            var frame = copy.closest('.preview-frame, .component-preview');
-            if (!frame) return;
-            var code = frame.querySelector('pre code');
+            var frame = copy.closest('.preview-frame');
+            var code = frame && frame.querySelector('[data-preview-panel="code"] code');
             if (!code) return;
-            var text = code.innerText;
+            // textContent: the code panel may be display:none, where innerText loses layout.
+            var text = code.textContent;
             var writeText = navigator.clipboard && navigator.clipboard.writeText
                 ? navigator.clipboard.writeText(text)
                 : Promise.reject(new Error('clipboard unavailable'));
@@ -312,6 +392,171 @@ window.shelldocsChrome = (function () {
                 setTimeout(function () { copy.classList.remove('copied'); }, 1400);
             }).catch(function () { /* silent */ });
         }
+    }
+
+    // WAI-ARIA tabs: arrows / Home / End move between Preview and Code.
+    function onPreviewKeydown(e) {
+        var tab = e.target.closest && e.target.closest('.preview-tabs [role="tab"]');
+        if (!tab) return;
+        var tabs = Array.prototype.slice.call(tab.parentElement.querySelectorAll('[role="tab"]'));
+        var i = tabs.indexOf(tab);
+        var next = e.key === 'ArrowRight' ? tabs[(i + 1) % tabs.length]
+            : e.key === 'ArrowLeft' ? tabs[(i - 1 + tabs.length) % tabs.length]
+            : e.key === 'Home' ? tabs[0]
+            : e.key === 'End' ? tabs[tabs.length - 1]
+            : null;
+        if (!next) return;
+        e.preventDefault();
+        selectPreviewTab(tab.closest('.preview-frame'), next.getAttribute('data-preview-tab-target'), true);
+    }
+
+    /* <Tabs> and <CodeGroup>: [data-tabs] roots, [data-tab-target] buttons,
+       [data-tab-panel] panels. Groups sharing [data-tabs-sync] switch together and
+       remember the choice in localStorage; others remember it per page + id so it
+       survives the circuit's DOM swap. Nested groups are kept apart via closest(). */
+    var TAB_STORE = 'shelldocs-tabs:';
+    var tabMemory = {};
+
+    function ownTabParts(root, selector) {
+        return Array.prototype.filter.call(root.querySelectorAll(selector), function (el) {
+            return el.closest('[data-tabs]') === root;
+        });
+    }
+
+    function selectTabsValue(root, value, focus) {
+        var buttons = ownTabParts(root, '[data-tab-target]');
+        if (!buttons.some(function (b) { return b.getAttribute('data-tab-target') === value; })) return false;
+        root.setAttribute('data-tabs-value', value);
+        buttons.forEach(function (b) {
+            var selected = b.getAttribute('data-tab-target') === value;
+            b.setAttribute('aria-selected', selected ? 'true' : 'false');
+            b.setAttribute('tabindex', selected ? '0' : '-1');
+            if (selected && focus) b.focus();
+        });
+        ownTabParts(root, '[data-tab-panel]').forEach(function (panel) {
+            panel.hidden = panel.getAttribute('data-tab-panel') !== value;
+        });
+        return true;
+    }
+
+    function chooseTab(root, value, focus) {
+        if (!selectTabsValue(root, value, focus)) return;
+        var sync = root.getAttribute('data-tabs-sync');
+        if (sync) {
+            try { localStorage.setItem(TAB_STORE + sync, value); } catch (e) {}
+            document.querySelectorAll('[data-tabs]').forEach(function (other) {
+                if (other !== root && other.getAttribute('data-tabs-sync') === sync) selectTabsValue(other, value, false);
+            });
+        } else if (root.id) {
+            tabMemory[location.pathname + '#' + root.id] = value;
+        }
+    }
+
+    function restoreTabs(scope) {
+        if (!scope.querySelectorAll) return;
+        var roots = Array.prototype.slice.call(scope.querySelectorAll('[data-tabs]'));
+        if (scope.matches && scope.matches('[data-tabs]')) roots.unshift(scope);
+        roots.forEach(function (root) {
+            var sync = root.getAttribute('data-tabs-sync');
+            var saved = null;
+            if (sync) { try { saved = localStorage.getItem(TAB_STORE + sync); } catch (e) {} }
+            else if (root.id) saved = tabMemory[location.pathname + '#' + root.id];
+            if (saved && root.getAttribute('data-tabs-value') !== saved) selectTabsValue(root, saved, false);
+        });
+    }
+
+    function onTabsClick(e) {
+        var btn = e.target.closest('[data-tab-target]');
+        if (!btn) return;
+        var root = btn.closest('[data-tabs]');
+        if (root) chooseTab(root, btn.getAttribute('data-tab-target'), false);
+    }
+
+    function onTabsKeydown(e) {
+        var btn = e.target.closest && e.target.closest('[data-tab-target]');
+        if (!btn) return;
+        var root = btn.closest('[data-tabs]');
+        var buttons = ownTabParts(root, '[data-tab-target]');
+        var i = buttons.indexOf(btn);
+        var next = e.key === 'ArrowRight' ? buttons[(i + 1) % buttons.length]
+            : e.key === 'ArrowLeft' ? buttons[(i - 1 + buttons.length) % buttons.length]
+            : e.key === 'Home' ? buttons[0]
+            : e.key === 'End' ? buttons[buttons.length - 1]
+            : null;
+        if (!next) return;
+        e.preventDefault();
+        chooseTab(root, next.getAttribute('data-tab-target'), true);
+    }
+
+    function restorePreviewTabs(root) {
+        var frames = root.matches && root.matches('.preview-frame[id]')
+            ? [root]
+            : (root.querySelectorAll ? root.querySelectorAll('.preview-frame[id]') : []);
+        Array.prototype.forEach.call(frames, function (frame) {
+            var saved = previewTabs[previewKey(frame)];
+            if (saved && frame.getAttribute('data-preview-tab') !== saved) selectPreviewTab(frame, saved, false);
+        });
+    }
+
+    function watchForReplacedFrames() {
+        if (!window.MutationObserver) return;
+        new MutationObserver(function (records) {
+            for (var r = 0; r < records.length; r++) {
+                var added = records[r].addedNodes;
+                for (var n = 0; n < added.length; n++) {
+                    if (added[n].nodeType !== 1) continue;
+                    restorePreviewTabs(added[n]);
+                    restoreTabs(added[n]);
+                    restoreMobileNav(added[n]);
+                }
+            }
+        }).observe(document.documentElement, { childList: true, subtree: true });
+    }
+
+    /* Mobile nav: hamburgers toggle [data-mobile-open] on the page shell. CSS slides
+       in the docs sidebar or shows the home menu; the backdrop, Escape, picking a
+       link, or an enhanced navigation closes it. */
+    function mobileShell(el) {
+        return el.closest('.docs-shell, .home-shell') || document.documentElement;
+    }
+
+    // Survives the circuit's DOM swap the same way preview tabs do.
+    var mobileNavOpen = false;
+
+    function setMobileNav(shell, open) {
+        mobileNavOpen = open;
+        shell.setAttribute('data-mobile-open', open ? 'true' : 'false');
+        shell.querySelectorAll('[data-mobile-nav-toggle]').forEach(function (b) {
+            b.setAttribute('aria-expanded', open ? 'true' : 'false');
+        });
+    }
+
+    function closeMobileNav() {
+        mobileNavOpen = false;
+        document.querySelectorAll('[data-mobile-open="true"]').forEach(function (shell) { setMobileNav(shell, false); });
+    }
+
+    function restoreMobileNav(root) {
+        if (!mobileNavOpen || !root.matches) return;
+        var shell = root.matches('.docs-shell, .home-shell') ? root : root.querySelector('.docs-shell, .home-shell');
+        if (shell && shell.getAttribute('data-mobile-open') !== 'true') setMobileNav(shell, true);
+    }
+
+    function onMobileNavClick(e) {
+        var toggle = e.target.closest('[data-mobile-nav-toggle]');
+        if (toggle) {
+            var shell = mobileShell(toggle);
+            setMobileNav(shell, shell.getAttribute('data-mobile-open') !== 'true');
+            return;
+        }
+        if (e.target.closest('[data-mobile-nav-close]') ||
+            e.target.closest('.docs-sidebar-slot a[href], .docs-header-mobile-menu a[href]')) {
+            closeMobileNav();
+        }
+    }
+
+    function onMobileNavKeydown(e) {
+        if (e.key === 'Escape') closeMobileNav();
     }
 
     // Re-run on enhancedload: heading IDs change per page, so the old observer is stale.
@@ -328,27 +573,32 @@ window.shelldocsChrome = (function () {
         });
     }
 
-    var delegatesAttached = false;
-    function attachDelegates() {
-        if (delegatesAttached) return;
-        delegatesAttached = true;
-        document.addEventListener('click', onSidebarClick);
-        document.addEventListener('click', onDropdownClick);
-        document.addEventListener('keydown', onDropdownKeydown);
-        document.addEventListener('click', onPreviewClick);
-    }
+    /* Document-level listeners attach immediately: waiting for DOMContentLoaded
+       (which also waits on module scripts such as the Shiki import) left early
+       clicks on prerendered chrome with no handler. */
+    document.addEventListener('click', onSidebarClick);
+    document.addEventListener('click', onDropdownClick);
+    document.addEventListener('keydown', onDropdownKeydown);
+    document.addEventListener('click', onPreviewClick);
+    document.addEventListener('keydown', onPreviewKeydown);
+    document.addEventListener('click', onTabsClick);
+    document.addEventListener('keydown', onTabsKeydown);
+    document.addEventListener('click', onMobileNavClick);
+    document.addEventListener('keydown', onMobileNavKeydown);
+    document.addEventListener('enhancedload', closeMobileNav);
+    watchForReplacedFrames();
 
-    function boot() {
-        attachDelegates();
+    function initPage() {
         initToc();
+        restoreTabs(document);
     }
 
     if (document.readyState !== 'loading') {
-        boot();
+        initPage();
     } else {
-        document.addEventListener('DOMContentLoaded', boot);
+        document.addEventListener('DOMContentLoaded', initPage);
     }
-    document.addEventListener('enhancedload', initToc);
+    document.addEventListener('enhancedload', initPage);
 
     return { initToc: initToc };
 })();

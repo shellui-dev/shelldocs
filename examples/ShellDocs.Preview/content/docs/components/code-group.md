@@ -21,7 +21,7 @@ order: 25
 
 ## Sync groups
 
-Pass `SyncKey` and every `<CodeGroup>` on the page with the same key switches together. Pick "pnpm" here — every other snippet with `SyncKey="pkg"` on the page will also read pnpm.
+Pass `SyncKey` and every `<CodeGroup>` (or [`<Tabs>`](/docs/components/tabs)) with the same key switches together. Pick "pnpm" here and every other group with `SyncKey="pkg"` follows, on this page and on later ones.
 
 ```razor:preview
 <CodeGroup SyncKey="pkg">
@@ -33,6 +33,6 @@ Pass `SyncKey` and every `<CodeGroup>` on the page with the same key switches to
 
 ## Notes
 
-- The first `<CodeTab>` in source order is the default selection on first render (unless overridden by an active sync group).
-- Choose stable sync keys — the sync state uses the key as its dictionary bucket, so renaming a key resets everyone's pick.
-- Sync is per-circuit today. Cross-session persistence via `localStorage` lands in a follow-up.
+- The first `<CodeTab>` in source order is selected on first render; a saved sync choice replaces it once `shelldocs.js` runs.
+- The choice is saved in `localStorage` under the sync key, so it carries across pages and visits. Pick stable keys: renaming one resets readers' choice.
+- Tabs are switched by `shelldocs.js`, so they work on static hosts. Arrow keys and Home / End move between tabs.

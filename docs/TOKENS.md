@@ -137,7 +137,7 @@ You can depend on `ShellDocs.Tokens` alone if you want *just the palette* for a 
 ## What's NOT in tokens.css
 
 - Base HTML resets (`html`, `body`, `*` box-sizing) — those live in `ShellDocs.Components/wwwroot/shelldocs-theme.css` alongside the prose typography and code-block chrome.
-- Component-specific styles (`.shelldocs-prose`, `.shelldocs-codeblock`, scrollbar overrides, Prism overrides) — same location.
+- Component-specific styles (`.shelldocs-prose`, `.shelldocs-codeblock`, scrollbar overrides, Shiki output styling) — same location.
 - Font files — the Inter font is `@import`ed from `rsms.me`; hosted assets aren't shipped in the package.
 
 If you use `ShellDocs.Components`, you get both files. If you use *just* `ShellDocs.Tokens`, you get variables only — bring your own component styles.

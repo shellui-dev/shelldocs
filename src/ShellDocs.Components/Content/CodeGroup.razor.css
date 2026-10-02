@@ -30,7 +30,7 @@
     white-space: nowrap;
 }
 .code-group-tab:hover { color: var(--foreground); }
-.code-group-tab.active {
+.code-group-tab[aria-selected="true"] {
     color: var(--foreground);
     background: var(--muted);
 }

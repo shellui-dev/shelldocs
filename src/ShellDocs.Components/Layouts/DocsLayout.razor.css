@@ -6,8 +6,6 @@
     color: var(--foreground);
 }
 
-.docs-shell[data-mobile-open="True"] { overflow: hidden; }
-
 .docs-body {
     display: grid;
     grid-template-columns: 1fr;
@@ -46,7 +44,7 @@
     display: flex;
     flex-direction: column;
 }
-.docs-sidebar-slot.open {
+.docs-shell[data-mobile-open="true"] .docs-sidebar-slot {
     transform: translateX(0);
     box-shadow: 4px 0 24px -8px rgb(0 0 0 / 0.25);
 }
@@ -74,8 +72,10 @@
     padding: 0;
     z-index: 40;
     cursor: pointer;
+    display: none;
     animation: docs-backdrop-in 200ms ease;
 }
+.docs-shell[data-mobile-open="true"] .docs-sidebar-backdrop { display: block; }
 @keyframes docs-backdrop-in {
     from { opacity: 0; }
     to   { opacity: 1; }

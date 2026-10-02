@@ -1,17 +1,65 @@
-@using ShellIcons.Icons
 @using ShellDocs.Markdown
+@using ShellIcons.Icons
 @attribute [ShellDocsIgnore]
 @inject MarkdownRenderer Renderer
+@inject ShellDocsOptions Options
+@inject NavigationManager Nav
 @inject ILogger<PreviewFrame> Logger
 
-@* Expand/collapse and copy are handled by shelldocs.js (data-preview-*).
-   Fed either a PreviewSlot (razor:preview fence) or Content + Code (DemoPreview). *@
-<div class="preview-frame collapsed">
+@* Tabs, copy and the ⋯ menu are driven by shelldocs.js through data-* attributes,
+   so they work without a Blazor runtime. Both panels are always rendered; CSS
+   shows the one named by [data-preview-tab]. Fed either a PreviewSlot
+   (razor:preview fence) or Content + Code (DemoPreview, ComponentPreview). *@
+<div class="preview-frame" id="@Id" data-preview-tab="preview">
     @if (!string.IsNullOrEmpty(Title))
     {
         <div class="preview-title">@Title</div>
     }
-    <div class="preview-render">
+    <div class="preview-toolbar">
+        <div class="preview-tabs" role="tablist" aria-label="Example view">
+            <button type="button" role="tab" class="preview-tab" id="@PartId("tab-preview")" aria-controls="@PartId("panel-preview")"
+                    data-preview-tab-target="preview" aria-selected="true" tabindex="0">
+                <Eye />
+                <span>Preview</span>
+            </button>
+            <button type="button" role="tab" class="preview-tab" id="@PartId("tab-code")" aria-controls="@PartId("panel-code")"
+                    data-preview-tab-target="code" aria-selected="false" tabindex="-1">
+                <CodeXml />
+                <span>Code</span>
+            </button>
+        </div>
+        <div class="preview-actions">
+            <button type="button" class="preview-action preview-copy" data-preview-copy aria-label="Copy code" title="Copy code">
+                <Copy Class="icon-copy" />
+                <Check Class="icon-check" />
+            </button>
+            <div class="preview-menu" data-open="false">
+                <button type="button" class="preview-action preview-menu-trigger" aria-haspopup="menu" aria-expanded="false" aria-label="More actions" title="More actions">
+                    <EllipsisVertical />
+                </button>
+                <div class="preview-menu-list" role="menu">
+                    <a class="preview-menu-item" role="menuitem" href="@_openHref" target="_blank" rel="noopener">
+                        <ExternalLink />
+                        <span>Open in new tab</span>
+                    </a>
+                    @if (_bugHref is not null)
+                    {
+                        <div class="preview-menu-separator" role="separator"></div>
+                        <a class="preview-menu-item" role="menuitem" href="@_bugHref" target="_blank" rel="noopener">
+                            <Bug />
+                            <span>Report a bug</span>
+                        </a>
+                        <a class="preview-menu-item" role="menuitem" href="@_suggestHref" target="_blank" rel="noopener">
+                            <Lightbulb />
+                            <span>Suggest something</span>
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="preview-panel preview-render" role="tabpanel" id="@PartId("panel-preview")" aria-labelledby="@PartId("tab-preview")" data-preview-panel="preview">
         @if (ErrorMessage is not null)
         {
             <div class="preview-error" role="alert">
@@ -28,7 +76,6 @@
         }
         else if (Preview!.Nodes is { Count: > 0 } nodes)
         {
-            @* Every top-level sibling of the fence, in order. *@
             @SlotRenderer.RenderNodes(Renderer, nodes, Logger)
         }
         else
@@ -37,18 +84,8 @@
                               Parameters="BuildParameters(Preview!.Parameters, Preview!.ChildContentRaw)" />
         }
     </div>
-    <div class="preview-code-wrap">
+    <div class="preview-panel preview-code-panel" role="tabpanel" id="@PartId("panel-code")" aria-labelledby="@PartId("tab-code")" data-preview-panel="code">
         <pre class="preview-code language-@Language"><code class="language-@Language">@(Code ?? Preview?.Code)</code></pre>
-        <div class="preview-fade">
-            <button type="button" class="preview-expand" data-preview-toggle="expand">View Code</button>
-        </div>
-        <div class="preview-code-actions">
-            <button type="button" class="preview-copy" data-preview-copy aria-label="Copy code">
-                <Copy Class="icon-copy" />
-                <Check Class="icon-check" />
-            </button>
-            <button type="button" class="preview-collapse" data-preview-toggle="collapse">Collapse</button>
-        </div>
     </div>
 </div>
 
@@ -62,9 +99,38 @@
     [Parameter] public string? Error { get; set; }
     [Parameter] public string ErrorTitle { get; set; } = "razor:preview error";
 
+    // Must be deterministic: it's the anchor, and how shelldocs.js restores the
+    // selected tab when Blazor replaces the prerendered DOM.
+    [Parameter] public string? Id { get; set; }
+    // Used in issue titles; defaults to the previewed component's type name.
+    [Parameter] public string? Name { get; set; }
+
+    private string _openHref = "";
+    private string? _bugHref;
+    private string? _suggestHref;
+
     private string? ErrorMessage =>
         Error
         ?? (Content is null && Preview?.ComponentType is null ? Preview?.Error ?? "Unknown error." : null);
+
+    private string? PartId(string part) => Id is null ? null : $"{Id}-{part}";
+
+    protected override void OnParametersSet()
+    {
+        var path = DocsVersionResolver.PathOf(Nav);
+        _openHref = string.IsNullOrEmpty(Id) ? path : $"{path}#{Id}";
+
+        var tracker = PreviewLinks.IssueTracker(Options);
+        if (tracker is null)
+        {
+            _bugHref = _suggestHref = null;
+            return;
+        }
+        var name = Name ?? Preview?.ComponentType?.Name ?? Title ?? "docs";
+        var pageUrl = PreviewLinks.PageUrl(Options, path, Id);
+        _bugHref = PreviewLinks.BugReport(tracker, name, pageUrl);
+        _suggestHref = PreviewLinks.Suggestion(tracker, name, pageUrl);
+    }
 
     // Only reached when ErrorMessage is null, i.e. ComponentType is non-null.
     private IDictionary<string, object> BuildParameters(IReadOnlyDictionary<string, string> attrs, string? childContentRaw) =>

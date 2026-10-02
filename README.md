@@ -1,8 +1,8 @@
 # ShellDocs
 
-**The docs framework for .NET.** Beautiful, animated, `Cmd+K`-searchable documentation sites. Powered by Blazor, styled with Tailwind-shaped design tokens, composable with any Blazor component library. The fumadocs / shadcn pattern, ported to .NET.
+**The docs framework for .NET.** Markdown-driven documentation sites with live Blazor component previews, versioned docs, `Cmd+K` search, and a static export. Styled with shadcn-shaped design tokens and composable with any Blazor component library. The fumadocs / shadcn pattern, ported to .NET.
 
-> `0.1.2-alpha` on nuget.org. See [CHANGELOG](CHANGELOG.md) and [ROADMAP](docs/ROADMAP.md). Docs at [shelldocs.dev](https://shelldocs.dev).
+[![NuGet](https://img.shields.io/nuget/vpre/ShellDocs.CLI?label=ShellDocs.CLI)](https://www.nuget.org/packages/ShellDocs.CLI) — alpha: APIs may change between minor versions. See the [CHANGELOG](CHANGELOG.md) and [ROADMAP](docs/ROADMAP.md).
 
 ## Quick start
 
@@ -10,34 +10,36 @@
 # Install the CLI (once)
 dotnet tool install -g ShellDocs.CLI --prerelease
 
-# Scaffold a site (creates docs/MyDocs.Docs/)
-shelldocs init MyDocs
+# From your repo root: scaffold a Blazor Web App in docs/<RepoFolder>.Docs
+shelldocs init
+cd docs/<RepoFolder>.Docs
 
-# Add pages
+# Add pages (or drop .md files into content/docs/)
 shelldocs add component Button
 shelldocs add guide getting-started
 
-# Run with hot reload
-cd docs/MyDocs.Docs
+# Run with hot reload on http://localhost:5000
 shelldocs dev
 
-# Ship
-shelldocs build --output publish
+# Prerender a static site into publish/
+shelldocs build
 ```
 
-That's a working docs site. See [shelldocs.dev/docs/getting-started/quick-start](https://shelldocs.dev/docs/getting-started/quick-start) for the walkthrough.
+Already have a Blazor project? Run `shelldocs init --attach` inside it: it adds the packages and content, and writes `SHELLDOCS_SETUP.md` with the `Program.cs` / `App.razor` snippets instead of editing your code.
 
 ## What you get
 
-- **Markdown-first authoring.** YAML frontmatter, fenced code blocks with Shiki, live-rendered `razor:preview` examples, inline Razor component tags mid-prose.
-- **Auto-wired navigation.** File-based routing. Drop a `.md` in `content/docs/` and it becomes a page. Sidebar, breadcrumb, prev/next, TOC — all derived from the tree.
-- **`Cmd+K` search.** Client-side substring scoring against title, description, section, and body text. Snippet extraction for body-only hits. Zero backend, zero external service.
-- **Blazor-native.** Components render as real Razor. Full JS interop, hot reload, all the tooling you already have.
-- **Composable.** Bring your own component library (ShellUI, MudBlazor, Radzen, hand-rolled). One-line assembly-scan registration:
+- **Markdown-first authoring.** YAML frontmatter, Shiki-highlighted code fences, live `razor:preview` examples, inline component tags mid-prose.
+- **File-based navigation.** Drop a `.md` in `content/docs/` and it's a page. Sidebar, breadcrumb, prev/next and TOC come from the folder tree; `meta.json` controls order, dividers, subsections and hidden pages.
+- **`Cmd+K` search** across titles, headings and page text, with body snippets. The index is built in memory at startup, so there's no external service; search needs a running Blazor app (it isn't available in the static export).
+- **Blazor-native.** Your components render as real Razor components, not iframes.
+- **Composable.** Bring your own component library (ShellUI, MudBlazor, Radzen, hand-rolled) and register it in one line:
   ```csharp
   o.RegisterComponentsFromAssembly<MyLib.Button>();
   ```
-- **Static site output.** `shelldocs build` produces static HTML ready for GitHub Pages, Vercel, Netlify, Cloudflare, anywhere. Base-href rewrite + SPA 404 fallback included.
+  Your components win name collisions with ShellDocs' built-ins, which stay available as `<DocsCard>`, `<DocsCallout>`, `<DocsTabs>`, and so on.
+- **Content primitives.** `Callout`, `Card` / `CardGrid` / `LinkCard`, `Steps`, `FileTree`, `Tabs`, `CodeGroup`, `TypeTable` / `AutoTypeTable`, `ComponentPreview`, `DemoPreview`.
+- **Static export.** `shelldocs build` prerenders every page to static HTML for GitHub Pages, Cloudflare Pages, Netlify or S3. Optional flags rewrite `<base href>` (`--base-href`), add a SPA `404.html` (`--spa-fallback`), and write sitemap / robots / `og:` meta (`--site-url`). Navigation, sidebar sections, the mobile menu, selectors, tabs, preview toolbars, the TOC and code copy work there through `shelldocs.js`. Search, the theme-toggle button, desktop sidebar collapse and stateful demos need a running Blazor app.
 
 ## Versioned docs
 
@@ -51,16 +53,26 @@ o.AddVersion("v0.2.1", "v0.2.1", "/docs/v0.2.1", "Previous release");
 o.AddPackage("shellui.cli", "ShellUI.CLI", "Command line", "/docs/{version}/cli", icon);
 ```
 
-The current version is the one whose `RootUrl` prefixes the path (segment-aware), otherwise the `latest` one. With 2+ versions a `<VersionSelector />` renders under the package selector (and in the mobile drawer; in the `TopNav` layout it sits in the header). Switching versions keeps the same page when it exists, else the current package's root, else the version's first page. Switching packages keeps the version. Inside a version the sidebar shows only that version's tree, prev/next never crosses into another version, search shows the current version plus pages outside every version, and the version folder is left out of the breadcrumb. Everything is server-rendered `<a href>`s plus `shelldocs.js` delegation, so it works on static hosts.
+The current version is the one whose `RootUrl` prefixes the path (segment-aware), otherwise the `latest` one. With 2+ versions a `<VersionSelector />` renders under the package selector (and in the mobile drawer; in the `TopNav` layout it sits in the header).
+
+- **Switching versions** keeps the same page when it exists, else the current package's root, else the version's first page.
+- **Switching packages** keeps the version.
+- **Inside a version**, the sidebar shows only that version's tree, prev/next never crosses into another version, and search shows the current version plus pages outside every version.
+- **Outside a version**, the sidebar leaves the version folders to the selector.
+- **Breadcrumbs** leave out the version folder.
+
+It's all server-rendered links plus `shelldocs.js`, so it works on static hosts.
 
 > Routes declared as `/docs/{*Path:nonfile}` don't match a URL whose **last** segment has a dot (`/docs/v0.2.1`). Pages below it (`/docs/v0.2.1/introduction`) are fine, and the selectors never link to a bare version root unless it has an `index.md`. If you add one, drop `:nonfile` from the route.
 
 ## Component previews
 
-- **`razor:preview` fences render everything** — several sibling components, HTML wrappers (`<div class="flex gap-2">…</div>`) and text, in order, inside one frame. The source tab shows the whole fence.
+- **Preview | Code toolbar on every example**, with copy and a ⋯ menu: *Open in new tab*, *Report a bug*, *Suggest something*. The issue links go to `https://github.com/{GitHubRepo}/issues/new`, pre-filled with the example and page URL; point them elsewhere with `o.IssueTrackerUrl`.
+- **`razor:preview` fences render everything.** Several sibling components, HTML wrappers (`<div class="flex gap-2">…</div>`) and text render in order inside one frame, and the Code tab shows the whole fence.
 - **Razor-shaped attribute values work:** `Variant="ButtonVariant.Destructive"`, `@ButtonVariant.Destructive`, `@true`, `@42`, `[Flags]` values as `Bold | Italic`.
 - **Attributes a static preview can't evaluate are skipped, not fatal:** `OnClick="HandleClick"`, `@onclick`, `@bind-*`, `@ref`, non-primitive parameter types, unparseable values. Each logs a warning and the component still renders.
-- **Stateful demos from real files.** For demos that need `@code` (dialogs, bound selects, toasts, charts with data), write a `.razor` component, register it, and drop `<DemoPreview Component="ButtonClickDemo" Title="Optional" />` into markdown. The source tab shows `{DemoSourceRoot}/**/ButtonClickDemo.razor`:
+- **Inline code stays code.** `` `<Button>` `` in prose renders as literal code, not a component.
+- **Stateful demos from real files.** For demos that need `@code` (dialogs, bound selects, toasts, charts with data), write a `.razor` component, register it, and drop `<DemoPreview Component="ButtonClickDemo" Title="Optional" />` into markdown. The Code tab shows `{DemoSourceRoot}/**/ButtonClickDemo.razor`:
 
   ```csharp
   o.RegisterComponentsFromAssembly<App>("MyDocs.Demos");
@@ -77,20 +89,22 @@ The current version is the one whose `RootUrl` prefixes the path (segment-aware)
 
 | Package | Purpose |
 |---|---|
-| [`ShellDocs.CLI`](src/ShellDocs.CLI) | Global tool. `shelldocs init`, `add`, `dev`, `build` |
-| [`ShellDocs.Components`](src/ShellDocs.Components) | RCL. Chrome (layout, sidebar, header, search, version/package selectors) + content primitives (Callout, Card, Steps, CodeGroup, FileTree, TypeTable, ComponentPreview, DemoPreview). Icons via [ShellIcons.Blazor](https://www.nuget.org/packages/ShellIcons.Blazor) |
-| [`ShellDocs.Markdown`](src/ShellDocs.Markdown) | Markdig pipeline. Frontmatter parser, `razor:preview` fence extractor, inline Razor tag extractor, per-property type coercion |
-| [`ShellDocs.Core`](src/ShellDocs.Core) | Navigation graph, search index, plain-text extraction. No UI |
-| [`ShellDocs.Tokens`](src/ShellDocs.Tokens) | Design-system CSS variables. shadcn-compatible names for interop with ShellUI and Tailwind-shaped design systems |
-| [`ShellDocs.Templates`](src/ShellDocs.Templates) | Starter markdown + Program.cs snippets emitted by `shelldocs init` |
+| [`ShellDocs.CLI`](src/ShellDocs.CLI) | Global tool: `shelldocs init`, `add`, `dev`, `build` |
+| [`ShellDocs.Components`](src/ShellDocs.Components) | Razor class library: layouts and chrome (sidebar, header, search, TOC, version / package selectors) and the content primitives. Icons via [ShellIcons.Blazor](https://www.nuget.org/packages/ShellIcons.Blazor) |
+| [`ShellDocs.Markdown`](src/ShellDocs.Markdown) | Markdig pipeline: frontmatter, `razor:preview` fences, inline component tags, the type registry |
+| [`ShellDocs.Core`](src/ShellDocs.Core) | Navigation graph, `meta.json`, search index, URL helpers. No UI |
+| [`ShellDocs.Tokens`](src/ShellDocs.Tokens) | Design-token CSS variables, shadcn-compatible names for interop with ShellUI and Tailwind-shaped design systems |
+| [`ShellDocs.Templates`](src/ShellDocs.Templates) | Files and snippets emitted by `shelldocs init` and `shelldocs add` |
 
 ## Docs
 
 - [shelldocs.dev](https://shelldocs.dev) : full documentation site (built with ShellDocs itself)
-- [docs/DESIGN.md](docs/DESIGN.md) : product positioning, primitive inventory, ecosystem story
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) : package boundaries, service registration, markdown pipeline, navigation graph, search
-- [docs/ROADMAP.md](docs/ROADMAP.md) : branch-by-branch delivery plan
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) : how it works: packages, pipeline, rendering, navigation, search, client-side chrome, CLI
+- [docs/TOKENS.md](docs/TOKENS.md) : the design-token contract and how to override it
+- [docs/DESIGN.md](docs/DESIGN.md) : original product design and positioning
+- [docs/ROADMAP.md](docs/ROADMAP.md) : branch-by-branch plan and what has shipped
 - [docs/RELEASING.md](docs/RELEASING.md) : how a maintainer cuts a NuGet release (Trusted Publishing)
+- [examples/ShellDocs.Preview](examples/ShellDocs.Preview) : the example site used for development, with versions, previews and demos
 
 ## Related
 
@@ -99,7 +113,7 @@ The current version is the one whose `RootUrl` prefixes the path (segment-aware)
 
 ## Contributing
 
-The alpha is API-fluid : we're taking freedom to break minor versions until `1.0`. Bug reports and dogfood-driven fixes welcome via issues. A proper `CONTRIBUTING.md` lands with the `0.2.0-alpha` cut.
+The alpha is API-fluid: we're taking freedom to break minor versions until `1.0`. Bug reports and dogfood-driven fixes are welcome via issues. A proper `CONTRIBUTING.md` lands with the `0.2.0-alpha` cut.
 
 ## License
 

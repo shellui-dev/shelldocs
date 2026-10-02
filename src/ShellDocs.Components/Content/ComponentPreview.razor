@@ -5,34 +5,12 @@
 @inject TypeRegistry Registry
 @inject ILogger<ComponentPreview> Logger
 
-@* Expand/collapse and copy are handled by shelldocs.js (data-preview-*). *@
-<div class="component-preview collapsed">
-    <div class="component-preview-render">
-        @if (_target is not null && _targetParams is not null)
-        {
-            <DynamicComponent Type="_target" Parameters="_targetParams" />
-        }
-        else
-        {
-            <div class="component-preview-error">
-                Unknown component: <code>@Component</code>
-            </div>
-        }
-    </div>
-    <div class="component-preview-source-wrap">
-        <pre class="component-preview-source language-razor"><code class="language-razor">@_source</code></pre>
-        <div class="component-preview-fade">
-            <button type="button" class="component-preview-expand" data-preview-toggle="expand">View source</button>
-        </div>
-        <div class="component-preview-actions">
-            <button type="button" class="component-preview-copy" data-preview-copy aria-label="Copy source">
-                <ShellIcons.Icons.Copy Class="icon-copy" />
-                <ShellIcons.Icons.Check Class="icon-check" />
-            </button>
-            <button type="button" class="component-preview-hide" data-preview-toggle="collapse">Hide</button>
-        </div>
-    </div>
-</div>
+<PreviewFrame Content="@(_target is null ? null : RenderTarget)"
+              Code="@_source"
+              Error="@(_target is null ? $"Unknown component <{Component}>." : null)"
+              ErrorTitle="ComponentPreview error"
+              Id="@_id"
+              Name="@Component" />
 
 @code {
     [Parameter, EditorRequired] public string? Component { get; set; }
@@ -45,12 +23,23 @@
     private Type? _target;
     private IDictionary<string, object>? _targetParams;
     private string? _source;
+    private string? _id;
 
     protected override void OnParametersSet()
     {
         _target = Component is null ? null : Registry.Resolve(Component);
         _targetParams = _target is null ? null : BuildTargetParams(_target);
-        _source = _target is null ? null : BuildSource();
+        _source = BuildSource();
+        // Same component twice on a page gets distinct ids via the source hash.
+        _id = $"example-{PreviewLinks.Slug(Component)}-{PreviewLinks.ShortHash(_source)}";
+    }
+
+    private void RenderTarget(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder builder)
+    {
+        builder.OpenComponent<DynamicComponent>(0);
+        builder.AddComponentParameter(1, "Type", _target);
+        builder.AddComponentParameter(2, "Parameters", _targetParams);
+        builder.CloseComponent();
     }
 
     private IDictionary<string, object> BuildTargetParams(Type target)

@@ -1,0 +1,11 @@
+@namespace ShellDocs.Components.Content
+
+@code {
+    [Parameter, EditorRequired] public string Label { get; set; } = "";
+    // Stable identifier for DefaultValue and sync; falls back to Label.
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [CascadingParameter] public Tabs? Parent { get; set; }
+
+    protected override void OnInitialized() => Parent?.Register(Value ?? Label, Label, ChildContent);
+}

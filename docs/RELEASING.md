@@ -66,10 +66,7 @@ Once the one-time setup is done, cutting a release is three commands.
 
 ### 1. Bump the version
 
-Bump **two** places to the same value:
-
-- `Directory.Build.props` → `<Version>0.X.Y[-suffix]</Version>` — propagates to every packable project via the shared props file
-- `src/ShellDocs.CLI/Commands/InitCommand.cs` → `private const string ShellDocsVersion = "0.X.Y[-suffix]";` — determines which `ShellDocs.*` package versions the CLI's `shelldocs init` scaffold references. If left stale, consumers scaffolding via the new CLI get old packages that lack the fresh CLI's fixes.
+Bump `Directory.Build.props` → `<Version>0.X.Y[-suffix]</Version>`. It propagates to every packable project via the shared props file, and `shelldocs init` reads the CLI's own version to pin the `ShellDocs.*` packages it scaffolds, so there's nothing else to keep in sync.
 
 For a prerelease bump: `0.1.0-alpha` → `0.1.1-alpha` (patch) or `0.2.0-alpha` (minor).
 For the first stable: strip the `-alpha` suffix → `1.0.0`.
@@ -92,14 +89,15 @@ The tag push triggers `.github/workflows/release.yml`:
 1. Builds Release
 2. Runs the test suite
 3. Packs every `IsPackable=true` project
-4. Pushes each `.nupkg` to nuget.org (`--skip-duplicate` so re-runs are safe)
-5. Creates a GitHub Release from the tag with auto-generated notes
+4. Checks nuget.org and fails if the `Directory.Build.props` version is already published for any of the six packages (bump the version and re-tag)
+5. Logs in via Trusted Publishing and pushes each `.nupkg` (`--skip-duplicate`)
+6. Creates a GitHub Release from the tag with auto-generated notes
 
-Watch the run under Actions. If NuGet push fails on one package (e.g. `409 Conflict — already exists`), `--skip-duplicate` handles it silently; a real failure (bad API key, network) will surface as a red X.
+Watch the run under Actions. A version that's already on nuget.org stops the run at step 4, before anything is pushed; a login or push failure (Trusted Publishing policy, `NUGET_USER`, network) shows as a red X on steps 5–6.
 
 ## Dry-run without publishing
 
-To validate the whole workflow without shipping to NuGet, go to Actions → Release → Run workflow → check "Pack and validate only". Runs build + pack, skips the push step.
+To validate the whole workflow without shipping to NuGet, go to Actions → Release → Run workflow → check "Pack and validate only". Runs build, test and pack, and skips the version check, login, push and GitHub Release.
 
 ## After the release
 

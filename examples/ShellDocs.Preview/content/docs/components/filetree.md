@@ -38,5 +38,5 @@ order: 50
 
 - `Name` — the file or folder name shown next to the glyph
 - `IsFolder` — draws the folder glyph and enables nested children
-- `Comment` — muted italic comment shown to the right (e.g. `// sidebar order`)
+- `Comment` — muted italic note shown to the right of the name (e.g. `sidebar order`)
 - `Highlight` — soft warning-coloured background on the label to draw attention to a specific line

@@ -1,5 +1,6 @@
 @using ShellIcons.Icons
 @using ShellDocs.Components.Chrome
+@inject DocsVersionResolver Versions
 
 @if (Node.Kind == NodeKind.Divider)
 {
@@ -29,7 +30,7 @@ else if (Node.Kind == NodeKind.Section)
         {
             <div class="sidebar-section-shell" data-open="@(_isOpen ? "true" : "false")">
                 <div class="sidebar-section-items">
-                    @foreach (var child in Node.Children)
+                    @foreach (var child in Node.Children.Where(c => !Versions.IsHiddenInSidebar(c)))
                     {
                         <DocsSidebarNode Node="child" Depth="@(Depth + 1)" CurrentPath="@CurrentPath" />
                     }
@@ -39,7 +40,7 @@ else if (Node.Kind == NodeKind.Section)
         else
         {
             <div class="sidebar-section-items">
-                @foreach (var child in Node.Children)
+                @foreach (var child in Node.Children.Where(c => !Versions.IsHiddenInSidebar(c)))
                 {
                     <DocsSidebarNode Node="child" Depth="@(Depth + 1)" CurrentPath="@CurrentPath" />
                 }

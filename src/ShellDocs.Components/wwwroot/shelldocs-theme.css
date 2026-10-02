@@ -160,10 +160,21 @@ body { margin: 0; min-height: 100vh; }
     font-feature-settings: 'ss01', 'cv02';
 }
 
+/* Lock page scroll while the mobile nav is open. On <html>, not the page shell:
+   overflow on the shell would make it the sticky header's scroll container, and
+   the header would scroll away from above the drawer. */
+@media (max-width: 1023.98px) {
+    html:has([data-mobile-open="true"]) { overflow: hidden; }
+}
+
+/* Once highlighted, the Blazor-owned source <pre> stays in the DOM but hidden;
+   shelldocs.js renders Shiki's output into the sibling after it. */
+pre[data-shiki="source"] { display: none !important; }
+
 /* Shiki output — normalise its inline styles into our chrome. */
 .shelldocs-codeblock pre.shiki,
 .shelldocs-prose pre.shiki,
-.preview-body pre.shiki {
+.preview-frame pre.shiki {
     margin: 0 !important;
     padding: 1rem 1.125rem !important;
     border: 0 !important;

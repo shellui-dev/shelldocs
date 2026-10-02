@@ -92,6 +92,18 @@ public class VersionChromeRenderTests : IDisposable
     }
 
     [Fact]
+    public async Task Sidebar_OutsideVersions_LeavesVersionFoldersToTheSelector()
+    {
+        var html = await Harness("/docs/elsewhere", o => o.LayoutVariant = DocsLayoutVariant.Sidebar)
+            .RenderAsync<DocsSidebar>();
+
+        Assert.DoesNotContain(">V0.3<", html);
+        Assert.DoesNotContain(">V0.2.1<", html);
+        Assert.DoesNotContain("href=\"/docs/v0.3/introduction\"", html);
+        Assert.Contains("class=\"ver ver-sidebar\"", html);
+    }
+
+    [Fact]
     public async Task Sidebar_IsScopedToCurrentVersion_AndCarriesVersionSelector()
     {
         var html = await Harness("/docs/v0.2.1/components/form/button", o => o.LayoutVariant = DocsLayoutVariant.Sidebar)

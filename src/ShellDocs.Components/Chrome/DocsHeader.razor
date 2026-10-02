@@ -1,19 +1,14 @@
 @using ShellIcons.Icons
 @inject ShellDocsOptions Options
-@inject ShellDocs.Components.Chrome.MobileNavState MobileNav
 @inject IJSRuntime JS
 
 <header class="docs-header">
     <div class="docs-header-inner">
-        <button type="button" class="docs-header-hamburger" @onclick="MobileNav.Toggle" aria-label="Toggle navigation">
-            @if (MobileNav.IsOpen)
-            {
-                <X />
-            }
-            else
-            {
-                <Menu />
-            }
+        @* shelldocs.js toggles [data-mobile-open] on the page shell: DocsLayout slides
+           in the sidebar, HomeLayout (MobileMenu) shows the menu below. *@
+        <button type="button" class="docs-header-hamburger" data-mobile-nav-toggle aria-expanded="false" aria-label="Toggle navigation">
+            <Menu Class="mobile-nav-icon-open" />
+            <X Class="mobile-nav-icon-close" />
         </button>
         <a class="docs-header-brand" href="/">
             <BrandLogo />
@@ -92,16 +87,33 @@
             }
         </div>
     </div>
+    @if (MobileMenu && Options.PrimaryNav.Count > 0)
+    {
+        <nav class="docs-header-mobile-menu" aria-label="Primary">
+            @foreach (var link in Options.PrimaryNav)
+            {
+                if (link.Children is { Count: > 0 })
+                {
+                    <div class="docs-header-mobile-group">@link.Label</div>
+                    @foreach (var child in link.Children)
+                    {
+                        <a class="docs-header-mobile-link nested" href="@child.Href">@child.Label</a>
+                    }
+                }
+                else
+                {
+                    <a class="docs-header-mobile-link" href="@link.Href">@link.Label</a>
+                }
+            }
+        </nav>
+    }
 </header>
-
-@implements IDisposable
 
 @code {
     // HomeLayout hides search and the version selector on marketing pages.
     [Parameter] public bool ShowSearch { get; set; } = true;
     [Parameter] public bool ShowVersionSelector { get; set; } = true;
-
-    protected override void OnInitialized() => MobileNav.OnChange += StateHasChanged;
-    public void Dispose() => MobileNav.OnChange -= StateHasChanged;
+    // Layouts without a sidebar drawer render the primary nav as a mobile menu.
+    [Parameter] public bool MobileMenu { get; set; }
     private Task OpenSearch() => JS.InvokeVoidAsync("shelldocsSearch.open").AsTask();
 }

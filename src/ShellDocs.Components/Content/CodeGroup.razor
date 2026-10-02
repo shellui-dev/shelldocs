@@ -1,26 +1,29 @@
 @namespace ShellDocs.Components.Content
-@inject CodeGroupSyncState Sync
-@implements IDisposable
 
-<div class="code-group">
+@* Same contract as <Tabs>: server-rendered strip + panels, switched by
+   shelldocs.js via [data-tabs], so it works without a Blazor runtime. *@
+<div class="code-group" id="@_id" data-tabs data-tabs-value="@_active" data-tabs-sync="@SyncKey">
     <div class="code-group-tabs" role="tablist">
-        @foreach (var tab in _tabs)
+        @for (var i = 0; i < _tabs.Count; i++)
         {
+            var tab = _tabs[i];
             var isActive = tab.Label == _active;
             <button type="button"
                     role="tab"
-                    aria-selected="@isActive"
-                    class="code-group-tab @(isActive ? "active" : "")"
-                    @onclick="() => Select(tab.Label)">
+                    class="code-group-tab"
+                    id="@($"{_id}-tab-{i}")" aria-controls="@($"{_id}-panel-{i}")"
+                    aria-selected="@(isActive ? "true" : "false")" tabindex="@(isActive ? "0" : "-1")"
+                    data-tab-target="@tab.Label">
                 @tab.Label
             </button>
         }
     </div>
     <div class="code-group-panel">
-        @foreach (var tab in _tabs)
+        @for (var i = 0; i < _tabs.Count; i++)
         {
-            var isActive = tab.Label == _active;
-            <div class="code-group-content" hidden="@(!isActive)">
+            var tab = _tabs[i];
+            <div class="code-group-content" role="tabpanel" id="@($"{_id}-panel-{i}")" aria-labelledby="@($"{_id}-tab-{i}")"
+                 data-tab-panel="@tab.Label" hidden="@(tab.Label != _active)">
                 @tab.Content
             </div>
         }
@@ -33,43 +36,21 @@
 </CascadingValue>
 
 @code {
+    // Groups with the same key switch together, across pages, remembered in localStorage.
     [Parameter] public string? SyncKey { get; set; }
     [Parameter] public RenderFragment? ChildContent { get; set; }
 
     private readonly List<(string Label, RenderFragment Content)> _tabs = new();
     private string? _active;
 
+    // Deterministic, so the prerendered id matches the interactive re-render.
+    private string _id => "code-group-" + PreviewLinks.ShortHash(SyncKey + "|" + string.Join("|", _tabs.Select(t => t.Label)));
+
     internal void Register(string label, RenderFragment content)
     {
         if (_tabs.Any(t => t.Label == label)) return;
         _tabs.Add((label, content));
-        if (_active is null)
-        {
-            _active = (SyncKey is not null ? Sync.Get(SyncKey) : null) ?? label;
-            StateHasChanged();
-        }
-    }
-
-    private void Select(string label)
-    {
-        if (_active == label) return;
-        _active = label;
-        if (SyncKey is not null) Sync.Set(SyncKey, label);
+        _active ??= label;
         StateHasChanged();
     }
-
-    protected override void OnInitialized() => Sync.OnChange += OnSyncChange;
-
-    private void OnSyncChange(string changedKey)
-    {
-        if (SyncKey != changedKey) return;
-        var v = Sync.Get(SyncKey);
-        if (v is not null && _tabs.Any(t => t.Label == v) && _active != v)
-        {
-            _active = v;
-            InvokeAsync(StateHasChanged);
-        }
-    }
-
-    public void Dispose() => Sync.OnChange -= OnSyncChange;
 }

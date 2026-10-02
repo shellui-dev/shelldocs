@@ -6,7 +6,7 @@ order: 2
 
 # Markdown syntax
 
-ShellDocs takes standard CommonMark markdown and adds two extensions.
+ShellDocs takes standard CommonMark markdown (plus tables and other common extensions via Markdig) and adds frontmatter, inline component tags and `razor:preview` fences.
 
 ## Frontmatter
 
@@ -30,8 +30,23 @@ Headings, lists, tables, code fences, images, links — all standard:
 
 ## Inline component tags
 
-Reference Blazor components mid-content with self-closing PascalCase tags. Registered components render live; unknown ones warn at build time and pass through untouched.
+Reference registered Blazor components mid-content with PascalCase tags, self-closing or with a body. They render live:
+
+<Callout Variant="tip" Title="This is a live component">
+Written as a `<Callout>` tag in the middle of this page's markdown.
+</Callout>
+
+Unknown tags log a warning and pass through as raw markup. Tags inside inline code (`` `<Callout>` ``) and fenced code blocks stay literal.
 
 ## `razor:preview` fenced blocks
 
-A code fence with the info string `razor:preview` renders as a live component preview alongside the source, in a tabbed container.
+A code fence with the info string `razor:preview` renders live in a preview frame with **Preview | Code** tabs, a copy button and a ⋯ menu. Every top-level element in the fence renders, in order:
+
+```razor:preview
+<div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+    <Callout Variant="info" Text="First sibling." />
+    <Callout Variant="warning" Text="Second sibling, same frame." />
+</div>
+```
+
+Attribute values accept Razor forms such as `Variant="ButtonVariant.Destructive"`, `@true` and `[Flags]` values like `Bold | Italic`. Attributes a static preview can't evaluate (`OnClick="Handler"`, `@bind-*`, `@ref`) are skipped with a logged warning. For demos that need `@code`, see `<DemoPreview>` in the README.

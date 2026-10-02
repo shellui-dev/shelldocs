@@ -1,48 +1,32 @@
 # ShellDocs Architecture
 
-Technical architecture. Consumers won't read this; contributors and future-you will.
-
-For high-level design see [DESIGN.md](DESIGN.md); for what ships when see [ROADMAP.md](ROADMAP.md).
+How ShellDocs works today, for contributors. For the original product design see [DESIGN.md](DESIGN.md); for release history see [CHANGELOG.md](../CHANGELOG.md).
 
 ---
 
-## High-level dataflow
+## Overview
+
+A ShellDocs site is a Blazor Web App (the example and the `shelldocs init` scaffold use interactive Server rendering with prerendering) plus a `content/` folder of markdown.
 
 ```
-┌────────────────────────────────────────────────────────────────────────┐
-│  Build time                                                             │
-│                                                                         │
-│  content/**/*.md  ──────►  ShellDocs.Markdown  ──────►  Rendered pages  │
-│         │                       (Markdig)                   │           │
-│         │                                                   │           │
-│         ▼                                                   ▼           │
-│    Frontmatter  ────►  NavigationGraph  ────►  SearchIndexBuilder       │
-│                       (ShellDocs.Core)         (ShellDocs.Core)         │
-│                                                             │           │
-│                                                             ▼           │
-│                                                    search-index.json    │
-│                                                     (wwwroot/)          │
-└────────────────────────────────────────────────────────────────────────┘
+startup ─ AddShellDocs(options)
+          ├─ NavigationGraphBuilder.Build(content/)   → NavigationGraph   (singleton)
+          ├─ SearchIndex.FromGraph(graph)             → SearchIndex       (singleton, in memory)
+          ├─ options.BuildTypeRegistry()              → TypeRegistry      (built-ins, then consumer components)
+          └─ MarkdownRenderer, DocsVersionResolver                         (singletons)
 
-┌────────────────────────────────────────────────────────────────────────┐
-│  Runtime (browser, Blazor WASM)                                         │
-│                                                                         │
-│  URL /docs/button                                                       │
-│         │                                                               │
-│         ▼                                                               │
-│  Router  ──►  DocsPage  ──►  NavigationGraph.ResolveByUrl              │
-│                    │                    │                               │
-│                    │                    └──►  NavigationNode            │
-│                    │                                                    │
-│                    ▼                                                    │
-│  MarkdownRenderer  ──►  MarkupString + component-slot list              │
-│         │                                                               │
-│         │  slots contain: <Callout Type="Info">…</Callout>              │
-│         │                                                               │
-│         ▼                                                               │
-│  DynamicComponent renders each slot via TypeRegistry                    │
-└────────────────────────────────────────────────────────────────────────┘
+request ─ /docs/{*Path} page (consumer-owned)
+          ├─ NavigationGraph.ResolveByUrl(url)        → NavigationNode (its .md path)
+          ├─ MarkdownRenderer.RenderFile(path)        → RenderedDocument (HTML + slot list + headings)
+          └─ <MarkdownContent Document="…" />         → HTML parts + live components, inside DocsLayout
+
+browser ─ shelldocs.js  delegated chrome handlers (sidebar, selectors, tabs, previews, mobile nav, TOC)
+          Shiki          syntax highlighting into JS-owned siblings of the code blocks
+
+static  ─ shelldocs build: dotnet publish → run the app → prerender every graph URL to index.html files
 ```
+
+Everything a reader clicks in the chrome is server-rendered with its initial state in data attributes and switched by `shelldocs.js`, so the same HTML works under a live Blazor runtime and on a static host. See [Client-side chrome](#client-side-chrome-shelldocsjs).
 
 ---
 
@@ -50,218 +34,124 @@ For high-level design see [DESIGN.md](DESIGN.md); for what ships when see [ROADM
 
 ### `ShellDocs.Core`
 
-**Purpose:** framework-agnostic building blocks. Zero dependency on Blazor.
+Framework-agnostic building blocks; no Blazor dependency. Depends on Markdig, YamlDotNet.
 
-**Public API:**
-- `NavigationNode` — POCO with `Url`, `Title`, `Description`, `Category`, `Order`, `Headings`, `Path`, `Children`
-- `NavigationGraph` — tree wrapper with `ResolveByUrl(string)`, `GetPrevNext(NavigationNode)`, `GetBreadcrumb(NavigationNode)`, `Flatten()`
-- `NavigationGraphBuilder` — takes `contentRoot` path + `FrontmatterParser`, returns `NavigationGraph`
-- `FrontmatterParser` — YamlDotNet-backed, returns `Dictionary<string, object>`
-- `SearchIndexEntry` — POCO for one page's search entry
-- `SearchIndexBuilder` — walks `NavigationGraph` + rendered content, emits `IEnumerable<SearchIndexEntry>`
-
-**Depends on:** Markdig (for AST types only — no rendering), YamlDotNet, `System.Text.Json`
-
-**Why separate:** static site generators, external tooling, or non-Blazor consumers could reuse the graph + index logic without pulling in Blazor.
+- `NavigationNode` — `Url`, `Title`, `Description`, `Category`, `Order`, `Path`, `Kind` (Page / Section / Divider), `Parent`, `Children`.
+- `NavigationGraphBuilder.Build(contentRoot)` → `NavigationGraph` — `ResolveByUrl`, `GetPrevNext` (optionally scoped), `GetBreadcrumb`, `FindFolder`, `FirstPageUnder`, `Flatten`, `AllUrls`.
+- `MetaJson` — `meta.json` model (`title`, `pages`, `hidden`).
+- `FrontmatterParser.Parse(markdown)` → `ParsedDocument(Frontmatter, Body)`.
+- `SearchIndex.FromGraph(graph)` → page and h2/h3 heading entries; `MarkdownPlainText` extracts page body text.
+- `UrlPath` — segment-aware path helpers (`Normalize`, `IsUnder`, `RelativeTo`, `Combine`).
 
 ### `ShellDocs.Markdown`
 
-**Purpose:** turn `.md` files into Razor-renderable output with typed component slots.
+Turns markdown into HTML plus typed component slots. Depends on `ShellDocs.Core`, Markdig, YamlDotNet.
 
-**Public API:**
-- `MarkdownPipelineFactory` — configures a Markdig pipeline with all custom extensions
-- `MarkdownRenderer` — takes markdown text or file path, returns `RenderedDocument`
-- `RenderedDocument { MarkupString Html, List<ComponentSlot> Slots, DocumentFrontmatter Frontmatter, List<Heading> Headings }`
-- `ComponentSlot { Guid Id, Type ComponentType, Dictionary<string, object> Parameters, RenderFragment? ChildContent }`
-- `TypeRegistry` — maps `string tagName` → `Type componentType`; consumers register their types
-
-**Depends on:** `ShellDocs.Core`, Markdig, YamlDotNet
-
-**Key design decisions:**
-- **Two-pass rendering.** First pass: Markdig turns markdown into HTML + placeholder `<span data-slot="{guid}">` markers for component tags. Second pass: `MarkdownContent` component walks its own DOM (or better: uses a `RenderTreeBuilder` on the AST directly) and swaps placeholders for `<DynamicComponent>` calls.
-- **`razor:preview` blocks are two things.** Markdown fence with language `razor:preview` → a `<DocsTabs>` slot with two children: a live-rendered `<DynamicComponent>` for the "Preview" tab and a `<CodeBlock>` for the "Code" tab.
-- **Inline tags are strict.** `<Button />` in markdown must match a registered type. Unknown tags render as escaped text with a build-time warning (not a runtime crash).
+- `MarkdownRenderer.Render(markdown)` / `RenderFile(path)` → `RenderedDocument(Html, Slots, Source, Headings)`; `LastWarnings` holds unknown/unclosed tag warnings.
+- `Slot` records: `ComponentSlot` (inline tag) and `PreviewSlot` (razor:preview fence, with parsed `Nodes`).
+- `TypeRegistry` — tag name → component type; records `Collisions`.
+- `MarkdownPipelineFactory`, `CodeBlockEnhancer`, `HeadingExtractor`.
 
 ### `ShellDocs.Components`
 
-**Purpose:** the UI. RCL — everyone's entry point.
+The Razor class library everyone references. Depends on `ShellDocs.Core`, `ShellDocs.Markdown`, `ShellDocs.Tokens`, `ShellIcons.Blazor`.
 
-**Public API:** the primitives listed in [DESIGN.md](DESIGN.md) — `DocsLayout`, `DocsHeader`, `DocsSidebar`, `CodeBlock`, `SearchDialog`, etc.
+- `AddShellDocs(options)` and `ShellDocsOptions`.
+- Layouts: `DocsLayout` (`TopNav` / `Sidebar` variants), `HomeLayout`.
+- Chrome: `DocsHeader`, `DocsSidebar`, `DocsSidebarHeader`, `DocsMobileBar`, `PackageSelector`, `VersionSelector`, `DocsBreadcrumb`, `PrevNextNav`, `TableOfContents`, `SearchDialog`, `ThemeToggle`, `DocsFooter`, `BrandLogo`.
+- Content primitives (auto-registered for markdown): `Callout`, `Card`, `CardGrid`, `LinkCard`, `Steps`/`Step`, `FileTree`/`FileTreeItem`, `Tabs`/`Tab`, `CodeGroup`/`CodeTab`, `TypeTable`/`TypeRow`, `AutoTypeTable`, `ComponentPreview`, `DemoPreview`.
+- Render machinery (`[ShellDocsIgnore]`, not reachable from markdown): `MarkdownContent`, `PreviewFrame`.
+- Services: `DocsPageState` (scoped), `DocsVersionResolver` (singleton).
+- `wwwroot/shelldocs.js` and `wwwroot/shelldocs-theme.css`.
 
-**Depends on:** `ShellDocs.Core`, `ShellDocs.Markdown`, `ShellUI.Components`
+### `ShellDocs.Tokens`
 
-**Key design decisions:**
-- **`AddShellDocs()` service extension.** Consumer's `Program.cs` calls one method to register `NavigationGraph`, `MarkdownRenderer`, `TypeRegistry`, `IJSRuntime` interop wrappers, current theme.
-- **Cascading values everywhere.** `NavigationGraph`, current theme, and current page context are cascaded from `DocsLayout` so child components can consume them without prop-drilling.
-- **`<DynamicComponent>` for component rendering.** Standard Blazor primitive — takes a `Type` + `Dictionary<string, object>` params. Works with any registered component.
-- **No JS beyond what's necessary.** Shiki (highlighting), Motion One (animation fallback), IntersectionObserver (scroll-spy). Everything else pure Blazor.
+One static asset, `tokens.css`: the CSS variables every component reads. See [TOKENS.md](TOKENS.md).
 
-### `ShellDocs.CLI`
+### `ShellDocs.CLI` / `ShellDocs.Templates`
 
-**Purpose:** developer ergonomics.
-
-**Public API:** commands, not a library.
-- `shelldocs init [--yes] [--theme <name>]`
-- `shelldocs new page <path>`
-- `shelldocs new component-page <name>`
-- `shelldocs dev [--port <n>]`
-- `shelldocs build [--output <path>]`
-- `shelldocs preview <component-name> [--variant <v>]`
-
-**Depends on:** `System.CommandLine`, `Spectre.Console`, `ShellDocs.Templates`
-
-**Key design decisions:**
-- **`init` is idempotent.** Detects existing setup and skips already-done steps. Fresh consumers get everything; existing consumers can rerun to pull in new defaults.
-- **`dev` is `dotnet watch` + markdown watcher.** Two file watchers: `dotnet-watch` handles `.razor` / `.cs` reload; a second watcher watches `content/**/*.md` and pings the running app via a well-known endpoint to invalidate the navigation graph.
-- **`build` is `dotnet publish` + post-processing.** Publish, then rewrite base-href, generate search index, copy `index.html` → `404.html`. Same pattern the ShellUI `fix/preview-app` branch uses.
-
-### `ShellDocs.Templates`
-
-**Purpose:** file content used by `ShellDocs.CLI`.
-
-**Public API:** static classes with `Content` string properties, mirroring the pattern from `ShellUI.Templates`.
-
-**Depends on:** nothing (or `ShellDocs.Core` for the `NavigationNode` POCO if templates need it).
-
-**Why separate from CLI:** allows the templates to be updated (and versioned) independently. Also allows the CLI to be a small binary while templates carry the bulk of the bytes.
-
-### `ShellDocs.Xml` (v2)
-
-**Purpose:** extract API reference from XML doc comments.
-
-**Public API:**
-- MSBuild task `<ShellDocsXmlExtract Assembly="..." XmlDoc="..." Output="..." />`
-- Emits JSON per public type: `{ Name, Namespace, Summary, Properties: [{ Name, Type, Summary, Default }], Methods: [...] }`
-- `<TypeTable Source="ShellUI.Components.Button" />` reads the JSON at render time
-
-**Depends on:** `Microsoft.CodeAnalysis` (Roslyn), `System.Xml.Linq`
-
-**Deferred to Phase 4.** Hand-authored `<TypeRow>` unblocks Phase 2 shipping.
+The `shelldocs` global tool and the file content it writes. See [CLI](#cli).
 
 ---
 
 ## Service registration
 
-`AddShellDocs(options)` wires up everything.
+`AddShellDocs` (in `ServiceCollectionExtensions.cs`):
 
-```csharp
-public static IServiceCollection AddShellDocs(
-    this IServiceCollection services,
-    Action<ShellDocsOptions> configure)
-{
-    var options = new ShellDocsOptions();
-    configure(options);
-    services.AddSingleton(options);
+1. Builds `ShellDocsOptions` and runs the consumer's `configure` callback.
+2. Registers the scoped chrome state (`MobileNavState`, `ThemeState`, `SearchState`, `SidebarCollapseState`, `CodeGroupSyncState`, `DocsPageState`).
+3. Adds every component in `ShellDocs.Components.Content` as a built-in.
+4. Registers singletons: `TypeRegistry` (built lazily from the options, collisions logged), `MarkdownRenderer`, `NavigationGraph` (empty graph if `ContentRoot` doesn't exist), `SearchIndex`, `DocsVersionResolver`.
 
-    // Core — nav graph is built once at startup
-    services.AddSingleton<NavigationGraph>(sp =>
-        NavigationGraphBuilder.Build(options.ContentRoot));
+Registering components after `AddShellDocs` still works because the registry is built on first resolve.
 
-    // Markdown pipeline is singleton — construction is expensive
-    services.AddSingleton<MarkdownPipelineFactory>();
-    services.AddScoped<MarkdownRenderer>();
+### Type registry precedence
 
-    // Type registry is populated during Register* calls
-    services.AddSingleton<TypeRegistry>(sp =>
-    {
-        var registry = new TypeRegistry();
-        foreach (var type in options.RegisteredComponents) registry.Register(type);
-        return registry;
-    });
-
-    // Theme applied as cascading value in DocsLayout
-    services.AddSingleton(options.Theme);
-
-    return services;
-}
-```
-
-`ShellDocsOptions` — plain POCO with fluent-friendly config:
-
-```csharp
-public class ShellDocsOptions
-{
-    public string ContentRoot { get; set; } = "content";
-    public string SiteName { get; set; } = "";
-    public string? GitHubRepo { get; set; }
-    public ShellDocsTheme Theme { get; set; } = ShellDocsTheme.Shadcn;
-    public List<Type> RegisteredComponents { get; } = new();
-    public bool EnableSearch { get; set; } = true;
-    public string SearchIndexPath { get; set; } = "search-index.json";
-    // ... more knobs
-
-    public ShellDocsOptions RegisterComponent<T>() where T : ComponentBase
-    {
-        RegisteredComponents.Add(typeof(T));
-        return this;
-    }
-}
-```
-
-Fluent API supports method chaining in `Program.cs`.
+Built-ins are registered first, each also under a `Docs` alias (`Card` and `DocsCard`); consumer components are registered last. On a tag-name collision the consumer component wins and the built-in stays reachable through its alias. `TypeRegistry.Collisions` records every re-pointed tag; an overridden built-in is logged at information level, two consumer components claiming one tag at warning level. `RegisterComponent<T>("Alias")` registers a type only under the alias.
 
 ---
 
-## Markdown pipeline internals
+## Markdown pipeline
 
-### Custom Markdig extensions
+`MarkdownRenderer.Render`:
 
-Three extensions register on the Markdig pipeline:
+1. **Frontmatter** — `FrontmatterParser` splits the YAML block from the body.
+2. **Slot extraction** (`SlotExtractor`):
+   - Fenced code blocks and inline code spans are masked so tag scanning never sees them.
+   - `razor:preview` fences are parsed by `PreviewParser` into a `PreviewSlot` and replaced with a placeholder `<div data-shelldocs-slot="preview" …>`.
+   - Inline PascalCase tags that resolve in the `TypeRegistry` become `ComponentSlot`s with their attributes and raw child markup, replaced with a placeholder. Unknown tags pass through as raw markup with a warning.
+   - Masks are restored, both in the document and inside each component's child markup.
+3. **Markdig** renders the result (pipe/grid tables, auto heading ids, autolinks, task lists, emphasis extras, footnotes, diagrams, media links, soft-line-as-hard-line).
+4. `HeadingExtractor` collects headings for the TOC; `CodeBlockEnhancer` wraps each `<pre><code>` with the language badge and copy button.
 
-**1. Frontmatter extension**
+Placeholders plus a slot list keep everything at render time: no generated Razor source and no build step. `SlotSplitter` later cuts the HTML at the placeholders.
 
-Uses `Markdig.Extensions.Yaml.YamlFrontMatterExtension` (built-in). Wraps its output as `DocumentFrontmatter` in the `RenderedDocument`.
+### Attribute parsing
 
-**2. `razor:preview` fence extension**
+`RazorTagScanner` is a linear, quote-aware tag reader: it keeps full attribute names (`@bind-Value`, `@onclick:preventDefault`) and skips balanced `@( … )` expressions, so values like `OnClick="@(() => x > y)"` don't break the tag.
 
-Extends `FencedCodeBlockRenderer` — inspects the info string. If it starts with `razor:preview`, replaces the standard code-block output with a placeholder `<span data-shelldocs-preview="{guid}"></span>` and adds a `PreviewSlot` to the rendered document.
+### `razor:preview` fences
 
-At render time, `MarkdownContent` walks its markup and for each `data-shelldocs-preview` span, injects a `<DocsTabs>` with the preview slot.
-
-**3. Inline component tag extension**
-
-Custom `InlineParser` on Markdig — matches `<TagName params />` at the block or inline level. Rejects if `TagName` isn't in `TypeRegistry`. Emits a placeholder `<span data-shelldocs-component="{guid}"></span>` and adds a `ComponentSlot` to the rendered document.
-
-Same render-time swap logic as `razor:preview`.
-
-### Why placeholders + slot list, not direct Razor generation
-
-Generating Razor source code from markdown at build time is possible but adds tooling complexity. Markdown-to-HTML + slot list at render time keeps everything in the runtime and lets us change the wrapper components without rebuilding the source.
-
-Trade-off: DOM walking at render time has a per-page cost (~1ms for a large page). Acceptable.
+`PreviewParser` turns the fence into ordered nodes: component nodes (registered capitalised tags; their children kept raw), element nodes (HTML, including unregistered capitalised tags) and text. `@code { }` / `@functions { }` blocks, `@* *@` comments and directive lines (`@using`, `@inject`, …) are skipped for rendering but stay in the Code tab. If no registered component is found the slot carries an `Error`, rendered as a red panel instead of a silent code block.
 
 ---
 
-## Navigation graph internals
+## Component rendering
 
-### Build process
+`MarkdownContent` splits a `RenderedDocument` into HTML parts and slots:
 
-`NavigationGraphBuilder.Build(contentRoot)`:
+- HTML parts render as `MarkupString`.
+- `ComponentSlot` → `<DynamicComponent>` with parameters from `SlotRenderer.BuildParameters`.
+- `PreviewSlot` → `<PreviewFrame Id="preview-N">`, where `SlotRenderer.RenderNodes` emits elements and components as real render-tree nodes, so wrappers keep their children under interactive re-renders.
 
-1. Recursively walk `contentRoot`
-2. For each `.md` file: parse frontmatter, create a `NavigationNode` with `Url = path minus root + filename`, populate from frontmatter
-3. For each folder: check for `meta.json`, build children in specified order; fall back to alphabetical
-4. Cross-link `Parent` and `Children`
-5. Compute derived properties: `NextNode`, `PreviousNode` (in flatten order)
-6. Return `NavigationGraph` root
+Component child markup is rendered recursively by `SlotRenderer.FromMarkup` (dedented first, since Markdig treats 4-space indentation as a code block). Child tags named after a `RenderFragment` parameter (`<Icon>` → `Alert.Icon`) are routed into that slot.
 
-Cache result — rebuild only when `dev` mode detects a change.
+**Parameter coercion.** Attribute values are strings. `BuildParameters` matches them to `[Parameter]` properties case-insensitively and coerces string, bool, char, numeric primitives and enums, accepting Razor forms: a leading `@`, `@( … )`, `Type.Member` enum values, `A | B` flags, numeric suffixes, `@null`. It never throws. Anything static markup can't set is skipped with a logged warning: directive attributes, delegate/`EventCallback` parameters, unsupported types, unparseable values, unknown attributes on components without a `CaptureUnmatchedValues` catch-all, and child content on components without a plain `RenderFragment ChildContent`.
 
-### Runtime queries
+**`PreviewFrame`** is the frame for every example: a toolbar with Preview | Code tabs, copy and a ⋯ menu (*Open in new tab* → the example's anchor; *Report a bug* / *Suggest something* → new-issue links built by `PreviewLinks` from `IssueTrackerUrl` or `GitHubRepo`). `ComponentPreview` and `DemoPreview` feed it a ready-made `Content` fragment and `Code` string instead of a `PreviewSlot`. `DemoPreview` reads its source from the first `{DemoSourceRoot}/**/X.razor` (shallowest path wins, cached, re-read when the file changes).
 
-`NavigationGraph.ResolveByUrl("/docs/button")`:
-- Walk the tree matching path segments
-- O(depth) — usually 2–3 segments
-- Return `null` if not found (page shows 404)
+**`DocsPageState`** (scoped) is fed by `MarkdownContent` and recomputes current node, prev/next and breadcrumbs on navigation, so the layout chrome needs no per-page wiring.
 
-`NavigationGraph.GetPrevNext(node)`:
-- Precomputed at build; O(1) lookup
+---
 
-`NavigationGraph.GetBreadcrumb(node)`:
-- Walk up `Parent` chain; O(depth)
+## Navigation graph
 
-`NavigationGraph.GetPrevNext(node, inScope)` / `FindFolder(url)` / `FirstPageUnder(url)`:
-- Scoped prev/next (skips out-of-scope neighbours), folder-section lookup by URL, first page under a URL prefix.
+`NavigationGraphBuilder.Build(contentRoot)` walks the folder tree:
+
+- Every `.md` file is a page; `index.md` takes the folder's URL. Frontmatter supplies `title` (else derived from the slug), `description`, `category`, `order`.
+- Every subfolder is a section titled from its name. Folder names keep their dots (`v0.2.1`).
+- Without `meta.json`: subfolders first, then pages by `order` and title.
+- With `meta.json`: `pages` sets the order for what it lists: a slug, `"---"` for a divider, or `{ "title", "pages" }` for a subsection. Unlisted files and folders are appended alphabetically, and unknown slugs are ignored. `hidden` entries route but stay out of the sidebar and prev/next.
+
+```json
+{
+  "title": "Components",
+  "pages": ["button", "input", "---", { "title": "Data Display", "pages": ["table", "card"] }],
+  "hidden": ["drafts"]
+}
+```
+
+Runtime queries: `ResolveByUrl` is a case-insensitive dictionary lookup on normalized URLs; prev/next walk the flattened visible page list (optionally restricted to a scope); breadcrumbs walk up `Parent`. The graph is built once at startup; `shelldocs dev` restarts the app when content changes.
 
 ### Versions
 
@@ -269,206 +159,91 @@ Cache result — rebuild only when `dev` mode detects a change.
 
 | Question | Answer |
 |---|---|
-| Current version | Version whose `RootUrl` is a segment-aware prefix of the path (`UrlPath.IsUnder`), longest wins → else `latest` → else `Versions[0]` |
-| Sidebar nodes | Inside a version: that version folder node's `Children` (`FindFolder`). Otherwise `Root.Children` |
-| Version switch href | Same relative page in the target version → current package's root in the target version → target version's first page |
+| Current version | Version whose `RootUrl` is a segment-aware prefix of the path, longest wins → else `latest` → else `Versions[0]` |
+| Sidebar nodes | Inside a version: that version folder's children. Outside: the whole tree minus version folders (`IsHiddenInSidebar`) |
+| Version switch href | Same relative page in the target version → current package's root there → the target version's first page |
 | Package href | `{version}` token replaced with the current version's `Id`; a versioned root that isn't a page lands on its first page |
-| Prev/next | `GetPrevNext(node, n => InSameScope(n.Url, node.Url))` |
-| Search | Entries in the current version + entries outside every version root |
+| Prev/next | Restricted to pages in the same version (or both unversioned) |
+| Search | Entries in the current version, plus entries outside every version root |
 | Breadcrumb | Version folder node removed |
 
-All answers are computed at render time and emitted as plain `<a href>`, so prerendered/static pages behave identically; dropdown open/close is `shelldocs.js` delegation on `.pkg`/`.ver`.
-
-### `meta.json` schema
-
-```json
-{
-    "title": "Components",
-    "pages": [
-        "button",
-        "input",
-        "---",
-        {
-            "title": "Data Display",
-            "pages": ["table", "card", "badge"]
-        }
-    ]
-}
-```
-
-- Strings: page slug matches filename minus `.md`
-- `"---"`: renders as a section divider in the sidebar
-- Objects: nested subsection with its own title and pages
-- Nested folders can have their own `meta.json` for further nesting
-
-Unknown page slugs (typo in `meta.json`) emit a build-time warning but don't crash.
+All answers are computed at render time and emitted as plain `<a href>`, so prerendered pages behave identically.
 
 ---
 
-## Search index
+## Search
 
-### Build time
+`SearchIndex.FromGraph` runs once at startup and keeps everything in memory: one entry per visible page (title, description, section, plain-text body) and one per h2/h3 heading (headings are read from the source if the page hasn't rendered yet).
 
-`SearchIndexBuilder.Build(graph, renderer)`:
-
-For each node in the graph:
-1. Render the page's markdown (via `MarkdownRenderer`)
-2. Extract all `<h2>` and `<h3>` headings (already in `RenderedDocument.Headings`)
-3. Extract first 200 chars of body per heading (for excerpt)
-4. Build `SearchIndexEntry { Url, Title, Description, Category, Headings, Excerpt }`
-
-Serialize the list to `search-index.json`, written to output `wwwroot/`.
-
-### Runtime
-
-`SearchDialog` component on first open (lazy):
-1. `HttpClient.GetFromJsonAsync<SearchIndexEntry[]>("search-index.json")`
-2. Store in memory for subsequent opens
-
-On each keystroke:
-1. Fuzzy match against `Title` + `Headings.Text` + `Excerpt`
-2. Score = Levenshtein + prefix bonus + heading-match bonus
-3. Top N results rendered inline in the modal
-
-No debounce needed for docs sites this size. ~500 entries client-filtered in <1ms.
-
-### Scaling out
-
-For 1000+ pages, the client-side fuzzy match starts to lag on slow devices. Escape hatch: `options.SearchProvider = SearchProvider.Orama` swaps to an Orama-backed backend. Not v1; escape hatch design only.
+`SearchDialog` (Cmd/Ctrl+K, or the header / sidebar buttons) filters the entries to the current version and scores them in .NET: whole-query and per-token matches against title (strongest), section, description and body; every token must match somewhere. Body-only matches get a ~150-character snippet. It's an interactive Blazor component, so search needs a running Blazor app; a static `shelldocs build` site has no search.
 
 ---
 
-## Component rendering (`<DynamicComponent>`)
+## Client-side chrome (`shelldocs.js`)
 
-Standard Blazor primitive — takes `Type` + `IReadOnlyDictionary<string, object>?`.
+Chrome that must work without a Blazor runtime follows one contract:
 
-`MarkdownContent` component:
+- The server renders the full markup with its initial state in data attributes (`data-open`, `data-tabs-value`, `data-preview-tab`, `data-mobile-open`, `aria-selected`, `hidden`). Nothing uses `@onclick` state.
+- `shelldocs.js` attaches document-level delegated listeners as soon as it runs (not on `DOMContentLoaded`, which waits for module scripts), so early clicks and enhanced-navigation DOM swaps are both covered.
+- When a Blazor circuit starts it replaces the prerendered DOM. A `MutationObserver` re-applies state chosen before then: preview tabs (per page + frame id), `<Tabs>`/`<CodeGroup>` selections, the mobile nav.
 
-```razor
-@foreach (var slot in Document.Slots)
-{
-    <span data-slot="@slot.Id">
-        <DynamicComponent Type="@slot.ComponentType" Parameters="@slot.Parameters">
-            @slot.ChildContent
-        </DynamicComponent>
-    </span>
-}
-```
+| Feature | Markup | Behaviour |
+|---|---|---|
+| Sidebar sections | `.sidebar-section[data-open]` | toggle on click |
+| Package / version selectors, preview ⋯ menu | `.pkg` / `.ver` / `.preview-menu` `[data-open]` | open on trigger; close on outside click, Escape or option |
+| Preview tabs | `.preview-frame[data-preview-tab]` | Preview / Code; arrow keys; copy reads the source |
+| Tabs, CodeGroup | `[data-tabs]`, `[data-tab-target]`, `[data-tab-panel]` | switch on click / arrows; `[data-tabs-sync]` groups switch together and persist in `localStorage` |
+| Mobile nav | page shell `[data-mobile-open]` | hamburger toggles; backdrop, Escape, link or navigation closes; page scroll locked on `<html>` |
+| TOC | `[data-toc-list][data-toc-ids]` | IntersectionObserver scroll-spy, re-attached on `enhancedload` |
+| Theme | `<html class="dark">` | inline head script applies the saved / system theme; re-applied after enhanced navigation |
 
-Then the plain HTML with `data-slot` placeholders is emitted alongside; the DOM ends up interleaved. Details in the [markdown pipeline notes](#markdown-pipeline-internals).
+Still Blazor-only: search, the `ThemeToggle` button, the desktop sidebar-collapse button.
 
-**Parameter serialization:** attribute values are strings. `SlotRenderer.BuildParameters` matches them to `[Parameter]` properties (case-insensitively) and coerces string, bool, char, numeric primitives and enums, accepting Razor forms: a leading `@`, `@( … )`, `Type.Member` enum values, `A | B` flags, numeric suffixes, `@null`. Anything else is skipped with a logged warning instead of throwing: directive attributes (`@onclick`, `@bind-*`, `@ref`), delegate/`EventCallback` params, unsupported types, bad values, and unknown attributes on components without a `CaptureUnmatchedValues` catch-all.
-
-**`razor:preview` fences** are parsed by `PreviewParser` (a hand-rolled, quote- and `@( … )`-aware tag scanner) into `PreviewSlot.Nodes`: component, element and text nodes in source order. `SlotRenderer.RenderNodes` emits them as real render-tree elements and components, so wrappers keep their children under interactive re-renders too. Razor-only constructs (`@code { }`, `@* *@`, `@using` lines) are skipped for rendering but stay in the source view.
-
-**`<DemoPreview Component="X" />`** renders registered component `X` inside `PreviewFrame` and reads `{DemoSourceRoot}/**/X.razor` (shallowest match, cached and re-read when the file's write time changes) for the source tab.
+**Syntax highlighting.** Shiki (loaded by the app as `window.__shiki`) never replaces Blazor-owned nodes: the source `<pre>` gets `data-shiki="source"` (hidden by CSS) and the highlighted output goes into a JS-owned `[data-shiki-output]` sibling, re-rendered when the source text changes and removed when its source is gone.
 
 ---
 
-## Theme layer
+## Theming
 
-### Layer 1 — presets
-
-Each theme is a package that ships:
-- A CSS file with custom properties (`--color-bg`, `--color-accent`, `--font-heading`, `--radius`, etc.)
-- Optional component style overrides (`.docs-sidebar-item.active { … }`)
-- Registered via `options.Theme = ShellDocsTheme.Fuma`
-
-`DocsLayout` applies the theme's CSS by injecting the stylesheet link into the `<HeadContent>` or by cascading a `ThemeContext` that child components consume.
-
-### Layer 2 — full customization
-
-Every custom property is overridable in the consumer's `wwwroot/*.css`. Cascade order: theme preset → consumer CSS. Standard shadcn escape hatch.
-
-Every component parameter is public. Consumer can wrap `<DocsSidebar>` in a component of their own with different behaviour — same override pattern as shadcn's copy-and-edit philosophy.
+One neutral, shadcn-shaped palette of CSS variables in `ShellDocs.Tokens/tokens.css` (`:root` and `:root.dark`). Component styles are scoped CSS reading those variables, plus `shelldocs-theme.css` for global prose, code-block and Shiki styling. Restyle by overriding variables in a stylesheet loaded after `tokens.css`. `ShellDocsOptions.Theme` exists but doesn't switch palettes yet.
 
 ---
 
-## Static site generation
+## CLI
+
+- `shelldocs init [path] [--attach] [--dir] [--yes] [--theme]` — create mode runs `dotnet new blazor` (default `docs/<CwdName>.Docs`), adds the packages at the CLI's own version, writes starter content and patches `Program.cs` / `App.razor`. Attach mode augments an existing project and writes `SHELLDOCS_SETUP.md` instead of editing code. Both are idempotent.
+- `shelldocs add <component|guide|page> <name> [--force]` — scaffolds a page into `content/docs/`.
+- `shelldocs dev [--port 5000]` — `dotnet watch run`, with `content/**/*.md` added to the watch set.
+- `shelldocs build [--output publish] [--base-href] [--spa-fallback] [--site-url]` — see below.
+- `shelldocs preview` — reserved, not implemented.
+
+### Static site generation
 
 `shelldocs build`:
 
-1. `dotnet publish -c Release -o <output>` — Blazor's WASM AOT publish
-2. Run `SearchIndexBuilder` on the content, write `search-index.json` to `output/wwwroot/`
-3. Rewrite `<base href="/" />` in `index.html` to `<base href="/<basePath>/" />` if `basePath` supplied
-4. Copy `index.html` → `404.html` (GH Pages SPA fallback)
-5. Copy any content-referenced static assets (images embedded in markdown)
-6. Exit
-
-Optionally, in a future version: prerender each route to a static `.html` file for SEO / first-paint. Requires Blazor's prerendering support — feasible in Server hosting mode, harder in WASM. Deferred.
+1. `dotnet publish -c Release` into `obj/shelldocs-publish` (mirroring `content/` into it if the csproj didn't copy it).
+2. Builds the navigation graph and collects every URL (visible and hidden) plus `/`.
+3. `PrerenderRunner` starts the published app on a free port, requests each URL and writes `<output>/<path>/index.html`.
+4. Merges the published `wwwroot/` into the output without overwriting prerendered HTML.
+5. Optionally rewrites `<base href>` in every HTML file, copies `index.html` to `404.html`, and with `--site-url` writes `sitemap.xml`, `robots.txt` and `og:*` meta.
 
 ---
 
-## Dev server (`shelldocs dev`)
+## Testing
 
-Two processes:
+`tests/ShellDocs.Tests` (xUnit):
 
-**1. `dotnet watch run`** on the consumer project. Hot-reloads on `.razor` / `.cs` changes.
+- Unit tests for the graph builder, `meta.json`, frontmatter, search index, URL helpers, versions, the markdown pipeline (slots, previews, code spans, attribute parsing), parameter coercion and the type registry.
+- Component render tests: `ComponentRenderHarness` renders components with Blazor's `HtmlRenderer` — the same static HTML a prerendered page ships — and asserts on markup (selectors, sidebar scoping, preview toolbar, tabs, mobile nav).
+- CLI tests for `init` (attach mode end-to-end, create-mode patchers against template fixtures), `add` and `build` helpers.
 
-**2. Markdown file watcher** (`FileSystemWatcher` on `content/**/*.md`) — spawns from the same CLI process. On change:
-- Rebuild `NavigationGraph`
-- POST to a well-known endpoint on the running app (`/_shelldocs/reload-graph`)
-- The endpoint invokes a `NavigationGraph`-refresh service (registered by `AddShellDocs()` in dev mode)
-
-Alternative: SignalR channel between CLI and app. Overkill for v1.
+JavaScript behaviour is verified manually in the example app (`examples/ShellDocs.Preview`).
 
 ---
 
-## Testing strategy
+## Not building (deliberately)
 
-Same three-layer approach as ShellUI:
-
-**1. Unit tests** (`ShellDocs.Tests`)
-- xUnit
-- Markdig extensions in isolation
-- `NavigationGraphBuilder` on synthetic content trees
-- `TypeRegistry` coercion
-- `SearchIndexBuilder` output shape
-
-**2. Template compile tests**
-- Every CLI template's `Content` is Roslyn-parsed to catch escape-quote regressions
-
-**3. Live↔template sync tests**
-- The scaffold generated by `shelldocs init` matches what the CLI templates say it should
-
-**4. E2E in CI**
-- `shelldocs init` a Blazor WASM project in a temp dir
-- `shelldocs build` it
-- Verify output has expected files, valid HTML, search index present
-
----
-
-## Cross-cutting concerns
-
-### Bundle size
-
-Priorities:
-- Base ShellDocs.Components: target <100KB gzipped
-- With Shiki full theme set: +~2MB (opt-out via config to a Prism-based highlighter, <50KB)
-- With Motion One fallback: +~10KB gzipped
-
-Every JS interop file gets budget scrutiny.
-
-### Accessibility
-
-- All primitives ship with correct ARIA roles + labels
-- Keyboard nav complete (Tab / Shift+Tab / Enter / Esc across all interactives)
-- Focus management on modal open/close
-- Skip-to-content link in `DocsLayout`
-- `prefers-reduced-motion` respected everywhere animations run
-
-### Internationalization (i18n)
-
-**Not v1.** Design left open by making content routing extension-friendly — a future `ShellDocs.I18n` package could add locale-aware content resolution without breaking `NavigationGraph`'s shape.
-
----
-
-## What we're NOT building (deliberately)
-
-- **A markdown editor.** Consumer authors in whatever they use (VSCode, Rider, whatever).
-- **A CMS.** Content is `.md` files in a git repo. That's the interface.
-- **A server backend.** ShellDocs is static-only; the search index is client-side.
-- **A hosted service.** No shelldocs.dev SaaS; it's a NuGet package family.
-- **A design system.** ShellUI is that. ShellDocs uses ShellUI; doesn't compete.
-
-Scope discipline. These are all things fumadocs also didn't build — and it stayed lean and usable.
+- **A markdown editor or CMS.** Content is `.md` files in a git repo.
+- **A hosted service.** ShellDocs is a NuGet package family; you host the app or its static output.
+- **A design system.** ShellDocs ships only the primitives a docs site needs; bring your own component library and register it.
+- **i18n**, for now. Content routing is plain folders, so locale-aware resolution can be added later without changing the graph's shape.

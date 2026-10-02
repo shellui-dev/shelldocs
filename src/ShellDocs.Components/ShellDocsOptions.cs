@@ -13,6 +13,10 @@ public class ShellDocsOptions
     // Absolute base URL ("https://shelldocs.dev") for sitemap.xml, robots.txt and
     // og:url in `shelldocs build`; those are skipped when unset.
     public string? SiteUrl { get; set; }
+    // Where the preview ⋯ menu's "Report a bug" / "Suggest something" open a new issue
+    // (title and body appended as query params). Defaults to GitHubRepo's issues/new;
+    // with neither set, those items are hidden.
+    public string? IssueTrackerUrl { get; set; }
 
     public string? LogoLight { get; set; }
     public string? LogoDark { get; set; }
@@ -32,6 +36,9 @@ public class ShellDocsOptions
     // Searched recursively for X.razor to show as <DemoPreview Component="X" />'s source.
     public string? DemoSourceRoot { get; set; }
     public List<Type> RegisteredComponents { get; } = new();
+    // ShellDocs' own content primitives, filled by AddShellDocs. Registered before
+    // RegisteredComponents so a consumer component with the same name wins.
+    internal List<Type> BuiltInComponents { get; } = new();
     // Markdown tag name per type, from RegisterComponent<T>(tagName). Last registration wins.
     public Dictionary<Type, string> ComponentAliases { get; } = new();
 
@@ -168,9 +175,27 @@ public class ShellDocsOptions
         return this;
     }
 
+    public const string BuiltInAliasPrefix = "Docs";
+
+    internal void AddBuiltInComponents(Assembly assembly, Func<Type, bool> filter)
+    {
+        foreach (var type in DiscoverComponentTypes(assembly))
+        {
+            if (filter(type) && !BuiltInComponents.Contains(type)) BuiltInComponents.Add(type);
+        }
+    }
+
+    /* Built-ins first, each also under a "Docs" alias (<DocsCard>) that stays
+       reachable when a consumer library shadows the short name; consumer
+       registrations last, so they win collisions. */
     internal TypeRegistry BuildTypeRegistry()
     {
         var registry = new TypeRegistry();
+        foreach (var type in BuiltInComponents)
+        {
+            registry.Register(type);
+            registry.Register(BuiltInAliasPrefix + type.Name, type);
+        }
         foreach (var type in RegisteredComponents)
         {
             if (ComponentAliases.TryGetValue(type, out var alias))

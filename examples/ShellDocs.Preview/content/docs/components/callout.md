@@ -7,7 +7,7 @@ order: 10
 
 # Callout
 
-Use `<Callout>` to break out of the reading flow with a short, high-signal note. Callouts render as a bordered strip with an icon, an optional bold title, and body copy. Four variants ship: `info`, `warning`, `tip`, and `danger`.
+Use `<Callout>` to break out of the reading flow with a short, high-signal note. Callouts render as a bordered strip with an icon, an optional bold title, and body copy. Four variants ship: `info`, `warning`, `tip`, and `danger` (`error` and `success` are accepted as aliases for `danger` and `tip`; anything else renders as `info`).
 
 ## Info
 
@@ -38,12 +38,18 @@ An optional-but-useful note. Best for "did you know" content that saves the read
 Strong warning about destructive or irreversible actions. Use sparingly — if every callout on the page is a danger, none of them read as one.
 
 ```razor:preview
-<Callout Variant="danger" Title="Data loss" Text="Running shelldocs init on an existing project overwrites content/meta.json without prompting. Back it up first." />
+<Callout Variant="danger" Title="Overwrites without asking" Text="shelldocs add --force replaces an existing page with the same name. Commit your changes first." />
 ```
 
 ## Composition
 
-Any of the four variants accept either a `Text` prop for one-liners, or a `ChildContent` slot when you need multiple paragraphs, links, or other components inside.
+Every variant accepts either a `Text` prop for one-liners, or child content when you need markup, links or inline code inside:
+
+```razor:preview
+<Callout Variant="info" Title="Child content">
+    Write markup in the body: <a href="/docs/markdown-syntax">links</a>, <code>inline code</code>, <strong>emphasis</strong>.
+</Callout>
+```
 
 ## Guidance
 
