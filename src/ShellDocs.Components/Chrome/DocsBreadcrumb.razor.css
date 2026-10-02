@@ -33,7 +33,7 @@
     font-weight: 500;
 }
 
-.docs-breadcrumb-sep {
+::deep .docs-breadcrumb-sep {
     width: 0.75rem;
     height: 0.75rem;
     opacity: 0.6;

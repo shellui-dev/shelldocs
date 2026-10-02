@@ -1,3 +1,4 @@
+@using ShellIcons.Icons
 @inject DocsPageState PageState
 @implements IDisposable
 @using ShellDocs.Core
@@ -14,7 +15,7 @@
         {
             <a class="prevnext-card prev" href="@prev.Url">
                 <span class="prevnext-hint">
-                    <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                    <ChevronLeft Class="chev" />
                     <span>@prev.Title</span>
                 </span>
                 @if (!string.IsNullOrEmpty(prev.Description))
@@ -30,7 +31,7 @@
             <a class="prevnext-card next" href="@next.Url">
                 <span class="prevnext-hint">
                     <span>@next.Title</span>
-                    <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                    <ChevronRight Class="chev" />
                 </span>
                 @if (!string.IsNullOrEmpty(next.Description))
                 {

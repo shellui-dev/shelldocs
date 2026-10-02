@@ -1,3 +1,4 @@
+@using ShellIcons.Icons
 @inject ShellDocsOptions Options
 @inject ShellDocs.Components.Chrome.MobileNavState MobileNav
 @inject IJSRuntime JS
@@ -5,19 +6,14 @@
 <header class="docs-header">
     <div class="docs-header-inner">
         <button type="button" class="docs-header-hamburger" @onclick="MobileNav.Toggle" aria-label="Toggle navigation">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                @if (MobileNav.IsOpen)
-                {
-                    <line x1="18" y1="6" x2="6" y2="18"/>
-                    <line x1="6" y1="6" x2="18" y2="18"/>
-                }
-                else
-                {
-                    <line x1="3" y1="6" x2="21" y2="6"/>
-                    <line x1="3" y1="12" x2="21" y2="12"/>
-                    <line x1="3" y1="18" x2="21" y2="18"/>
-                }
-            </svg>
+            @if (MobileNav.IsOpen)
+            {
+                <X />
+            }
+            else
+            {
+                <Menu />
+            }
         </button>
         <a class="docs-header-brand" href="/">
             <BrandLogo />
@@ -32,7 +28,7 @@
                     <div class="docs-header-nav-item has-menu">
                         <button type="button" class="docs-header-nav-link">
                             @link.Label
-                            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                            <ChevronDown Class="chevron" />
                         </button>
                         <div class="docs-header-mega">
                             <div class="docs-header-mega-grid">
@@ -40,7 +36,14 @@
                                 {
                                     <a class="docs-header-mega-card" href="@child.Href">
                                         <span class="docs-header-mega-icon">
-                                            @((MarkupString)(child.IconSvg ?? DefaultIcon))
+                                            @if (child.IconSvg is not null)
+                                            {
+                                                @((MarkupString)child.IconSvg)
+                                            }
+                                            else
+                                            {
+                                                <Square StrokeWidth="1.75" />
+                                            }
                                         </span>
                                         <span class="docs-header-mega-body">
                                             <span class="docs-header-mega-title">@child.Label</span>
@@ -70,7 +73,7 @@
             @if (ShowSearch)
             {
                 <button type="button" class="docs-header-search" @onclick="OpenSearch" aria-label="Search">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+                    <Search />
                     <span class="docs-header-search-label">Search</span>
                     <span class="docs-header-kbd">
                         <kbd>Ctrl</kbd>
@@ -97,9 +100,6 @@
     // HomeLayout hides search and the version selector on marketing pages.
     [Parameter] public bool ShowSearch { get; set; } = true;
     [Parameter] public bool ShowVersionSelector { get; set; } = true;
-
-    private const string DefaultIcon =
-        "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"3\"/></svg>";
 
     protected override void OnInitialized() => MobileNav.OnChange += StateHasChanged;
     public void Dispose() => MobileNav.OnChange -= StateHasChanged;

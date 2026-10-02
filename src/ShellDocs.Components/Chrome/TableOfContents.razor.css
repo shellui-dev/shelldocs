@@ -16,7 +16,7 @@
     z-index: 5;
     background: var(--background);
 }
-.toc-title svg { width: 0.9rem; height: 0.9rem; }
+.toc-title ::deep svg { width: 0.9rem; height: 0.9rem; }
 
 .toc-list {
     list-style: none;

@@ -33,7 +33,7 @@
     border-radius: 5px;
     flex-shrink: 0;
 }
-.ver-mark svg { width: 0.85rem; height: 0.85rem; }
+.ver-mark ::deep svg { width: 0.85rem; height: 0.85rem; }
 
 .ver-value {
     flex: 1;
@@ -48,7 +48,7 @@
     white-space: nowrap;
 }
 
-.ver-chevron {
+::deep .ver-chevron {
     width: 0.9rem;
     height: 0.9rem;
     color: var(--muted-foreground);
@@ -56,7 +56,7 @@
     margin-left: 0.25rem;
     transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
 }
-.ver-chevron.open { transform: rotate(180deg); }
+::deep .ver-chevron.open { transform: rotate(180deg); }
 
 .ver-menu {
     position: absolute;
@@ -111,7 +111,7 @@ a.ver-option { text-decoration: none; }
     letter-spacing: -0.005em;
 }
 .ver-option-desc { font-size: 0.7rem; color: var(--muted-foreground); line-height: 1.35; }
-.ver-option-check {
+::deep .ver-option-check {
     width: 0.9rem;
     height: 0.9rem;
     color: var(--foreground);

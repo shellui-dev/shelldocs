@@ -1,3 +1,4 @@
+@using ShellIcons.Icons
 @inject DocsPageState PageState
 @implements IDisposable
 @using ShellDocs.Core
@@ -25,7 +26,7 @@
                         {
                             <span class="docs-breadcrumb-section">@node.Title</span>
                         }
-                        <svg class="docs-breadcrumb-sep" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+                        <ChevronRight Class="docs-breadcrumb-sep" />
                     }
                 </li>
             }

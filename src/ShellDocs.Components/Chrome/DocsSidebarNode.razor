@@ -1,3 +1,4 @@
+@using ShellIcons.Icons
 @using ShellDocs.Components.Chrome
 
 @if (Node.Kind == NodeKind.Divider)
@@ -14,7 +15,7 @@ else if (Node.Kind == NodeKind.Section)
                 @* Toggled by shelldocs.js so it works without a Blazor runtime. *@
                 <button type="button" class="sidebar-section-label sidebar-section-toggle" aria-expanded="@_isOpen">
                     @RenderLabelInner()
-                    <svg class="sidebar-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
+                    <ChevronRight Class="sidebar-section-chevron" />
                 </button>
             }
             else
@@ -49,11 +50,11 @@ else if (Node.Kind == NodeKind.Section)
 else
 {
     var isActive = string.Equals(Node.Url.TrimEnd('/'), CurrentPath.TrimEnd('/'), StringComparison.OrdinalIgnoreCase);
-    var itemIcon = Depth <= 1 ? SidebarIcons.GetPath(Node.Title) : null;
+    var itemIcon = Depth <= 1 ? SidebarIcons.Get(Node.Title) : null;
     <a class="sidebar-item @(isActive ? "active" : "")" href="@Node.Url">
         @if (itemIcon is not null)
         {
-            <svg class="sidebar-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="@itemIcon"/></svg>
+            <DynamicComponent Type="itemIcon" Parameters="SidebarIcons.ItemParameters" />
         }
         <span class="sidebar-item-label">@Node.Title</span>
     </a>
@@ -108,15 +109,17 @@ else
 
     private RenderFragment RenderLabelInner() => builder =>
     {
-        var iconD = Depth <= 1 ? SidebarIcons.GetPath(Node.Title) : null;
-        if (iconD is not null)
+        var icon = Depth <= 1 ? SidebarIcons.Get(Node.Title) : null;
+        if (icon is not null)
         {
-            builder.AddMarkupContent(0,
-                $"<svg class=\"sidebar-section-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"{iconD}\"/></svg>");
+            builder.OpenComponent(0, icon);
+            builder.AddComponentParameter(1, "Class", "sidebar-section-icon");
+            builder.AddComponentParameter(2, "StrokeWidth", SidebarIcons.StrokeWidth);
+            builder.CloseComponent();
         }
-        builder.OpenElement(1, "span");
-        builder.AddAttribute(2, "class", "sidebar-section-title");
-        builder.AddContent(3, Node.Title);
+        builder.OpenElement(3, "span");
+        builder.AddAttribute(4, "class", "sidebar-section-title");
+        builder.AddContent(5, Node.Title);
         builder.CloseElement();
     };
 }

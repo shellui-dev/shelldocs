@@ -1,3 +1,4 @@
+@using ShellIcons.Icons
 @inject NavigationManager Nav
 @inject ShellDocsOptions Options
 @inject DocsVersionResolver Versions
@@ -13,14 +14,17 @@
     <div class="pkg" data-open="false">
         <button type="button" class="pkg-trigger" aria-haspopup="listbox" aria-expanded="false">
             <span class="pkg-mark">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="@(selected.IconPath ?? DefaultIcon)"/>
-                </svg>
+                @if (selected.IconPath is { } markPath)
+                {
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="@markPath"/></svg>
+                }
+                else
+                {
+                    <Box StrokeWidth="1.75" />
+                }
             </span>
             <span class="pkg-value">@selected.Title</span>
-            <svg class="pkg-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="6 9 12 15 18 9"/>
-            </svg>
+            <ChevronDown Class="pkg-chevron" />
         </button>
 
         <div class="pkg-menu" role="listbox">
@@ -29,9 +33,14 @@
                 var isSel = pkg.Id == selected.Id;
                 <a class="pkg-option @(isSel ? "selected" : "")" role="option" aria-selected="@(isSel ? "true" : "false")" href="@Versions.GetPackageHref(pkg, version)">
                     <span class="pkg-option-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="@(pkg.IconPath ?? DefaultIcon)"/>
-                        </svg>
+                        @if (pkg.IconPath is { } optionPath)
+                        {
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="@optionPath"/></svg>
+                        }
+                        else
+                        {
+                            <Box StrokeWidth="1.75" />
+                        }
                     </span>
                     <span class="pkg-option-body">
                         <span class="pkg-option-title">@pkg.Title</span>
@@ -39,7 +48,7 @@
                     </span>
                     @if (isSel)
                     {
-                        <svg class="pkg-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        <Check Class="pkg-option-check" StrokeWidth="2.5" />
                     }
                 </a>
             }
@@ -48,8 +57,6 @@
 }
 
 @code {
-    private const string DefaultIcon = "M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z M3.27 6.96 12 12.01l8.73-5.05 M12 22.08V12";
-
     // No parameters change on navigation, so the parent's re-render would skip us.
     protected override void OnInitialized() => Nav.LocationChanged += OnLocationChanged;
 
