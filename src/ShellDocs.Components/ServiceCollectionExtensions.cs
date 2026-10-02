@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using ShellDocs.Components.Chrome;
@@ -44,6 +45,9 @@ public static class ServiceCollectionExtensions
         });
         services.AddSingleton<SearchIndex>(sp => SearchIndex.FromGraph(sp.GetRequiredService<NavigationGraph>()));
         services.AddSingleton<DocsVersionResolver>();
+        services.AddSingleton<DocsRedirects>();
+        if (options.EnableRedirects)
+            services.AddTransient<IStartupFilter, DocsRedirectStartupFilter>();
 
         return services;
     }

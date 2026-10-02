@@ -6,8 +6,9 @@
     <Description>Blazor RCL for ShellDocs: DocsLayout, sidebar, header, search, TOC, version and package selectors, plus content primitives (Callout, Card, Steps, Tabs, CodeGroup, FileTree, TypeTable, live component previews).</Description>
   </PropertyGroup>
 
+  <!-- Server-side: content is read from disk, and redirects run as middleware. -->
   <ItemGroup>
-    <SupportedPlatform Include="browser" />
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <InternalsVisibleTo Include="ShellDocs.Tests" />
   </ItemGroup>
 
@@ -15,8 +16,6 @@
     <ProjectReference Include="..\ShellDocs.Core\ShellDocs.Core.csproj" />
     <ProjectReference Include="..\ShellDocs.Markdown\ShellDocs.Markdown.csproj" />
     <ProjectReference Include="..\ShellDocs.Tokens\ShellDocs.Tokens.csproj" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.Web" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
     <PackageReference Include="ShellIcons.Blazor" />
     <!-- ShellUI.Components ref lands once shellui is published to NuGet. -->
     <!-- <PackageReference Include="ShellUI.Components" /> -->

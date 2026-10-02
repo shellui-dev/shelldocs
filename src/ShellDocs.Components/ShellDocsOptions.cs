@@ -33,6 +33,12 @@ public class ShellDocsOptions
     // Fewer than 2 hides the version selector; any entry scopes sidebar, prev/next,
     // search and breadcrumb to the current version.
     public List<DocsVersion> Versions { get; } = new();
+    /* Redirects for URLs that aren't pages: content folders and version roots go to
+       their first page, unversioned URLs that exist in the latest version go there,
+       plus AddRedirect rules. Served by middleware that AddShellDocs registers, and
+       written as redirect pages by `shelldocs build`. */
+    public bool EnableRedirects { get; set; } = true;
+    public List<DocsRedirectRule> Redirects { get; } = new();
     // Searched recursively for X.razor to show as <DemoPreview Component="X" />'s source.
     public string? DemoSourceRoot { get; set; }
     public List<Type> RegisteredComponents { get; } = new();
@@ -128,6 +134,16 @@ public class ShellDocsOptions
             if (t.IsDefined(typeof(ShellDocsIgnoreAttribute), inherit: false)) continue;
             yield return t;
         }
+    }
+
+    // Segment-aware prefix rule: AddRedirect("/docs/v0.3.0", "/docs/v0.3") also sends
+    // /docs/v0.3.0/intro to /docs/v0.3/intro. Permanent rules answer 301, others 302.
+    public ShellDocsOptions AddRedirect(string from, string to, bool permanent = true)
+    {
+        if (string.IsNullOrWhiteSpace(from) || string.IsNullOrWhiteSpace(to))
+            throw new ArgumentException("Redirect paths must be non-empty.");
+        Redirects.Add(new DocsRedirectRule(from, to, permanent));
+        return this;
     }
 
     public ShellDocsOptions AddNavLink(string label, string href)
@@ -227,6 +243,8 @@ public record DocsPackage(string Id, string Title, string Description, string Ro
 }
 
 public record DocsVersion(string Id, string Label, string RootUrl, string? Description, bool IsLatest);
+
+public record DocsRedirectRule(string From, string To, bool Permanent = true);
 
 public enum ShellDocsTheme
 {

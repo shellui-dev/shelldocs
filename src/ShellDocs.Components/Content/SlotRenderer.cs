@@ -9,6 +9,9 @@ using ShellDocs.Markdown;
 
 namespace ShellDocs.Components.Content;
 
+// Sequence numbers follow the parsed markup, not source order; regions per node keep them stable.
+#pragma warning disable ASP0006
+
 // Renders markdown/HTML containing component tags as real DynamicComponents,
 // recursively, so components nest inside previews and ChildContent.
 internal static class SlotRenderer

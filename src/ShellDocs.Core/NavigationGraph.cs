@@ -86,6 +86,22 @@ public class NavigationGraph
     public NavigationNode? FirstPageUnder(string urlPrefix)
         => _flatPages.FirstOrDefault(p => UrlPath.IsUnder(p.Url, urlPrefix));
 
+    public NavigationNode? FirstPageUnder(string urlPrefix, Func<NavigationNode, bool> predicate)
+        => _flatPages.FirstOrDefault(p => UrlPath.IsUnder(p.Url, urlPrefix) && predicate(p));
+
+    // URL of every visible content folder below the root. Empty for graphs built without on-disk paths.
+    public IEnumerable<(string Url, NavigationNode Node)> Folders()
+    {
+        if (string.IsNullOrEmpty(Root.Path)) yield break;
+        foreach (var n in FlattenFrom(Root))
+        {
+            if (n.Kind != NodeKind.Section || n == Root || string.IsNullOrEmpty(n.Path)) continue;
+            var rel = System.IO.Path.GetRelativePath(Root.Path, n.Path).Replace('\\', '/');
+            if (rel.StartsWith("..", StringComparison.Ordinal)) continue;
+            yield return (UrlPath.Normalize(rel), n);
+        }
+    }
+
     public IReadOnlyList<NavigationNode> GetBreadcrumb(NavigationNode node)
     {
         var chain = new List<NavigationNode>();
