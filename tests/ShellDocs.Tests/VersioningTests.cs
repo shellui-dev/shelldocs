@@ -176,8 +176,30 @@ public class VersioningTests : IDisposable
     }
 
     [Fact]
-    public void SidebarNodes_OutsideVersions_AreWholeTree()
-        => Assert.Same(_graph.Root.Children, Resolver().GetSidebarNodes("/docs/introduction"));
+    public void SidebarNodes_OutsideVersions_HideVersionFolders()
+    {
+        var r = Resolver();
+        var docs = Assert.Single(r.GetSidebarNodes("/docs/introduction"));
+        Assert.Equal("Docs", docs.Title);
+        Assert.False(r.IsHiddenInSidebar(docs));
+        Assert.True(r.IsHiddenInSidebar(_graph.FindFolder("/docs/v0.3")!));
+        Assert.True(r.IsHiddenInSidebar(_graph.FindFolder("/docs/v0.2.1")!));
+        Assert.Equal(new[] { "/docs/introduction" },
+            docs.Children.Where(c => !r.IsHiddenInSidebar(c)).Select(c => c.Url));
+    }
+
+    [Fact]
+    public void SidebarNodes_SectionHoldingOnlyVersions_IsHidden()
+    {
+        var o = new ShellDocsOptions();
+        o.AddVersion("v0.3", "v0.3", "/docs/v0.3");
+        var r = new DocsVersionResolver(o, _graph);
+        var docs = _graph.Root.Children.Single();
+        // docs/ still has introduction.md, so it stays; a folder of only versions would not.
+        Assert.False(r.IsHiddenInSidebar(docs));
+        Assert.True(r.IsHiddenInSidebar(_graph.FindFolder("/docs/v0.3")!));
+        Assert.False(r.IsHiddenInSidebar(_graph.FindFolder("/docs/v0.2.1")!)); // not a configured version
+    }
 
     [Fact]
     public void SidebarNodes_WithoutVersions_AreWholeTree()

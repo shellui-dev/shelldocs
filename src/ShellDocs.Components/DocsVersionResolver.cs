@@ -74,7 +74,18 @@ public sealed class DocsVersionResolver
     {
         var version = FindContaining(path);
         var node = version is null ? null : GetVersionNode(version);
-        return node?.Children ?? _graph.Root.Children;
+        if (node is not null) return node.Children;
+        return HasVersions ? _graph.Root.Children.Where(n => !IsHiddenInSidebar(n)).ToList() : _graph.Root.Children;
+    }
+
+    /* Version folders are reached through the version selector, so the sidebar
+       leaves them out — along with sections that hold nothing but version folders. */
+    public bool IsHiddenInSidebar(NavigationNode node)
+    {
+        if (!HasVersions || node.Kind != NodeKind.Section) return false;
+        if (IsVersionNode(node)) return true;
+        var content = node.Children.Where(c => c.Kind != NodeKind.Divider).ToList();
+        return content.Count > 0 && content.All(IsHiddenInSidebar);
     }
 
     public bool InSameScope(string? urlA, string? urlB)
