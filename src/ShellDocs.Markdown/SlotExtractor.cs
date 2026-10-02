@@ -33,9 +33,8 @@ internal class SlotExtractor
         var slots = new List<Slot>();
         var warnings = new List<string>();
 
-        // Mask code fences so component-tag scanning skips them.
-        // razor:preview fences get replaced with a placeholder slot marker in-line;
-        // other fences get a mask token that's restored verbatim at the end.
+        // Mask fences so tag scanning skips them; razor:preview fences become
+        // slot placeholders, the rest are restored verbatim at the end.
         var maskedFences = new Dictionary<string, string>();
         var processed = FenceBlock.Replace(markdown, m =>
         {
@@ -65,8 +64,7 @@ internal class SlotExtractor
             processed = processed.Replace(id, original);
         }
 
-        // Sort slots by the position of their placeholder in the processed text
-        // so the returned list reflects document order.
+        // Return slots in document order.
         var ordered = slots.OrderBy(s => processed.IndexOf(s.Id, StringComparison.Ordinal)).ToList();
         return (processed, ordered, warnings);
     }
@@ -117,11 +115,8 @@ internal class SlotExtractor
                     cursor = open.Index + open.Length;
                     continue;
                 }
-                /* Preserve original indentation — SlotRenderer.Dedent normalizes
-                   the common leading whitespace before feeding to Markdig, and
-                   Trim()-ing here would strip the first line's indent and defeat
-                   that (Markdig would then treat the remaining 4-space-indented
-                   lines as an indented code block). */
+                /* No Trim(): SlotRenderer.Dedent needs the first line's indent,
+                   or Markdig reads the remaining lines as an indented code block. */
                 childRaw = text.Substring(open.Index + open.Length, closeStart - (open.Index + open.Length));
                 endIndex = closeEnd;
             }
@@ -148,9 +143,7 @@ internal class SlotExtractor
         var type = _registry.Resolve(name);
         var attrs = ParseAttributes(open.Groups["attrs"].Value);
 
-        /* Extract inner ChildContent for non-self-closing tags even in the
-           error case — Copy button in the error state should still hand back
-           the exact source the author authored. */
+        // Extracted even for unknown tags so Copy returns the authored source.
         string? childContentRaw = null;
         if (!open.Groups["self"].Success)
         {
@@ -163,12 +156,7 @@ internal class SlotExtractor
 
         if (type is null)
         {
-            /* Unknown component. Emit an error PreviewSlot so PreviewFrame can
-               render a visible "Unknown component <X>" panel in the browser.
-               Returning null here (the pre-fix behavior) caused the whole
-               fence to render as a plain code block — silent failure that sent
-               authors hunting for a nonexistent component bug. Warning still
-               emitted for build logs. */
+            // Error slot → a visible panel, rather than silently rendering a code block.
             var msg = $"Unknown component <{name}>. Register it via `o.RegisterComponent<{name}>()` or `o.RegisterComponentsFromAssembly<TMarker>()`.";
             warnings.Add($"razor:preview references unknown component <{name}>.");
             return new PreviewSlot(NewSlotId(), null, attrs, code, "razor", childContentRaw, Error: msg);

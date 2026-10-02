@@ -46,8 +46,6 @@
     white-space: nowrap;
 }
 
-/* Single chevron-down that rotates 180° when the menu opens — matches
-   the collapsible section toggles in the sidebar. */
 .pkg-chevron {
     width: 0.9rem;
     height: 0.9rem;
@@ -69,8 +67,7 @@
     box-shadow: 0 12px 32px -8px rgb(0 0 0 / 0.18), 0 4px 12px -4px rgb(0 0 0 / 0.06);
     padding: 0.35rem;
     z-index: 30;
-    /* Always rendered so shelldocs.js can toggle visibility via [data-open]
-       on the parent .pkg without needing a Blazor re-render. */
+    /* Always rendered; shelldocs.js toggles [data-open] on .pkg. */
     display: none;
     flex-direction: column;
     gap: 0.15rem;
@@ -79,7 +76,6 @@
 }
 .pkg[data-open="true"] .pkg-menu { display: flex; }
 
-/* Anchor variant of .pkg-option — same styling as the old <button> variant. */
 a.pkg-option { text-decoration: none; }
 
 .pkg-option {

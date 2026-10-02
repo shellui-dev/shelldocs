@@ -58,8 +58,7 @@
 </div>
 
 <CascadingValue Value="this" IsFixed="true">
-    @* Consume ChildContent silently — TypeRow children register into _rows via
-       this cascading value; TypeRow itself renders nothing on its own. *@
+    @* Renders nothing itself: TypeRow children register through the cascading value. *@
     <div style="display:none">@ChildContent</div>
 </CascadingValue>
 
@@ -75,5 +74,3 @@
         StateHasChanged();
     }
 }
-
-@* Info record used by TypeRow to hand its data up to the table. *@

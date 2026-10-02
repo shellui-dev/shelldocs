@@ -4,8 +4,6 @@ using Spectre.Console;
 
 namespace ShellDocs.CLI;
 
-/* CLI entry point.
-   This scaffolding wires up the command tree so `shelldocs --help` produces the right shape. */
 internal class Program
 {
     private const string Logo = @"

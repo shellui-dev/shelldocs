@@ -11,7 +11,6 @@
     <NoWarn>$(NoWarn);CS1591</NoWarn> <!-- suppress "missing XML comment" until we backfill -->
   </PropertyGroup>
 
-  <!-- Central package version pinning via Directory.Packages.props -->
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
@@ -34,12 +33,10 @@
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
   </PropertyGroup>
 
-  <!-- Default: nothing is packable unless the project opts in -->
   <PropertyGroup>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
-  <!-- Include README in packages that opt in -->
   <ItemGroup Condition="'$(IsPackable)' == 'true'">
     <None Include="$(MSBuildThisFileDirectory)README.md" Pack="true" PackagePath="\" />
   </ItemGroup>

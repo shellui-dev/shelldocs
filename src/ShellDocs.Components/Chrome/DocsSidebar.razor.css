@@ -9,8 +9,7 @@
 
 .sidebar-tree {
     flex: 1;
-    /* flex items default to `min-height: auto` (intrinsic content size), so
-       without this the tree grows past the parent instead of scrolling. */
+    /* Flex items default to min-height: auto; without this the tree overflows instead of scrolling. */
     min-height: 0;
     display: flex;
     flex-direction: column;
@@ -19,7 +18,6 @@
     scrollbar-width: thin;
     scrollbar-color: var(--border) transparent;
     padding: 0 0 2rem;
-    /* fumadocs — soft fade at top/bottom of scroll viewport */
     mask-image: linear-gradient(to bottom, transparent, black 12px, black calc(100% - 12px), transparent);
     -webkit-mask-image: linear-gradient(to bottom, transparent, black 12px, black calc(100% - 12px), transparent);
 }
@@ -96,7 +94,6 @@
     width: 100%;
 }
 
-/* Toggle button variant — clickable section header */
 ::deep .sidebar-section-toggle {
     background: transparent;
     border: 0;
@@ -124,9 +121,8 @@
     transform: rotate(90deg);
 }
 
-/* Toggleable section content — grid-rows 0fr→1fr animates to natural height
-   without needing a fixed max-height. The inner wrapper carries the actual
-   items and MUST have `min-height: 0` so it can collapse cleanly. */
+/* grid-rows 0fr→1fr animates to natural height without a fixed max-height;
+   the inner wrapper needs min-height: 0 to collapse fully. */
 ::deep .sidebar-section-shell {
     display: grid;
     grid-template-rows: 0fr;
@@ -147,7 +143,6 @@
     padding: 0;
 }
 
-/* Tree lines — vertical guide + hover accent */
 ::deep .sidebar-section[data-depth="1"] > .sidebar-section-items,
 ::deep .sidebar-section[data-depth="2"] > .sidebar-section-items,
 ::deep .sidebar-section[data-depth="3"] > .sidebar-section-items {

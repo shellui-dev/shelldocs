@@ -2,9 +2,7 @@
 @attribute [ShellDocsIgnore]
 @inject MarkdownRenderer Renderer
 
-@* Expand/collapse of the source region is handled by shelldocs.js — delegated
-   click on [data-preview-toggle] toggles the expanded/collapsed class on the
-   ancestor .preview-frame. Works without a live Blazor runtime. *@
+@* Expand/collapse and copy are handled by shelldocs.js (data-preview-*). *@
 <div class="preview-frame collapsed">
     <div class="preview-render">
         @if (Preview!.ComponentType is not null)
@@ -41,9 +39,7 @@
 @code {
     [Parameter, EditorRequired] public PreviewSlot Preview { get; set; } = default!;
 
-    /* Only called from the render-region branch guarded by
-       `Preview!.ComponentType is not null`, so the ! here is a safe assertion
-       — never dereferenced when the tag was unknown. */
+    // Only reached when ComponentType is non-null.
     private IDictionary<string, object> BuildParameters(IReadOnlyDictionary<string, string> attrs, string? childContentRaw) =>
         SlotRenderer.BuildParameters(Renderer, Preview!.ComponentType!, attrs, childContentRaw);
 }

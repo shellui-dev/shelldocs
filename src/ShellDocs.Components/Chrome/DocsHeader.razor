@@ -90,9 +90,7 @@
 @implements IDisposable
 
 @code {
-    /* Search chip toggle. Marketing pages (HomeLayout) pass false — visitors
-       there aren't looking to grep docs. Docs pages (DocsLayout TopNav variant)
-       leave the default true. */
+    // HomeLayout hides search on marketing pages.
     [Parameter] public bool ShowSearch { get; set; } = true;
 
     private const string DefaultIcon =

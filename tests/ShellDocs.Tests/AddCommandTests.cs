@@ -3,8 +3,6 @@ using Xunit;
 
 namespace ShellDocs.Tests;
 
-/* Integration tests for `shelldocs add`. Uses reflection to reach the internal
-   AddCommand.Run entry point (matches the InitCommand test pattern). */
 public class AddCommandTests : IDisposable
 {
     private readonly string _sandbox;

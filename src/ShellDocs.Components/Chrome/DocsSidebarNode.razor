@@ -11,9 +11,7 @@ else if (Node.Kind == NodeKind.Section)
         {
             @if (_isToggleable)
             {
-                @* Click handling lives in shelldocs.js — delegated document
-                   listener flips data-open on the ancestor .sidebar-section.
-                   Works on both live-Blazor and static-prerender deploys. *@
+                @* Toggled by shelldocs.js so it works without a Blazor runtime. *@
                 <button type="button" class="sidebar-section-label sidebar-section-toggle" aria-expanded="@_isOpen">
                     @RenderLabelInner()
                     <svg class="sidebar-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
@@ -79,9 +77,8 @@ else
 
         var containsActive = ContainsPath(Node, CurrentPath);
 
-        /* Open on first render if we contain the active page.
-           Re-open on later renders only when the active path just moved into us —
-           this preserves the user's manual collapses on the current section. */
+        /* Open initially if we contain the active page; afterwards only when the
+           active page moves into us, so manual collapses survive navigation. */
         if (!_initialized)
         {
             _isOpen = containsActive;
@@ -94,9 +91,6 @@ else
 
         _lastPath = CurrentPath;
     }
-
-    // Toggle handled by shelldocs.js — kept as a no-op just in case the
-    // Blazor lifecycle re-renders and needs the initial state stable.
 
     private static bool ContainsPath(NavigationNode node, string path)
     {

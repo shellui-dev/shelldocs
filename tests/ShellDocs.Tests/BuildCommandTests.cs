@@ -49,9 +49,7 @@ public class BuildCommandTests : IDisposable
     private int InjectOgMeta(string outputDir, string siteUrl, NavigationGraph graph) =>
         (int)_injectOg.Invoke(null, new object[] { outputDir, siteUrl, graph })!;
 
-    // NavigationNode.Children/Parent have `internal set` — bypass via reflection
-    // so tests can build a graph without exposing the setters or standing up a
-    // temp content directory.
+    // Children/Parent have internal setters; reflection avoids a temp content dir.
     private static readonly PropertyInfo _childrenProp = typeof(NavigationNode).GetProperty("Children")!;
     private static readonly PropertyInfo _parentProp = typeof(NavigationNode).GetProperty("Parent")!;
     private static void LinkChildren(NavigationNode parent, params NavigationNode[] children)

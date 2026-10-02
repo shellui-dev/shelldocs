@@ -16,7 +16,7 @@
     <PackageVersion Include="System.CommandLine" Version="2.0.0-beta5.25306.1" />
     <PackageVersion Include="Spectre.Console" Version="0.49.1" />
 
-    <!-- ShellUI (base primitives — added in feat/components-shell once ShellUI is published to NuGet)
+    <!-- Once ShellUI is on NuGet:
          <PackageVersion Include="ShellUI.Components" Version="0.4.0" />
     -->
 

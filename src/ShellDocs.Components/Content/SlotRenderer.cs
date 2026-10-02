@@ -8,18 +8,14 @@ using ShellDocs.Markdown;
 
 namespace ShellDocs.Components.Content;
 
-/* Turns a slice of markdown (or raw HTML-with-component-tags) into a Blazor
-   RenderFragment that renders nested components as real DynamicComponents,
-   recursively — so <CardGrid><Card /><Card /></CardGrid> and friends work
-   inside razor:preview blocks and inline ChildContent. */
+// Renders markdown/HTML containing component tags as real DynamicComponents,
+// recursively, so components nest inside previews and ChildContent.
 internal static class SlotRenderer
 {
     public static RenderFragment FromMarkup(MarkdownRenderer renderer, string raw) => builder =>
     {
-        /* Markdig treats any block indented 4+ spaces as a code block, so
-           children of <Steps>, <FileTree>, etc. authored with the outer tag's
-           natural indent would render as literal <pre> instead of components.
-           Strip the common leading whitespace before feeding to the renderer. */
+        /* Markdig treats 4+ space indentation as a code block, so children
+           authored at the outer tag's indent would render as <pre>. */
         var doc = renderer.Render(Dedent(raw));
         var parts = SlotSplitter.Split(doc);
         var seq = 0;
@@ -83,12 +79,8 @@ internal static class SlotRenderer
         }
         if (!string.IsNullOrWhiteSpace(childContentRaw))
         {
-            // Route direct-child tags whose name matches a RenderFragment
-            // param (other than ChildContent) into that named slot. Any
-            // remaining text becomes ChildContent. Lets authors write
-            // <Alert><Icon><svg/></Icon>Body</Alert> and have <Icon>'s
-            // inner content routed to Alert.Icon instead of being flattened
-            // into the ChildContent stream.
+            // Child tags named after a RenderFragment parameter (<Icon> → Alert.Icon)
+            // go to that slot; the rest becomes ChildContent.
             var slotNames = props
                 .Where(kv => kv.Key != "ChildContent" && typeof(RenderFragment).IsAssignableFrom(kv.Value.PropertyType))
                 .Select(kv => kv.Key)
@@ -111,20 +103,15 @@ internal static class SlotRenderer
             if (!string.IsNullOrWhiteSpace(remaining))
                 dict["ChildContent"] = FromMarkup(renderer, remaining);
 
-            /* If the target declares a ChildContentSource [Parameter] (as
-               ComponentPreview does for reconstructing its source view),
-               pass the raw markup through unchanged in addition to the
-               RenderFragments above. */
+            // ComponentPreview rebuilds its source view from the raw markup.
             if (props.ContainsKey("ChildContentSource"))
                 dict["ChildContentSource"] = childContentRaw;
         }
         return dict;
     }
 
-    // Finds `<TagName>...</TagName>` (balanced) or `<TagName />` in `text`
-    // and returns its inner content + `text` with that occurrence removed.
-    // Only the first occurrence is extracted; multi-instance named slots
-    // aren't a common pattern.
+    // Removes the first balanced `<TagName>…</TagName>` (or `<TagName />`) from
+    // `text`, returning its inner content and the remaining text.
     private static (string? Content, string Remaining) ExtractNamedSlot(string text, string tagName)
     {
         var open = Regex.Match(text, $@"<{Regex.Escape(tagName)}(?<attrs>\s[^>]*?)?\s*(?<self>/)?>");
@@ -132,13 +119,11 @@ internal static class SlotRenderer
 
         if (open.Groups["self"].Success)
         {
-            // Self-closing → empty content, remove the tag.
             var head = text.Substring(0, open.Index);
             var tail = text.Substring(open.Index + open.Length);
             return ("", head + tail);
         }
 
-        // Find matching close, tracking nested opens of the same name.
         var closeName = Regex.Escape(tagName);
         var scanFrom = open.Index + open.Length;
         var depth = 1;

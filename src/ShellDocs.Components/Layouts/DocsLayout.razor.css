@@ -121,10 +121,7 @@
     .docs-toc-slot { display: block; }
 }
 
-/* ───────────────────────────────────────────────────────────────────
-   Sidebar variant — no top nav, sidebar is the ONLY floating card,
-   content sits flush against the page bg. shadcn sidebar-04 vibe.
-   ─────────────────────────────────────────────────────────────────── */
+/* Sidebar variant: the sidebar is the only floating card. */
 
 .docs-shell-sidebar { background: var(--background); }
 
@@ -135,9 +132,6 @@
         max-width: 1500px;
         grid-template-columns: var(--sidebar-width) 1fr;
     }
-    /* Sidebar = the floating card. `display: flex; flex-direction: column`
-       already comes from the base .docs-sidebar-slot rule — we only override
-       the card chrome + positioning here. */
     .docs-shell-sidebar .docs-sidebar-slot {
         position: sticky;
         top: 0.85rem;
@@ -149,9 +143,6 @@
         margin-right: 0;
         overflow: hidden;
     }
-    /* nav `flex: 1; min-height: 0` moved to the base .docs-sidebar rule so it
-       applies in every layout context, not just desktop Sidebar variant. */
-    /* Content = flush to page bg, no border, no shadow */
     .docs-shell-sidebar .docs-main {
         padding: 1.5rem 0 4rem;
         background: transparent;
@@ -165,7 +156,6 @@
         padding: 0 1rem 1rem 1.25rem;
     }
 
-    /* Collapsed — sidebar column disappears, grid expands to single column */
     .docs-shell-sidebar.docs-sidebar-collapsed .docs-sidebar-slot { display: none; }
     .docs-shell-sidebar.docs-sidebar-collapsed .docs-body {
         grid-template-columns: 1fr;
@@ -184,7 +174,6 @@
     }
 }
 
-/* Floating reopen toolbar — appears at top-left when collapsed */
 .docs-collapsed-toolbar {
     position: fixed;
     top: 0.9rem;

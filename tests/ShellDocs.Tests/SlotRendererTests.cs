@@ -5,9 +5,7 @@ using Xunit;
 
 namespace ShellDocs.Tests;
 
-// Named-slot routing behavior: child tags matching a target component's
-// [Parameter] RenderFragment prop names should route into that param instead
-// of being flattened into ChildContent.
+// Child tags named after a RenderFragment parameter route into it, not ChildContent.
 public class SlotRendererTests
 {
     public class Alert : ComponentBase

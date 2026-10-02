@@ -2,8 +2,7 @@ namespace ShellDocs.Components.Chrome;
 
 internal static class SidebarIcons
 {
-    /* Lightweight title→lucide-svg map — matches fumadocs' inline icon feel
-       without forcing content authors to configure per-page icons. */
+    // Title → lucide icon path, so authors needn't configure per-page icons.
     private static readonly Dictionary<string, string> _map = new(StringComparer.OrdinalIgnoreCase)
     {
         ["Getting Started"] = "M13 2 3 14h9l-1 8 10-12h-9l1-8z",

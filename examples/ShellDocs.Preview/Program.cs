@@ -14,7 +14,7 @@ builder.Services.AddShellDocs(o =>
     o.SiteName = "ShellDocs";
     o.SiteTagline = "the docs framework for .NET";
     o.GitHubRepo = "shellui-dev/shelldocs";
-    // Try the new floating-sidebar variant. Flip to TopNav for the classic look.
+    // Flip to TopNav for the classic header layout.
     o.LayoutVariant = DocsLayoutVariant.Sidebar;
     o.AddNavMenu("Documentation",
         new NavMenuItem("Getting Started", "/docs/introduction",
@@ -44,8 +44,7 @@ builder.Services.AddShellDocs(o =>
     o.AddPackage("shelldocs.components","ShellDocs.Components","Layouts, header, sidebar, TOC.",    "/docs/components",
         "M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z");
 
-    // Callout, Card, Steps, FileTree, CodeGroup, LinkCard etc. are
-    // auto-registered by AddShellDocs — no extra work needed here.
+    // Built-in primitives (Callout, Card, Steps, …) are registered by AddShellDocs.
 });
 
 var app = builder.Build();

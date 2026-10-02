@@ -144,7 +144,6 @@
                     Jump(_results[_highlightedIndex].Entry);
                 break;
             default:
-                // Any other key = user is typing; rerun search on next binding cycle.
                 InvokeAsync(Recalc);
                 break;
         }
@@ -202,8 +201,7 @@
 
         if (e.Kind == SearchEntryKind.Page) score += 2;
 
-        // Only surface a snippet when the match came from the body (title/desc
-        // is already shown; snippet is only useful for otherwise-hidden matches).
+        // Snippets only for body matches — title/description are already shown.
         var snippet = bodyHit && !string.IsNullOrEmpty(e.Body)
             ? BuildSnippet(e.Body!, tokens)
             : null;
@@ -211,8 +209,7 @@
         return new Scored(e, score, snippet);
     }
 
-    /* Center the snippet on the first token match, ~150 chars, with ellipses
-       when trimmed. Case-preserving. */
+    // ~150 chars centred on the first token match.
     private static string? BuildSnippet(string body, string[] tokens)
     {
         var lower = body.ToLowerInvariant();

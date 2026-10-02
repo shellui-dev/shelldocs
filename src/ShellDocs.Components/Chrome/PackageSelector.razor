@@ -1,9 +1,8 @@
 @inject NavigationManager Nav
 @inject ShellDocsOptions Options
 
-@* Dropdown open/close handled by shelldocs.js — delegated click on
-   .pkg-trigger flips [data-open] on the .pkg root; outside-click closes.
-   Menu is always rendered; CSS hides it unless [data-open="true"]. *@
+@* Open/close is handled by shelldocs.js via [data-open]; the menu is always
+   rendered and hidden by CSS, and options are plain links. *@
 @if (Options.Packages.Count > 1)
 {
     <div class="pkg" data-open="false">
@@ -23,7 +22,6 @@
             @foreach (var pkg in Options.Packages)
             {
                 var isSel = pkg.Id == Selected.Id;
-                @* Plain <a> — native navigation, no Blazor round-trip. *@
                 <a class="pkg-option @(isSel ? "selected" : "")" role="option" aria-selected="@isSel" href="@pkg.RootUrl">
                     <span class="pkg-option-icon">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">

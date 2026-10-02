@@ -33,9 +33,8 @@ internal static class PrerenderRunner
             CreateNoWindow = true,
         };
         psi.ArgumentList.Add(assemblyPath);
-        // Port 0 → kernel picks a free port at Kestrel bind time (no TOCTOU
-        // gap between us checking and the child using). We learn the actual
-        // port by parsing Kestrel's "Now listening on:" startup line below.
+        // Port 0 lets Kestrel pick a free port (no check-then-bind race); the real
+        // port comes from its "Now listening on:" line.
         psi.Environment["ASPNETCORE_URLS"] = "http://127.0.0.1:0";
         psi.Environment["ASPNETCORE_ENVIRONMENT"] = "Production";
         psi.Environment["DOTNET_USE_POLLING_FILE_WATCHER"] = "0";

@@ -144,7 +144,6 @@
     .docs-header-search { min-width: 0; padding: 0.5rem; }
 }
 
-/* Mega-menu on hover */
 .docs-header-nav-item.has-menu { position: relative; }
 .docs-header-nav-item.has-menu .docs-header-nav-link {
     background: transparent;
@@ -166,8 +165,7 @@
 }
 .docs-header-nav-item.has-menu:hover .chevron { transform: rotate(180deg); }
 
-/* Invisible hover-bridge below the trigger so the cursor can travel to the menu
-   without dropping :hover on the parent nav-item. */
+/* Hover bridge: keeps :hover while the cursor travels down to the menu. */
 .docs-header-nav-item.has-menu::after {
     content: '';
     position: absolute;

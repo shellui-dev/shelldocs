@@ -1,8 +1,7 @@
 namespace ShellDocs.Components.Chrome;
 
-/* Desktop-only collapse state for the Sidebar-variant docs layout. Distinct
-   from MobileNavState — mobile drawer is temporary/overlay, this is a
-   persistent "hide the sidebar until I click reopen" toggle. */
+// Desktop collapse for the Sidebar layout — persistent, unlike the
+// temporary mobile drawer in MobileNavState.
 public class SidebarCollapseState
 {
     public bool IsCollapsed { get; private set; }

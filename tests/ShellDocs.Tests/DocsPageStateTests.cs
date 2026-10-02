@@ -44,7 +44,6 @@ public class DocsPageStateTests
         var (graph, nav) = MinimalGraphAndNav("http://localhost/");
         var state = new DocsPageState(graph, nav);
 
-        // Should not throw; sanity that Dispose is idempotent-ish.
         state.Dispose();
     }
 

@@ -39,11 +39,8 @@ internal static class BuildCommand
         var publishExit = RunPublish(csproj, publishStage);
         if (publishExit != 0) return publishExit;
 
-        // Belt-and-suspenders: mirror source content/ into publish. Consumer
-        // csprojs using `<Content Update="content/...">` don't actually copy
-        // .md files (Update is the wrong verb; see InitCommand notes), which
-        // would leave the running app with an empty NavigationGraph and every
-        // prerendered page as "Page not found."
+        // Mirror content/ into publish: csprojs using `<Content Update="content/...">`
+        // don't copy .md files, which would prerender every page as "Page not found".
         var publishContent = Path.Combine(publishStage, "content");
         if (!Directory.Exists(publishContent))
         {
@@ -213,9 +210,8 @@ internal static class BuildCommand
         File.WriteAllText(Path.Combine(outputDir, "robots.txt"), body);
     }
 
-    // Injects og:title / og:description / og:url / og:type into each prerendered
-    // HTML file's <head>, using titles + descriptions from the nav graph. Skips
-    // pages the graph doesn't know about (e.g. root "/" home page).
+    // Adds og:* meta from the nav graph to each prerendered page; pages the graph
+    // doesn't know (e.g. "/") are skipped.
     internal static int InjectOgMeta(string outputDir, string siteUrl, NavigationGraph graph)
     {
         var count = 0;

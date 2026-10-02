@@ -3,11 +3,8 @@ using Xunit;
 
 namespace ShellDocs.Tests;
 
-/* Integration tests for `shelldocs init`. Covers ATTACH mode end-to-end
-   (fast — no `dotnet new` spawn) and the CREATE-mode patchers (PatchProgramCs,
-   PatchAppRazor) against synthetic fresh-blazor-template fixtures. The full
-   CREATE path (dotnet new blazor + patchers) is verified by hand — spawning
-   dotnet in unit tests is slow and fragile. */
+// ATTACH mode end-to-end plus the CREATE-mode patchers against synthetic
+// template fixtures. The full CREATE path spawns `dotnet new` and is verified by hand.
 public class InitCommandTests : IDisposable
 {
     private readonly string _tempDir;
@@ -53,8 +50,6 @@ public class InitCommandTests : IDisposable
 
     private int InvokeAttach() =>
         (int)_run.Invoke(null, new object?[] { null, _tempDir, true, true, "shadcn" })!;
-
-    // ---- ATTACH MODE ----------------------------------------------------
 
     [Fact]
     public void Attach_MissingCsproj_ReturnsError()
@@ -112,8 +107,6 @@ public class InitCommandTests : IDisposable
         InvokeAttach();
         Assert.Equal("# My custom intro\n", File.ReadAllText(mdPath));
     }
-
-    // ---- CREATE-MODE PATCHERS -------------------------------------------
 
     /// <summary>Emits a synthetic Program.cs identical in shape to `dotnet new blazor` output.</summary>
     private void WriteFreshBlazorProgramCs() =>
@@ -232,8 +225,6 @@ public class InitCommandTests : IDisposable
         Assert.Empty(secondChanges);
     }
 
-    // ---- SOLUTION FINDER ------------------------------------------------
-
     [Fact]
     public void FindNearestSolution_ReturnsSlnxInSameDir()
     {
@@ -272,8 +263,7 @@ public class InitCommandTests : IDisposable
     [Fact]
     public void FindNearestSolution_StopsAtGitRoot()
     {
-        // .git in tempDir marks it as repo root; no sln inside means null,
-        // even if an sln exists in tempDir's parent (which it doesn't here).
+        // .git marks tempDir as the repo root, so the walk stops there.
         Directory.CreateDirectory(Path.Combine(_tempDir, ".git"));
         var sub = Path.Combine(_tempDir, "sub");
         Directory.CreateDirectory(sub);

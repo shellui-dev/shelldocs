@@ -11,9 +11,7 @@ public class MetaJson
     [JsonPropertyName("pages")]
     public List<MetaJsonEntry> Pages { get; set; } = new();
 
-    // Slugs of pages or subfolders that should route (URLs resolve) but not
-    // appear in the sidebar tree. Useful for landing pages reached only via
-    // the package selector, private drafts, or archived content.
+    // Slugs that route but don't appear in the sidebar (landing pages, drafts, archives).
     [JsonPropertyName("hidden")]
     public List<string> Hidden { get; set; } = new();
 
@@ -41,13 +39,8 @@ public class MetaJsonSubsection : MetaJsonEntry
     public List<MetaJsonEntry> Pages { get; init; } = new();
 }
 
-/*
-    Each entry in meta.json's "pages" array can be:
-      - a string slug ("button")
-      - the literal "---" for a section divider
-      - an object { "title": "Data Display", "pages": [...] } for a subsection
-    Custom converter dispatches on the JSON token type.
-*/
+// "pages" entries: a slug string, "---" for a divider, or { "title", "pages" }
+// for a subsection — dispatched on the JSON token type.
 internal class MetaJsonEntryConverter : JsonConverter<MetaJsonEntry>
 {
     public override MetaJsonEntry? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)

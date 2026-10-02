@@ -2,10 +2,7 @@ using System.Text.RegularExpressions;
 
 namespace ShellDocs.Core;
 
-/* An in-memory search index built from the navigation graph. Each entry
-   represents one searchable thing — a page, or a heading within a page.
-   Page entries carry a trimmed plain-text body so client-side match can
-   find hits that aren't in the title/description surface. */
+// One entry per page and per h2/h3. Page entries carry plain-text body for body-only hits.
 public sealed class SearchIndex
 {
     public IReadOnlyList<SearchEntry> Entries { get; }
@@ -31,9 +28,8 @@ public sealed class SearchIndex
                 Kind: SearchEntryKind.Page,
                 Body: ExtractBodyFromFile(node.Path)));
 
-            // Prefer headings already extracted at render time; otherwise pull
-            // them from the source markdown ourselves so the index isn't blank
-            // at startup (headings normally populate only when a page renders).
+            // Headings normally populate only when a page renders; read them from
+            // the source so the index isn't blank at startup.
             var headings = node.Headings.Count > 0
                 ? node.Headings
                 : ExtractHeadingsFromFile(node.Path);

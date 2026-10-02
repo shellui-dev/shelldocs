@@ -10,9 +10,7 @@
     font-weight: 500;
     color: var(--muted-foreground);
     padding: 1rem 0 0.75rem 0.75rem;
-    /* Sticky at top of the scrolling TOC slot. Solid bg = content hides
-       cleanly under it (no bleed-through). Bottom border optional; kept
-       transparent to stay minimal. */
+    /* Solid background so content scrolls cleanly underneath. */
     position: sticky;
     top: 0;
     z-index: 5;
@@ -20,7 +18,6 @@
 }
 .toc-title svg { width: 0.9rem; height: 0.9rem; }
 
-/* Grey rail = left border on the list. The coloured highlight rides on top of it. */
 .toc-list {
     list-style: none;
     padding: 0;
@@ -29,8 +26,7 @@
     border-left: 1px solid color-mix(in oklch, var(--foreground) 12%, transparent);
 }
 
-/* The moving highlight — 1px vertical bar sitting on the border. JS drives its
-   transform + height as the active heading changes. */
+/* Active-heading highlight on the rail; shelldocs.js drives transform + height. */
 ::deep .toc-bar {
     position: absolute;
     left: -1px;

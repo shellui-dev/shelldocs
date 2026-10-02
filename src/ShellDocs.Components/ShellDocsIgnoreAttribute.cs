@@ -1,9 +1,7 @@
 namespace ShellDocs.Components;
 
-/* Marker attribute — put this on a public ComponentBase-derived type to keep it
-   out of ShellDocsOptions.RegisterComponentsFromAssembly(...) scans. Use for
-   internal-shaped components that happen to be `public` for testing / other
-   assemblies but shouldn't be reachable from markdown authoring. */
+// Excludes a public component from RegisterComponentsFromAssembly scans, for
+// render machinery that shouldn't be reachable from markdown.
 [AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
 public sealed class ShellDocsIgnoreAttribute : Attribute
 {

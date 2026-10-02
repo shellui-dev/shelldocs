@@ -13,8 +13,7 @@ public class NavigationGraph
         _byUrl = new Dictionary<string, NavigationNode>(StringComparer.OrdinalIgnoreCase);
         _flatPages = new List<NavigationNode>();
         Index(root);
-        // Hidden pages route (URLs resolve) but never appear in the visible
-        // tree, so they're excluded from _flatPages (prev/next skips them).
+        // Hidden pages resolve by URL but stay out of _flatPages, so prev/next skips them.
         if (hiddenPages is not null)
         {
             foreach (var page in hiddenPages) IndexHidden(page);
@@ -63,8 +62,7 @@ public class NavigationGraph
         return FlattenFrom(Root);
     }
 
-    // Visible + hidden pages. Static prerender needs both — hidden pages
-    // still route at runtime.
+    // Visible + hidden pages; static prerender needs both.
     public IEnumerable<string> AllUrls => _byUrl.Keys;
 
     private static IEnumerable<NavigationNode> FlattenFrom(NavigationNode node)

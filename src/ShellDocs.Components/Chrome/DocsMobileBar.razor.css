@@ -32,5 +32,4 @@
 ::deep .docs-mobile-tool:hover { color: var(--foreground); background: var(--muted); }
 ::deep .docs-mobile-tool svg { width: 1.15rem; height: 1.15rem; }
 
-/* Push ThemeToggle to the right end */
 ::deep .theme-toggle { margin-left: auto; }
