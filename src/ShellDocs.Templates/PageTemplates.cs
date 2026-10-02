@@ -1,8 +1,6 @@
 namespace ShellDocs.Templates;
 
-/* Starter markdown emitted by `shelldocs add`.
-   Each method returns a self-contained .md string with frontmatter, a title,
-   and a light section skeleton. TODOs mark spots the author should fill in. */
+// Starter pages emitted by `shelldocs add`.
 public static class PageTemplates
 {
     public static string ComponentPage(string displayName) => $$"""

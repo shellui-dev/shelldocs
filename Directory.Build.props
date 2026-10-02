@@ -11,14 +11,13 @@
     <NoWarn>$(NoWarn);CS1591</NoWarn> <!-- suppress "missing XML comment" until we backfill -->
   </PropertyGroup>
 
-  <!-- Central package version pinning via Directory.Packages.props -->
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
 
   <!-- Package metadata (applies to any project with IsPackable=true) -->
   <PropertyGroup>
-    <Version>0.1.7-alpha</Version>
+    <Version>0.1.8-alpha</Version>
     <Authors>ShellUI</Authors>
     <Company>ShellUI</Company>
     <Copyright>Copyright © 2026 ShellUI</Copyright>
@@ -34,12 +33,10 @@
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
   </PropertyGroup>
 
-  <!-- Default: nothing is packable unless the project opts in -->
   <PropertyGroup>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
-  <!-- Include README in packages that opt in -->
   <ItemGroup Condition="'$(IsPackable)' == 'true'">
     <None Include="$(MSBuildThisFileDirectory)README.md" Pack="true" PackagePath="\" />
   </ItemGroup>

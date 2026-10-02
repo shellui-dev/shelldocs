@@ -260,6 +260,25 @@ Cache result — rebuild only when `dev` mode detects a change.
 `NavigationGraph.GetBreadcrumb(node)`:
 - Walk up `Parent` chain; O(depth)
 
+`NavigationGraph.GetPrevNext(node, inScope)` / `FindFolder(url)` / `FirstPageUnder(url)`:
+- Scoped prev/next (skips out-of-scope neighbours), folder-section lookup by URL, first page under a URL prefix.
+
+### Versions
+
+`ShellDocsOptions.Versions` (`AddVersion(id, label, rootUrl, description, latest)`) maps each docs version to a content folder URL. `DocsVersionResolver` (singleton, stateless — the current path is always passed in) answers every version question the chrome asks:
+
+| Question | Answer |
+|---|---|
+| Current version | Version whose `RootUrl` is a segment-aware prefix of the path (`UrlPath.IsUnder`), longest wins → else `latest` → else `Versions[0]` |
+| Sidebar nodes | Inside a version: that version folder node's `Children` (`FindFolder`). Otherwise `Root.Children` |
+| Version switch href | Same relative page in the target version → current package's root in the target version → target version's first page |
+| Package href | `{version}` token replaced with the current version's `Id`; a versioned root that isn't a page lands on its first page |
+| Prev/next | `GetPrevNext(node, n => InSameScope(n.Url, node.Url))` |
+| Search | Entries in the current version + entries outside every version root |
+| Breadcrumb | Version folder node removed |
+
+All answers are computed at render time and emitted as plain `<a href>`, so prerendered/static pages behave identically; dropdown open/close is `shelldocs.js` delegation on `.pkg`/`.ver`.
+
 ### `meta.json` schema
 
 ```json
@@ -338,7 +357,11 @@ Standard Blazor primitive — takes `Type` + `IReadOnlyDictionary<string, object
 
 Then the plain HTML with `data-slot` placeholders is emitted alongside; the DOM ends up interleaved. Details in the [markdown pipeline notes](#markdown-pipeline-internals).
 
-**Parameter serialization:** frontmatter values are strings from YAML. `TypeRegistry` inspects each component's `[Parameter]` properties to know the target type and coerces (int, bool, enum, string). Complex types (records, DTOs) need JSON literals in the markdown.
+**Parameter serialization:** attribute values are strings. `SlotRenderer.BuildParameters` matches them to `[Parameter]` properties (case-insensitively) and coerces string, bool, char, numeric primitives and enums, accepting Razor forms: a leading `@`, `@( … )`, `Type.Member` enum values, `A | B` flags, numeric suffixes, `@null`. Anything else is skipped with a logged warning instead of throwing: directive attributes (`@onclick`, `@bind-*`, `@ref`), delegate/`EventCallback` params, unsupported types, bad values, and unknown attributes on components without a `CaptureUnmatchedValues` catch-all.
+
+**`razor:preview` fences** are parsed by `PreviewParser` (a hand-rolled, quote- and `@( … )`-aware tag scanner) into `PreviewSlot.Nodes`: component, element and text nodes in source order. `SlotRenderer.RenderNodes` emits them as real render-tree elements and components, so wrappers keep their children under interactive re-renders too. Razor-only constructs (`@code { }`, `@* *@`, `@using` lines) are skipped for rendering but stay in the source view.
+
+**`<DemoPreview Component="X" />`** renders registered component `X` inside `PreviewFrame` and reads `{DemoSourceRoot}/**/X.razor` (shallowest match, cached and re-read when the file's write time changes) for the source tab.
 
 ---
 

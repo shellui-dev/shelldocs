@@ -149,11 +149,10 @@ public class NavigationGraphBuilderTests : IDisposable
         var graph = NavigationGraphBuilder.Build(_root);
         var titles = graph.Root.Children.Select(c => c.Title).ToList();
 
-        // Sidebar shows only visible (secret excluded despite being on disk).
+        // Hidden from the sidebar…
         Assert.Equal(new[] { "Visible" }, titles);
 
-        // But secret's URL still resolves (the whole point of `hidden` vs
-        // deleting the file: the dropdown/direct link still works).
+        // …but still routable.
         var secretNode = graph.ResolveByUrl("/secret");
         Assert.NotNull(secretNode);
         Assert.Equal("Secret", secretNode!.Title);
@@ -196,8 +195,7 @@ public class NavigationGraphBuilderTests : IDisposable
     [Fact]
     public void Build_HiddenSlug_IsAlsoExcludedFromAutoAppend()
     {
-        // No `pages` array. Without hidden support, auto-append would surface
-        // secret alongside visible. With hidden, secret still hidden.
+        // No `pages` array: auto-append must still respect hidden.
         WriteMd("visible.md", "Visible");
         WriteMd("secret.md", "Secret");
         WriteMeta("", """{ "hidden": ["secret"] }""");
@@ -211,9 +209,7 @@ public class NavigationGraphBuilderTests : IDisposable
     [Fact]
     public void Build_MdFileNotInMetaJson_IsAppendedAfterExplicitOrdering()
     {
-        // Meta lists only `alpha`, but `bravo.md` exists on disk.
-        // Bravo should surface at the end, not silently disappear (the
-        // `shelldocs add` DX gap fix).
+        // Pages missing from meta.json are appended, not dropped.
         WriteMd("alpha.md", "Alpha");
         WriteMd("bravo.md", "Bravo");
         WriteMeta("", """{ "pages": ["alpha"] }""");
@@ -255,8 +251,6 @@ public class NavigationGraphBuilderTests : IDisposable
     [Fact]
     public void Build_ExplicitOrderingIsPreserved_ForItemsInMetaJson()
     {
-        // Verify the auto-append doesn't break the existing "meta.json controls
-        // ordering for explicitly-listed items" contract.
         WriteMd("alpha.md", "Alpha");
         WriteMd("bravo.md", "Bravo");
         WriteMd("charlie.md", "Charlie");

@@ -1,0 +1,14 @@
+@using ShellDocs.Preview.Ui
+
+<div style="display: flex; align-items: center; gap: 0.75rem;">
+    <Button OnClick="Increment">Click me</Button>
+    <Button Variant="ButtonVariant.Outline" OnClick="Reset" Disabled="@(count == 0)">Reset</Button>
+    <span class="click-count">Clicked @count @(count == 1 ? "time" : "times")</span>
+</div>
+
+@code {
+    private int count;
+
+    private void Increment() => count++;
+    private void Reset() => count = 0;
+}

@@ -2,10 +2,7 @@ using System.Text.RegularExpressions;
 
 namespace ShellDocs.Core;
 
-/* Extracts plain text from markdown for search-body indexing. Strips YAML
-   frontmatter, fenced code blocks, razor component tags, inline HTML, and
-   the surface markdown syntax (headings, emphasis, links, images). Preserves
-   the actual prose so token matching finds body-only hits. */
+// Prose-only text for search bodies: strips frontmatter, fences, tags/HTML and markdown syntax.
 public static class MarkdownPlainText
 {
     private static readonly Regex Frontmatter = new(@"^---\s*\r?\n[\s\S]*?\r?\n---\s*\r?\n", RegexOptions.Compiled);

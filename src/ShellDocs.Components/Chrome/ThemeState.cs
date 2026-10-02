@@ -1,16 +1,13 @@
 namespace ShellDocs.Components.Chrome;
 
-/* Shared theme state for every ThemeToggle instance on the page.
-   Without this, each toggle held its own bool and the second toggle stayed
-   stale when the first one flipped the theme. */
+// Shared by every ThemeToggle on the page so they stay in sync.
 public class ThemeState
 {
     public bool IsDark { get; private set; }
     public bool IsInitialized { get; private set; }
     public event Action? OnChange;
 
-    // Called once from the first ThemeToggle that hydrates — reads the actual
-    // <html> class the pre-Blazor head script set. Later toggles skip re-init.
+    // Seeded once from the <html> class the pre-Blazor head script set.
     public void Init(bool isDark)
     {
         if (IsInitialized) return;

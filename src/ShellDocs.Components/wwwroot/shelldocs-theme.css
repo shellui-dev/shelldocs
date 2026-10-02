@@ -1,9 +1,5 @@
-/* ShellDocs Component Styles
-   ─────────────────────────────────────────────────────────────────────
-   Base HTML resets, .shelldocs-prose typography, code-block chrome, and
-   Prism.js overrides. All colours/spacings resolve via the CSS variables
-   defined in ShellDocs.Tokens (loaded separately as `tokens.css`).
-   ───────────────────────────────────────────────────────────────────── */
+/* Base resets, .shelldocs-prose typography and code-block chrome.
+   Every colour and spacing comes from ShellDocs.Tokens (tokens.css). */
 
 /* Base */
 *, *::before, *::after { box-sizing: border-box; border-color: var(--border); }
@@ -16,7 +12,7 @@ html {
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
     scroll-behavior: smooth;
-    scrollbar-gutter: stable; /* fumadocs — no jumpy shift when a modal opens */
+    scrollbar-gutter: stable; /* no layout shift when a modal hides the scrollbar */
 }
 body { margin: 0; min-height: 100vh; }
 
@@ -194,16 +190,12 @@ pre.shiki span { color: var(--shiki-light); }
 :root.dark pre.shiki,
 :root.dark pre.shiki span { color: var(--shiki-dark); }
 
-/* View-transitions — the browser diffs old vs new page and cross-fades
-   automatically when Blazor enhanced navigation swaps the DOM. Progressive:
-   Chromium supports today; other engines just no-op the pseudo rules. */
+/* Cross-fade enhanced-nav page swaps where view transitions are supported. */
 @view-transition { navigation: auto; }
 ::view-transition-old(root),
 ::view-transition-new(root) { animation-duration: 180ms; animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
 
-/* Global reduced-motion guard — respects the OS preference so animations
-   collapse to instant while transitions still fire (kept at 0.01ms so JS
-   `transitionend` handlers still trigger). */
+/* Reduced motion: near-zero (not zero) durations so transitionend still fires. */
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,

@@ -1,13 +1,11 @@
-using System.Reflection;
 using Microsoft.AspNetCore.Components;
+using ShellDocs.Components.Content;
 using ShellDocs.Markdown;
 using Xunit;
 
 namespace ShellDocs.Tests;
 
-// Named-slot routing behavior: child tags matching a target component's
-// [Parameter] RenderFragment prop names should route into that param instead
-// of being flattened into ChildContent.
+// Child tags named after a RenderFragment parameter route into it, not ChildContent.
 public class SlotRendererTests
 {
     public class Alert : ComponentBase
@@ -18,20 +16,8 @@ public class SlotRendererTests
         [Parameter] public RenderFragment? ChildContent { get; set; }
     }
 
-    private static readonly MethodInfo BuildParametersMethod = LoadBuildParameters();
-
-    private static MethodInfo LoadBuildParameters()
-    {
-        var asm = Assembly.Load("ShellDocs.Components");
-        var t = asm.GetType("ShellDocs.Components.Content.SlotRenderer", throwOnError: true)!;
-        return t.GetMethod("BuildParameters", BindingFlags.Public | BindingFlags.Static)!;
-    }
-
     private static IDictionary<string, object> BuildParameters(Type target, IReadOnlyDictionary<string, string> attrs, string? childRaw)
-    {
-        var renderer = new MarkdownRenderer();
-        return (IDictionary<string, object>)BuildParametersMethod.Invoke(null, new object?[] { renderer, target, attrs, childRaw })!;
-    }
+        => SlotRenderer.BuildParameters(new MarkdownRenderer(), target, attrs, childRaw);
 
     [Fact]
     public void BuildParameters_RoutesNamedSlotIntoRenderFragmentParam()

@@ -25,9 +25,7 @@
     <Routes @rendermode="RenderMode.InteractiveServer" />
     <script src="_content/ShellDocs.Components/shelldocs.js"></script>
     <script type="module">
-        /* Shiki singleton highlighter — VSCode-quality syntax colouring via
-           WASM. Loads the fixed subset of languages we support; dual-theme
-           (github-light + github-dark) resolves through CSS vars. */
+        /* Shiki (WASM) with github-light/dark themes resolved through CSS vars. */
         import { createHighlighter } from 'https://esm.sh/shiki@1.24.0';
         window.__shiki = await createHighlighter({
             themes: ['github-light', 'github-dark'],

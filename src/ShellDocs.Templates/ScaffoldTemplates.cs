@@ -1,7 +1,6 @@
 namespace ShellDocs.Templates;
 
-/* Templates emitted by `shelldocs init`. Raw string constants so the CLI has
-   zero I/O overhead — the templates ARE the payload. */
+// Files and snippets emitted by `shelldocs init`.
 public static class ScaffoldTemplates
 {
     public static string IntroductionMd => """
@@ -88,9 +87,6 @@ public static class ScaffoldTemplates
         }
         """;
 
-    /* Home.razor emitted by create mode after stripping the fresh Blazor
-       template's Counter/Weather demo pages. Fumadocs-style welcome — one
-       CTA to the docs, plus edit-this-file hints. */
     public static string WelcomeHomeRazor => """
         @page "/"
         @layout HomeLayout
@@ -160,15 +156,10 @@ public static class ScaffoldTemplates
         }
         """;
 
-    /* Bare pass-through MainLayout that replaces the fresh template's
-       sidebar+NavMenu layout. Every page uses @layout to pick its real
-       layout (HomeLayout or DocsLayout), so this is a fallback only. */
     public static string BareMainLayoutRazor => """
         @inherits LayoutComponentBase
         @Body
         """;
-
-    // --- Program.cs patch snippets ---
 
     public static string ProgramUsing => "using ShellDocs.Components;";
 
@@ -193,8 +184,6 @@ public static class ScaffoldTemplates
             //   o.RegisterComponentsFromAssembly<MyMarker>();
         });
         """;
-
-    // --- App.razor patch snippets ---
 
     public static string AppTokenLinks => """
         <link rel="stylesheet" href="_content/ShellDocs.Tokens/tokens.css" />
@@ -225,8 +214,6 @@ public static class ScaffoldTemplates
             if (window.shelldocsHighlight) window.shelldocsHighlight();
         </script>
         """;
-
-    // --- Fallback: SHELLDOCS_SETUP.md for --attach mode where we can't safely patch ---
 
     public static string SetupInstructionsMd(string siteName, string githubRepo) => $$"""
         # ShellDocs setup

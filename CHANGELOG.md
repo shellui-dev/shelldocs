@@ -4,6 +4,46 @@ All notable changes to ShellDocs land here. Format follows [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [0.1.8-alpha] — 2026-10-02
+
+Versioned docs, plus `razor:preview` fixes that let real component-library docs (ShellUI) preview what they actually write. Every new chrome interaction follows the 0.1.7 static-host pattern: server-rendered initial state, data attributes, and delegated handlers in `shelldocs.js`, with no `@onclick` state.
+
+### Added
+
+- **Docs versions.** `ShellDocsOptions.AddVersion(string id, string label, string rootUrl, string? description = null, bool latest = false)` stores `DocsVersion(Id, Label, RootUrl, Description, IsLatest)` records in `ShellDocsOptions.Versions`. The current version is the one whose `RootUrl` is a segment-aware prefix of the path, otherwise the latest, otherwise the first.
+- **`DocsVersionResolver`** (registered singleton): current version, scoped sidebar nodes, version/package hrefs, search filtering, prev/next scope, breadcrumb filtering.
+- **`<VersionSelector />`** chrome: rendered under `<PackageSelector />` in `DocsSidebar` (so it's in the mobile drawer too), and in `DocsHeader` for the `TopNav` layout (desktop; the sidebar copy covers mobile there). Hidden with fewer than 2 versions. Current label in the trigger, a "latest" badge, and a check on the selected version. Options are plain `<a href>`: same page in the target version → current package root in the target version → the target version's first page.
+- **`{version}` token in `AddPackage` root URLs**, resolved to the current version's `Id`. Selected-package matching (longest prefix, now segment-aware) uses resolved URLs. Switching packages keeps the version; versioned package roots without an index page link to their first page.
+- **`<DemoPreview Component="X" Title="…" />`** content primitive plus `ShellDocsOptions.DemoSourceRoot`. It renders the registered component inside the preview frame, and the source tab shows `{DemoSourceRoot}/**/X.razor` (cached, highlighted as razor). A missing component or file renders the red error panel.
+- `UrlPath` helpers (`Normalize`, `IsUnder`, `RelativeTo`, `Combine`) and `NavigationGraph.GetPrevNext(node, inScope)`, `FindFolder(url)`, `FirstPageUnder(url)` in `ShellDocs.Core`.
+- `PreviewSlot.Nodes` + `PreviewNode` / `PreviewTextNode` / `PreviewElementNode` / `PreviewComponentNode` in `ShellDocs.Markdown`.
+- `PreviewFrame` content mode (`Content` / `Code` / `Title` / `Error` / `ErrorTitle`), `DocsHeader.ShowVersionSelector`.
+
+### Changed
+
+- **Version-scoped chrome.** Inside a version, `DocsSidebar` renders only that version folder's children, prev/next never crosses a version boundary, search shows the current version plus anything outside every version root, and the breadcrumb omits the version folder. Without versions configured, behavior is unchanged.
+- `PackageSelector` and `VersionSelector` re-render on navigation themselves. Parameterless components weren't re-rendered by their parent, so the package selection could go stale after enhanced navigation.
+- `shelldocs.js` dropdown delegation now covers `.pkg` and `.ver`. Picking an option or pressing Escape closes the menu.
+- Inline component tags and preview tags keep full attribute names. `@bind-Value="v"` is no longer misread as a `Value` parameter.
+- Parameter-name matching is case-insensitive, like Blazor's.
+- **Icons come from [ShellIcons.Blazor](https://www.nuget.org/packages/ShellIcons.Blazor) 0.1.0-alpha** (new dependency of `ShellDocs.Components`) instead of inline `<svg>` markup. `SidebarIcons` maps titles to icon components. Brand marks (GitHub, X) and consumer-supplied raw icons (`DocsPackage.IconPath`, `NavMenuItem.IconSvg`, `Card.IconSvg`) are unchanged. Scoped CSS that styled icon `<svg>`s now uses `::deep`, so if you restyle those classes in your own scoped CSS, do the same.
+
+### Fixed
+
+- **`razor:preview` with several top-level siblings rendered only the first component.** All top-level content now renders in order inside the one frame: components, HTML wrappers like `<div class="flex gap-2">…</div>`, and text. Wrappers are real render-tree elements, so their children stay inside them under interactive re-renders. The "unknown component" error panel still appears when no registered component is found. `@code { }`, `@* *@` and `@using`-style lines are skipped for rendering but kept in the source view.
+- **Enum attributes in Razor form.** `ButtonVariant.Destructive`, `@ButtonVariant.Destructive`, `@true`, `@42`, `@(…)`, and `[Flags]` values as `A | B` all coerce now.
+- **Attributes that can't be coerced no longer crash the page.** `EventCallback`/`Action`/`Func` params (`OnClick="HandleClick"`), `@bind-*`, `@ref`, `@onclick`, parameters of unsupported types, values `Coerce` can't parse, unknown attributes on components without a catch-all, and child content on components without a `RenderFragment ChildContent` are skipped with a logged warning. The component still renders. `ComponentPreview` gets the same protection.
+- Search results lagged one keystroke behind the input. The query now recalculates via `@bind:after`.
+- `PreviewFrame` / `ComponentPreview` copy buttons showed the copy and check icons side by side. The check now appears only after a successful copy.
+- `aria-selected` on selector options renders `"true"`/`"false"` instead of a bare or missing attribute.
+- `DocsSidebar` now actually implements `IDisposable`, so its `LocationChanged` handler is released.
+
+### Notes
+
+- Version folder names with dots (`v0.2.1`) keep their dots in every URL, slug and prerender output path. A route declared as `/docs/{*Path:nonfile}` won't match a URL whose last segment contains a dot (`/docs/v0.2.1`). Pages under it are fine, and the selectors only link to a bare version root when it has an `index.md`.
+- To ship `<DemoPreview>` sources, copy the `.razor` files with a `None` item. The Razor SDK drops `.razor` from publish even with `Content Update` metadata:
+  `<None Include="Demos/**/*.razor" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />`
+
 ## [0.1.7-alpha] — 2026-09-06
 
 Fixes the interactivity gap the `0.1.5-alpha` static-prerender pipeline opened up. Four chrome interactions (sidebar section expand/collapse, package selector dropdown, TableOfContents scroll-spy, PreviewFrame source view) were written as ordinary interactive Razor components with `@onclick` handlers that mutate `[Parameter] bool` state and re-render via `StateHasChanged()`. Prerendered HTML captured only the initial state; on a static host with no Blazor runtime, every one of those interactions was dead on the deployed site.

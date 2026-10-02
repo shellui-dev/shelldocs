@@ -1,0 +1,62 @@
+@using ShellIcons.Icons
+@inject NavigationManager Nav
+@inject ShellDocsOptions Options
+@inject DocsVersionResolver Versions
+@implements IDisposable
+
+@* Same contract as PackageSelector: shelldocs.js opens/closes it, and the
+   options are hrefs computed at render time, so it works on static hosts. *@
+@if (Options.Versions.Count > 1)
+{
+    var path = DocsVersionResolver.PathOf(Nav);
+    var current = Versions.Current(path)!;
+    <div class="ver ver-@Placement" data-open="false">
+        <button type="button" class="ver-trigger" aria-haspopup="listbox" aria-expanded="false" aria-label="Docs version: @current.Label">
+            <span class="ver-mark">
+                <Tag StrokeWidth="1.75" />
+            </span>
+            <span class="ver-value">@current.Label</span>
+            <ChevronDown Class="ver-chevron" />
+        </button>
+
+        <div class="ver-menu" role="listbox">
+            @foreach (var v in Options.Versions)
+            {
+                var isSel = v.Id == current.Id;
+                <a class="ver-option @(isSel ? "selected" : "")" role="option" aria-selected="@(isSel ? "true" : "false")" href="@Versions.GetVersionHref(path, v)">
+                    <span class="ver-option-body">
+                        <span class="ver-option-title">
+                            @v.Label
+                            @if (v.IsLatest)
+                            {
+                                <span class="ver-badge">latest</span>
+                            }
+                        </span>
+                        @if (!string.IsNullOrEmpty(v.Description))
+                        {
+                            <span class="ver-option-desc">@v.Description</span>
+                        }
+                    </span>
+                    @if (isSel)
+                    {
+                        <Check Class="ver-option-check" StrokeWidth="2.5" />
+                    }
+                </a>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    // "sidebar", "header" (TopNav, desktop only) or "drawer" (mobile-only copy
+    // used when the header carries the desktop one).
+    [Parameter] public string Placement { get; set; } = "sidebar";
+
+    // No parameters change on navigation, so the parent's re-render would skip us.
+    protected override void OnInitialized() => Nav.LocationChanged += OnLocationChanged;
+
+    private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+        => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Nav.LocationChanged -= OnLocationChanged;
+}

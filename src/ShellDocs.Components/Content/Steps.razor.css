@@ -1,8 +1,7 @@
 .steps {
     list-style: none;
     counter-reset: step;
-    /* Push the whole rail right so the border-left lives at x = 1rem, which is
-       where the ::before badges get centered via the negative-left offset below. */
+    /* Rail sits at x = 1rem; the ::before badges centre on it (see below). */
     margin: 1.5rem 0 1.5rem 1rem;
     padding: 0;
     border-left: 1px solid var(--border);
@@ -20,8 +19,7 @@
 ::deep .step::before {
     content: counter(step);
     position: absolute;
-    /* Badge is 2rem wide; pulling it left by (badge-width / 2 + rail-half-px)
-       centers it on the 1px rail. */
+    /* Half the 2rem badge plus half the 1px rail. */
     left: calc(-1rem - 0.5px);
     top: 0;
     width: 2rem;

@@ -1,7 +1,6 @@
 window.ShellDocs = window.ShellDocs || {};
 
-/* Search — global Cmd/Ctrl+K opens the <SearchDialog>. Bridges to Blazor
-   via a DotNetObjectReference the dialog registers on first render. */
+// Cmd/Ctrl+K opens <SearchDialog> via the DotNetObjectReference it registers on first render.
 window.shelldocsSearch = (function () {
     var dotnet = null;
     function isModK(e) {
@@ -30,9 +29,8 @@ window.shelldocsSearch = (function () {
     };
 })();
 
-/* Theme sync — Blazor's enhanced navigation swaps the DOM on route change,
-   which strips the .dark class the head-inline bootstrap set. Re-apply the
-   theme from localStorage after every enhanced-nav commit. */
+/* Enhanced navigation swaps the DOM and strips the .dark class the inline
+   head script set, so re-apply the saved theme after every enhanced load. */
 (function () {
     function applyTheme() {
         var saved = null;
@@ -46,9 +44,7 @@ window.shelldocsSearch = (function () {
     window.shelldocsApplyTheme = applyTheme;
 })();
 
-/* Shiki-backed highlighters. Both functions replace <pre><code class="language-X">
-   with Shiki's rendered <pre> so we get VSCode-parity colouring. Idempotent —
-   a data-shiki flag prevents re-highlighting. */
+// Swap <pre><code class="language-X"> for Shiki's output; data-shiki makes it idempotent.
 
 function langOf(codeEl) {
     var cls = (codeEl.className || '').split(/\s+/);
@@ -65,7 +61,7 @@ function highlightOne(preEl) {
     if (!code) return;
     var lang = langOf(code);
     if (!lang) return;
-    /* Shiki doesn't know every Prism alias — silently fall back. */
+    /* Languages Shiki hasn't loaded stay as plain text. */
     if (!window.__shiki.getLoadedLanguages().includes(lang)) return;
 
     var source = code.textContent;
@@ -92,7 +88,6 @@ window.shelldocsHighlight = function () {
 
 window.shelldocsHighlightElement = function (preEl) { highlightOne(preEl); };
 
-// Copy-to-clipboard for code blocks.
 window.shelldocsCopyCode = function (button) {
     var block = button.closest('.shelldocs-codeblock');
     if (!block) return;
@@ -115,9 +110,6 @@ window.shelldocsCopyCode = function (button) {
     });
 };
 
-/* Simple TOC scroll spy. IntersectionObserver on the content headings; on
-   change, move .toc-bar to the active TOC link and toggle .active. No masks,
-   no SVGs, no polling. */
 window.shelldocsToc = {
     attach: function (listEl, ids) {
         if (!listEl || !ids || ids.length === 0) return null;
@@ -223,17 +215,11 @@ window.shelldocsToc = {
     }
 };
 
-/* Chrome interactivity for static-host deploys. Without a live Blazor runtime,
-   component @onclick handlers never fire — sidebar sections don't expand, the
-   package selector dropdown doesn't open, the TOC scroll-spy never attaches,
-   the PreviewFrame "View Code" button is dead. This module wires each of those
-   to plain JS on top of the prerendered DOM. Same behavior, no runtime needed.
-
-   Delegated document-level click handlers so they survive Blazor enhanced-nav
-   DOM swaps without re-attaching. State lives on data-* attributes or on the
-   same CSS classes Blazor used to toggle — CSS unchanged. */
+/* Chrome interactivity that must work on static hosts, where no Blazor
+   runtime exists to run @onclick. Delegated document-level listeners survive
+   enhanced-nav DOM swaps; state lives in data-* attributes / CSS classes
+   that the server already renders with the correct initial values. */
 window.shelldocsChrome = (function () {
-    // Sidebar section expand/collapse.
     function onSidebarClick(e) {
         var btn = e.target.closest('.sidebar-section-toggle');
         if (!btn) return;
@@ -247,35 +233,58 @@ window.shelldocsChrome = (function () {
         if (shell) shell.setAttribute('data-open', next);
     }
 
-    // Package selector dropdown. Click trigger to open/close, click outside to close.
-    function onPackageClick(e) {
-        var trigger = e.target.closest('.pkg-trigger');
-        var openPkg = document.querySelector('.pkg[data-open="true"]');
+    // .pkg (PackageSelector) and .ver (VersionSelector): the trigger toggles
+    // [data-open]; outside click, Escape, or picking an option closes it.
+    var DROPDOWN = '.pkg, .ver';
+    var TRIGGER = '.pkg-trigger, .ver-trigger';
+    var MENU = '.pkg-menu, .ver-menu';
+    var OPTION = '.pkg-option, .ver-option';
+    var CHEVRON = '.pkg-chevron, .ver-chevron';
 
+    function onDropdownClick(e) {
+        var trigger = e.target.closest(TRIGGER);
         if (trigger) {
-            var pkg = trigger.closest('.pkg');
-            if (!pkg) return;
-            var isOpen = pkg.getAttribute('data-open') === 'true';
-            if (openPkg && openPkg !== pkg) closePkg(openPkg);
-            pkg.setAttribute('data-open', isOpen ? 'false' : 'true');
-            trigger.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
-            var chevron = pkg.querySelector('.pkg-chevron');
-            if (chevron) chevron.classList.toggle('open', !isOpen);
+            var root = trigger.closest(DROPDOWN);
+            if (!root) return;
+            var isOpen = root.getAttribute('data-open') === 'true';
+            closeAllDropdowns(root);
+            setDropdown(root, !isOpen);
             return;
         }
 
-        if (openPkg && !e.target.closest('.pkg-menu')) closePkg(openPkg);
+        var option = e.target.closest(OPTION);
+        if (option) {
+            var owner = option.closest(DROPDOWN);
+            if (owner) setDropdown(owner, false);
+            return;
+        }
+
+        if (!e.target.closest(MENU)) closeAllDropdowns(null);
     }
 
-    function closePkg(pkg) {
-        pkg.setAttribute('data-open', 'false');
-        var trigger = pkg.querySelector('.pkg-trigger');
-        if (trigger) trigger.setAttribute('aria-expanded', 'false');
-        var chevron = pkg.querySelector('.pkg-chevron');
-        if (chevron) chevron.classList.remove('open');
+    function onDropdownKeydown(e) {
+        if (e.key !== 'Escape') return;
+        var open = document.querySelector('.pkg[data-open="true"], .ver[data-open="true"]');
+        if (!open) return;
+        closeAllDropdowns(null);
+        var trigger = open.querySelector(TRIGGER);
+        if (trigger) trigger.focus();
     }
 
-    // PreviewFrame + ComponentPreview source expand/collapse + copy.
+    function setDropdown(root, open) {
+        root.setAttribute('data-open', open ? 'true' : 'false');
+        var trigger = root.querySelector(TRIGGER);
+        if (trigger) trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+        var chevron = root.querySelector(CHEVRON);
+        if (chevron) chevron.classList.toggle('open', open);
+    }
+
+    function closeAllDropdowns(except) {
+        document.querySelectorAll('.pkg[data-open="true"], .ver[data-open="true"]').forEach(function (d) {
+            if (d !== except) setDropdown(d, false);
+        });
+    }
+
     function onPreviewClick(e) {
         var toggle = e.target.closest('[data-preview-toggle]');
         if (toggle) {
@@ -305,8 +314,7 @@ window.shelldocsChrome = (function () {
         }
     }
 
-    // TOC scroll-spy auto-attach. Called both at boot and on enhancedload
-    // (Blazor swaps the DOM on route change → previous handle is stale).
+    // Re-run on enhancedload: heading IDs change per page, so the old observer is stale.
     function initToc() {
         document.querySelectorAll('[data-toc-list]').forEach(function (list) {
             if (list.__tocHandle) {
@@ -325,7 +333,8 @@ window.shelldocsChrome = (function () {
         if (delegatesAttached) return;
         delegatesAttached = true;
         document.addEventListener('click', onSidebarClick);
-        document.addEventListener('click', onPackageClick);
+        document.addEventListener('click', onDropdownClick);
+        document.addEventListener('keydown', onDropdownKeydown);
         document.addEventListener('click', onPreviewClick);
     }
 
@@ -339,8 +348,6 @@ window.shelldocsChrome = (function () {
     } else {
         document.addEventListener('DOMContentLoaded', boot);
     }
-    // Blazor enhanced-nav swaps DOM but leaves document-attached listeners intact.
-    // TOC needs re-attach because heading IDs change per page.
     document.addEventListener('enhancedload', initToc);
 
     return { initToc: initToc };

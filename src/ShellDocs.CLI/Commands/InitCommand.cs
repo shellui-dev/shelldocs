@@ -5,24 +5,15 @@ using Spectre.Console;
 
 namespace ShellDocs.CLI.Commands;
 
-/* `shelldocs init` — two modes:
-
-   CREATE (default): scaffolds a brand-new Blazor Web App under docs/<Name>.Docs,
-   runs `dotnet new blazor -o <path>`, then patches Program.cs + App.razor
-   directly (we know the template shape because we created it). One command →
-   running docs site.
-
-   ATTACH (--attach): augments an existing Blazor project in --dir. Doesn't
-   patch Program.cs / App.razor — the user's own project has custom
-   middleware / auth / etc. we can't safely rewrite around. Writes a
-   SHELLDOCS_SETUP.md with copy-paste snippets instead.
-
+/* CREATE (default) scaffolds a new Blazor Web App and patches Program.cs +
+   App.razor in place — safe because we just generated that template.
+   ATTACH (--attach) only writes SHELLDOCS_SETUP.md snippets: an existing
+   project's Program.cs may have middleware/auth we can't rewrite around.
    Both modes are idempotent. */
 internal static class InitCommand
 {
-    // Bump with <Version> in Directory.Build.props on every release. Determines
-    // which ShellDocs.* versions the scaffold references. If stale, consumers
-    // scaffolding via a new CLI get old packages that lack the fresh CLI's fixes.
+    // Keep in sync with <Version> in Directory.Build.props — it pins the
+    // ShellDocs.* package versions the scaffold references.
     private const string ShellDocsVersion = "0.1.2-alpha";
 
     public static int Run(string? path, string dir, bool attach, bool yes, string theme)
@@ -31,8 +22,6 @@ internal static class InitCommand
         return CreateMode(path, dir, yes, theme);
     }
 
-    // ---- CREATE MODE ----------------------------------------------------
-
     private static int CreateMode(string? explicitPath, string cwd, bool yes, string theme)
     {
         var cwdAbs = Path.GetFullPath(cwd);
@@ -40,8 +29,6 @@ internal static class InitCommand
             ? Path.Combine(cwdAbs, InferOutputPath(cwdAbs))
             : Path.GetFullPath(Path.Combine(cwdAbs, explicitPath));
 
-        // Site name: strip the .Docs suffix we auto-append to the project
-        // folder — "shell-tech.Docs" (project) → "shell-tech" (brand shown in header).
         var siteName = Path.GetFileName(outputAbs);
         if (siteName.EndsWith(".Docs", StringComparison.OrdinalIgnoreCase))
             siteName = siteName[..^5];
@@ -58,8 +45,6 @@ internal static class InitCommand
         AnsiConsole.Write(summary);
         AnsiConsole.WriteLine();
 
-        /* Refuse to overwrite an existing non-empty directory. If they want to
-           re-scaffold on top of an existing dir, they can --attach it. */
         if (Directory.Exists(outputAbs) && Directory.EnumerateFileSystemEntries(outputAbs).Any())
         {
             AnsiConsole.MarkupLine($"[red]error:[/] target directory [yellow]{outputAbs}[/] already exists and isn't empty.");
@@ -67,7 +52,6 @@ internal static class InitCommand
             return 1;
         }
 
-        // 1. dotnet new blazor
         AnsiConsole.MarkupLine("[dim]$[/] [cyan]dotnet new blazor -o " + outputAbs + "[/]");
         var newCode = RunDotnetNewBlazor(outputAbs);
         if (newCode != 0)
@@ -76,7 +60,6 @@ internal static class InitCommand
             return newCode;
         }
 
-        // 2. Scaffold + patch the freshly-created project
         var csproj = FindCsproj(outputAbs);
         if (csproj is null)
         {
@@ -93,7 +76,6 @@ internal static class InitCommand
         PatchAppRazor(outputAbs, changes);
         RegisterWithSolution(csproj, cwdAbs, changes);
 
-        // Report
         AnsiConsole.WriteLine();
         AnsiConsole.MarkupLine($"[green]✓[/] Wrote [bold]{changes.Count}[/] change(s):");
         foreach (var c in changes) AnsiConsole.MarkupLine($"  [dim]•[/] {c}");
@@ -107,9 +89,7 @@ internal static class InitCommand
         return 0;
     }
 
-    /* Walks up from `startDir` looking for a .slnx (preferred) or .sln.
-       Stops at the directory containing .git (repo root) or after 6 levels,
-       whichever comes first. Returns null if no solution found. */
+    // Stops at the git root or after 6 levels, whichever comes first.
     internal static string? FindNearestSolution(string startDir)
     {
         var current = new DirectoryInfo(startDir);
@@ -120,7 +100,6 @@ internal static class InitCommand
             if (slnx is not null) return slnx.FullName;
             var sln = current.GetFiles("*.sln").FirstOrDefault();
             if (sln is not null) return sln.FullName;
-            // Don't walk past the git root.
             if (Directory.Exists(Path.Combine(current.FullName, ".git"))) break;
             current = current.Parent;
             depth++;
@@ -133,14 +112,13 @@ internal static class InitCommand
         var sln = FindNearestSolution(cwd);
         if (sln is null) return;
 
-        // Skip if the .slnx already lists this project (idempotent re-run guard).
+        // Idempotent re-run guard.
         try
         {
             var xml = File.ReadAllText(sln);
             var csprojRel = Path.GetFileName(csproj);
             if (xml.Contains(csprojRel, StringComparison.OrdinalIgnoreCase))
             {
-                // Already registered.
                 return;
             }
         }
@@ -186,8 +164,6 @@ internal static class InitCommand
         if (string.IsNullOrEmpty(libName)) libName = "Site";
         return Path.Combine("docs", libName + ".Docs");
     }
-
-    // ---- ATTACH MODE ----------------------------------------------------
 
     private static int AttachMode(string dir, bool yes, string theme)
     {
@@ -249,8 +225,6 @@ internal static class InitCommand
         return 0;
     }
 
-    // ---- SHARED SCAFFOLDING ---------------------------------------------
-
     private static void ScaffoldPackages(string csproj, List<string> changes)
     {
         AddPackageIfMissing(csproj, "ShellDocs.Components", ShellDocsVersion, changes);
@@ -258,10 +232,9 @@ internal static class InitCommand
         AddContentCopyIfMissing(csproj, changes);
     }
 
-    // Split-rule .md/.json copy so both `dotnet run` and `dotnet publish`
-    // carry content. Two rules because the Web SDK auto-includes .json (need
-    // Update, not Include — Include triggers NETSDK1022) but not .md.
-    // Migrates the pre-0.1.5-alpha broken single-Update form on re-run.
+    // Two rules so both `dotnet run` and `dotnet publish` carry content: the Web
+    // SDK already includes .json as Content (Include would trip NETSDK1022) but
+    // not .md. Also migrates the broken single-Update rule from before 0.1.5-alpha.
     internal static void AddContentCopyIfMissing(string csproj, List<string> changes)
     {
         var xml = File.ReadAllText(csproj);
@@ -310,16 +283,12 @@ internal static class InitCommand
         WriteIfMissing(Path.Combine(pagesDir, "DocsPage.razor"), ScaffoldTemplates.DocsPageRazor, changes);
     }
 
-    /* Strips the demo pages / NavMenu / MainLayout that `dotnet new blazor`
-       ships, then writes a fumadocs-style welcome Home.razor rooted on
-       HomeLayout. Called from CreateMode only — attach-mode leaves the
-       user's existing pages alone. */
+    // CreateMode only — attach mode leaves the user's existing pages alone.
     internal static void StripFreshTemplate(string projectRoot, List<string> changes)
     {
         var componentsDir = Path.Combine(projectRoot, "Components");
         if (!Directory.Exists(componentsDir)) return;
 
-        // Delete demo pages Counter, Weather. Home gets replaced below.
         var demoPages = new[] { "Counter.razor", "Weather.razor" };
         foreach (var p in demoPages)
         {
@@ -331,8 +300,8 @@ internal static class InitCommand
             }
         }
 
-        // Delete NavMenu (the purple sidebar) — MainLayout still references it,
-        // so we also overwrite MainLayout as a bare pass-through afterward.
+        // MainLayout references NavMenu, so it's rewritten as a bare pass-through
+        // below; real pages pick HomeLayout / DocsLayout via @layout.
         var navMenus = new[] { "NavMenu.razor", "NavMenu.razor.css" };
         foreach (var n in navMenus)
         {
@@ -344,8 +313,6 @@ internal static class InitCommand
             }
         }
 
-        // Bare-passthrough MainLayout so Routes.razor still resolves it, but
-        // every actual page uses @layout HomeLayout / DocsLayout to override.
         var mainLayoutPath = Path.Combine(componentsDir, "Layout", "MainLayout.razor");
         if (File.Exists(mainLayoutPath))
         {
@@ -359,13 +326,11 @@ internal static class InitCommand
             changes.Add("deleted [cyan]Components/Layout/MainLayout.razor.css[/]");
         }
 
-        // Overwrite Home.razor with the welcome page.
         var homePath = Path.Combine(componentsDir, "Pages", "Home.razor");
         Directory.CreateDirectory(Path.GetDirectoryName(homePath)!);
         File.WriteAllText(homePath, ScaffoldTemplates.WelcomeHomeRazor);
         changes.Add("wrote [cyan]Components/Pages/Home.razor[/] (welcome page)");
 
-        // The css file that ships alongside Home.razor is no longer relevant.
         var homeCss = Path.Combine(componentsDir, "Pages", "Home.razor.css");
         if (File.Exists(homeCss))
         {
@@ -374,10 +339,7 @@ internal static class InitCommand
         }
     }
 
-    // ---- CREATE-MODE PATCHERS -------------------------------------------
-
-    /* Patches Program.cs of a freshly-created `dotnet new blazor` project.
-       We know the exact template shape so anchor-based text insertion is safe. */
+    // Anchor-based insertion is safe here: we know the fresh template's shape.
     internal static void PatchProgramCs(string projectRoot, string siteName, string githubRepo, List<string> changes)
     {
         var path = Path.Combine(projectRoot, "Program.cs");
@@ -386,7 +348,6 @@ internal static class InitCommand
         var src = File.ReadAllText(path);
         var original = src;
 
-        // 1. `using ShellDocs.Components;` — after the existing using line.
         if (!src.Contains("using ShellDocs.Components;"))
         {
             var m = Regex.Match(src, @"^using\s+[^;]+;\s*$", RegexOptions.Multiline);
@@ -400,7 +361,6 @@ internal static class InitCommand
             }
         }
 
-        // 2. `builder.WebHost.UseStaticWebAssets();` — right after WebApplication.CreateBuilder.
         if (!src.Contains("UseStaticWebAssets"))
         {
             var m = Regex.Match(src, @"var\s+builder\s*=\s*WebApplication\.CreateBuilder\(args\)\s*;");
@@ -411,7 +371,6 @@ internal static class InitCommand
             }
         }
 
-        // 3. `builder.Services.AddShellDocs(...);` — after AddRazorComponents block.
         if (!src.Contains("AddShellDocs"))
         {
             var m = Regex.Match(src, @"builder\.Services\.AddRazorComponents\(\)[\s\S]*?;");
@@ -430,17 +389,14 @@ internal static class InitCommand
         }
     }
 
-    /* Patches App.razor of a freshly-created `dotnet new blazor` project. */
     internal static void PatchAppRazor(string projectRoot, List<string> changes)
     {
-        // Fresh Blazor Web App puts App.razor under Components/.
         var path = Path.Combine(projectRoot, "Components", "App.razor");
         if (!File.Exists(path)) return;
 
         var src = File.ReadAllText(path);
         var original = src;
 
-        // 1. Token + component CSS links — before <HeadOutlet />.
         if (!src.Contains("_content/ShellDocs.Tokens/tokens.css"))
         {
             var m = Regex.Match(src, @"<HeadOutlet\s*/?>", RegexOptions.IgnoreCase);
@@ -451,7 +407,6 @@ internal static class InitCommand
             }
         }
 
-        // 2. Theme bootstrap script — also before <HeadOutlet />, after the CSS links.
         if (!src.Contains("shelldocs-theme'"))
         {
             var m = Regex.Match(src, @"<HeadOutlet\s*/?>", RegexOptions.IgnoreCase);
@@ -462,8 +417,7 @@ internal static class InitCommand
             }
         }
 
-        // 3. shelldocs.js + Shiki module — after blazor.web.js. Fresh templates
-        // in .NET 10 wrap the src in @Assets[...], so accept both variants.
+        // .NET 10 templates wrap the src in @Assets[...]; accept both forms.
         if (!src.Contains("_content/ShellDocs.Components/shelldocs.js"))
         {
             var m = Regex.Match(src,
@@ -476,15 +430,13 @@ internal static class InitCommand
             }
         }
 
-        // 4. <Routes /> needs @rendermode="InteractiveServer" or the theme
-        // toggle (and every other Blazor interactive component) is dead.
+        // Without an interactive render mode the theme toggle and search are dead.
         if (!Regex.IsMatch(src, @"<Routes\s+@rendermode"))
         {
             src = Regex.Replace(src, @"<Routes\s*/>", "<Routes @rendermode=\"InteractiveServer\" />");
         }
 
-        // 5. Strip Bootstrap CSS + the fresh template's app.css. Both conflict
-        // with the token system — Bootstrap paints inline <code> pink.
+        // Bootstrap and the template's app.css fight the token system (e.g. pink inline <code>).
         src = Regex.Replace(src,
             @"\s*<link\s+rel=""stylesheet""\s+href=""@Assets\[""lib/bootstrap/dist/css/bootstrap\.min\.css""\]""\s*/>",
             "");
@@ -498,8 +450,6 @@ internal static class InitCommand
             changes.Add("patched [cyan]Components/App.razor[/]");
         }
     }
-
-    // ---- SHARED HELPERS -------------------------------------------------
 
     private static string? FindCsproj(string dir)
     {

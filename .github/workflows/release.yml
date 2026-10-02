@@ -44,12 +44,8 @@ jobs:
       - name: List produced packages
         run: ls -la nupkgs/
 
-      # ─── Pre-push safety: refuse if the version is already on nuget.org ───
-      # NuGet locks version numbers permanently after first publish. Without
-      # this check, `--skip-duplicate` in the push step would silently no-op
-      # the upload of a fresh binary when the version already exists — burned
-      # us once (see CHANGELOG 0.1.0-alpha → 0.1.1-alpha). Fails loud so the
-      # human bumps Directory.Build.props before re-tagging.
+      # nuget.org locks a version forever after first publish, and --skip-duplicate
+      # would silently skip the upload. Fail so the version gets bumped before re-tagging.
       - name: Verify version is not already published
         if: github.event_name == 'push' || inputs.dry_run == false
         run: |

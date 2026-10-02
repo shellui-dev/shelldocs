@@ -4,22 +4,19 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Rendering;
+using Microsoft.Extensions.Logging;
 using ShellDocs.Markdown;
 
 namespace ShellDocs.Components.Content;
 
-/* Turns a slice of markdown (or raw HTML-with-component-tags) into a Blazor
-   RenderFragment that renders nested components as real DynamicComponents,
-   recursively — so <CardGrid><Card /><Card /></CardGrid> and friends work
-   inside razor:preview blocks and inline ChildContent. */
+// Renders markdown/HTML containing component tags as real DynamicComponents,
+// recursively, so components nest inside previews and ChildContent.
 internal static class SlotRenderer
 {
-    public static RenderFragment FromMarkup(MarkdownRenderer renderer, string raw) => builder =>
+    public static RenderFragment FromMarkup(MarkdownRenderer renderer, string raw, ILogger? logger = null) => builder =>
     {
-        /* Markdig treats any block indented 4+ spaces as a code block, so
-           children of <Steps>, <FileTree>, etc. authored with the outer tag's
-           natural indent would render as literal <pre> instead of components.
-           Strip the common leading whitespace before feeding to the renderer. */
+        /* Markdig treats 4+ space indentation as a code block, so children
+           authored at the outer tag's indent would render as <pre>. */
         var doc = renderer.Render(Dedent(raw));
         var parts = SlotSplitter.Split(doc);
         var seq = 0;
@@ -31,17 +28,62 @@ internal static class SlotRenderer
             }
             else if (part is SlotPart s && s.Slot is ComponentSlot comp)
             {
-                Emit(builder, ref seq, renderer, comp);
+                Emit(builder, ref seq, renderer, comp, logger);
             }
         }
     };
 
-    private static void Emit(RenderTreeBuilder builder, ref int seq, MarkdownRenderer renderer, ComponentSlot slot)
+    private static void Emit(RenderTreeBuilder builder, ref int seq, MarkdownRenderer renderer, ComponentSlot slot, ILogger? logger)
     {
         builder.OpenComponent<DynamicComponent>(seq++);
         builder.AddAttribute(seq++, "Type", slot.ComponentType);
-        builder.AddAttribute(seq++, "Parameters", BuildParameters(renderer, slot.ComponentType, slot.Parameters, slot.ChildContentRaw));
+        builder.AddAttribute(seq++, "Parameters", BuildParameters(renderer, slot.ComponentType, slot.Parameters, slot.ChildContentRaw, logger));
         builder.CloseComponent();
+    }
+
+    /* Elements are real render-tree elements, not markup strings, so wrappers keep
+       their component children under interactive re-renders. One region per node
+       keeps sequence numbers stable. */
+    public static RenderFragment RenderNodes(MarkdownRenderer renderer, IReadOnlyList<PreviewNode> nodes, ILogger? logger = null)
+        => builder => EmitNodes(builder, renderer, nodes, logger);
+
+    private static void EmitNodes(RenderTreeBuilder builder, MarkdownRenderer renderer, IReadOnlyList<PreviewNode> nodes, ILogger? logger)
+    {
+        for (var n = 0; n < nodes.Count; n++)
+        {
+            builder.OpenRegion(n);
+            switch (nodes[n])
+            {
+                case PreviewTextNode text:
+                    builder.AddContent(0, text.Text);
+                    break;
+
+                case PreviewComponentNode comp:
+                    builder.OpenComponent<DynamicComponent>(0);
+                    builder.AddAttribute(1, "Type", comp.ComponentType);
+                    builder.AddAttribute(2, "Parameters", BuildParameters(renderer, comp.ComponentType, comp.Parameters, comp.ChildContentRaw, logger));
+                    builder.CloseComponent();
+                    break;
+
+                case PreviewElementNode el:
+                    var seq = 0;
+                    builder.OpenElement(seq++, el.TagName);
+                    foreach (var (name, value) in el.Attributes)
+                    {
+                        if (value is null) builder.AddAttribute(seq++, name, true);
+                        else builder.AddAttribute(seq++, name, value);
+                    }
+                    if (el.Children.Count > 0)
+                    {
+                        builder.OpenRegion(seq++);
+                        EmitNodes(builder, renderer, el.Children, logger);
+                        builder.CloseRegion();
+                    }
+                    builder.CloseElement();
+                    break;
+            }
+            builder.CloseRegion();
+        }
     }
 
     private static string Dedent(string raw)
@@ -69,29 +111,52 @@ internal static class SlotRenderer
         return sb.ToString();
     }
 
+    /* Never throws. Anything static markup can't set — directive attributes,
+       EventCallback/delegate params, unsupported types, unparseable values, unknown
+       attributes without a CaptureUnmatchedValues catch-all — is skipped with a
+       warning and the component still renders. */
     public static IDictionary<string, object> BuildParameters(
         MarkdownRenderer renderer,
         Type componentType,
         IReadOnlyDictionary<string, string> attrs,
-        string? childContentRaw)
+        string? childContentRaw,
+        ILogger? logger = null)
     {
         var dict = new Dictionary<string, object>(StringComparer.Ordinal);
         var props = GetParameterProps(componentType);
+        var catchAll = HasCatchAll(componentType);
         foreach (var (k, v) in attrs)
         {
-            dict[k] = props.TryGetValue(k, out var prop) ? Coerce(v, prop.PropertyType) : v;
+            if (k.StartsWith('@'))
+            {
+                Skip(logger, componentType, k, "Razor directive attributes can't be evaluated in a static preview");
+                continue;
+            }
+            if (!props.TryGetValue(k, out var prop))
+            {
+                if (catchAll) dict[k] = v;
+                else Skip(logger, componentType, k, "no matching [Parameter] and no CaptureUnmatchedValues catch-all");
+                continue;
+            }
+            if (!IsCoercible(prop.PropertyType))
+            {
+                Skip(logger, componentType, k, $"parameter type {prop.PropertyType.Name} can't be set from a string attribute");
+                continue;
+            }
+            if (!TryCoerce(v, prop.PropertyType, out var coerced))
+            {
+                Skip(logger, componentType, k, $"value \"{v}\" isn't a valid {prop.PropertyType.Name}");
+                continue;
+            }
+            if (coerced is not null) dict[prop.Name] = coerced;
         }
         if (!string.IsNullOrWhiteSpace(childContentRaw))
         {
-            // Route direct-child tags whose name matches a RenderFragment
-            // param (other than ChildContent) into that named slot. Any
-            // remaining text becomes ChildContent. Lets authors write
-            // <Alert><Icon><svg/></Icon>Body</Alert> and have <Icon>'s
-            // inner content routed to Alert.Icon instead of being flattened
-            // into the ChildContent stream.
+            // Child tags named after a RenderFragment parameter (<Icon> → Alert.Icon)
+            // go to that slot; the rest becomes ChildContent.
             var slotNames = props
-                .Where(kv => kv.Key != "ChildContent" && typeof(RenderFragment).IsAssignableFrom(kv.Value.PropertyType))
-                .Select(kv => kv.Key)
+                .Where(kv => kv.Key != "ChildContent" && kv.Value.PropertyType == typeof(RenderFragment))
+                .Select(kv => kv.Value.Name)
                 .ToHashSet(StringComparer.Ordinal);
 
             var remaining = childContentRaw;
@@ -102,29 +167,31 @@ internal static class SlotRenderer
                     var extracted = ExtractNamedSlot(remaining, slotName);
                     if (extracted.Content is not null)
                     {
-                        dict[slotName] = FromMarkup(renderer, extracted.Content);
+                        dict[slotName] = FromMarkup(renderer, extracted.Content, logger);
                         remaining = extracted.Remaining;
                     }
                 }
             }
 
             if (!string.IsNullOrWhiteSpace(remaining))
-                dict["ChildContent"] = FromMarkup(renderer, remaining);
+            {
+                // Only a plain RenderFragment ChildContent can take markup; a
+                // missing or templated (RenderFragment<T>) one would throw.
+                if (props.TryGetValue("ChildContent", out var cc) && cc.PropertyType == typeof(RenderFragment))
+                    dict["ChildContent"] = FromMarkup(renderer, remaining, logger);
+                else
+                    Skip(logger, componentType, "ChildContent", "component has no RenderFragment ChildContent parameter");
+            }
 
-            /* If the target declares a ChildContentSource [Parameter] (as
-               ComponentPreview does for reconstructing its source view),
-               pass the raw markup through unchanged in addition to the
-               RenderFragments above. */
+            // ComponentPreview rebuilds its source view from the raw markup.
             if (props.ContainsKey("ChildContentSource"))
                 dict["ChildContentSource"] = childContentRaw;
         }
         return dict;
     }
 
-    // Finds `<TagName>...</TagName>` (balanced) or `<TagName />` in `text`
-    // and returns its inner content + `text` with that occurrence removed.
-    // Only the first occurrence is extracted; multi-instance named slots
-    // aren't a common pattern.
+    // Removes the first balanced `<TagName>…</TagName>` (or `<TagName />`) from
+    // `text`, returning its inner content and the remaining text.
     private static (string? Content, string Remaining) ExtractNamedSlot(string text, string tagName)
     {
         var open = Regex.Match(text, $@"<{Regex.Escape(tagName)}(?<attrs>\s[^>]*?)?\s*(?<self>/)?>");
@@ -132,13 +199,11 @@ internal static class SlotRenderer
 
         if (open.Groups["self"].Success)
         {
-            // Self-closing → empty content, remove the tag.
             var head = text.Substring(0, open.Index);
             var tail = text.Substring(open.Index + open.Length);
             return ("", head + tail);
         }
 
-        // Find matching close, tracking nested opens of the same name.
         var closeName = Regex.Escape(tagName);
         var scanFrom = open.Index + open.Length;
         var depth = 1;
@@ -171,14 +236,20 @@ internal static class SlotRenderer
         return (null, text);
     }
 
-    private static readonly Dictionary<Type, Dictionary<string, PropertyInfo>> _propCache = new();
+    private static void Skip(ILogger? logger, Type componentType, string attribute, string reason)
+        => logger?.LogWarning("ShellDocs: skipped attribute '{Attribute}' on <{Component}> — {Reason}.",
+            attribute, componentType.Name, reason);
 
+    private static readonly Dictionary<Type, Dictionary<string, PropertyInfo>> _propCache = new();
+    private static readonly Dictionary<Type, bool> _catchAllCache = new();
+
+    // Blazor matches parameter names case-insensitively, so lookups here do too.
     internal static Dictionary<string, PropertyInfo> GetParameterProps(Type t)
     {
         lock (_propCache)
         {
             if (_propCache.TryGetValue(t, out var cached)) return cached;
-            var map = new Dictionary<string, PropertyInfo>(StringComparer.Ordinal);
+            var map = new Dictionary<string, PropertyInfo>(StringComparer.OrdinalIgnoreCase);
             foreach (var p in t.GetProperties(BindingFlags.Public | BindingFlags.Instance))
             {
                 if (p.GetCustomAttribute<ParameterAttribute>() is not null) map[p.Name] = p;
@@ -188,16 +259,102 @@ internal static class SlotRenderer
         }
     }
 
-    internal static object Coerce(string raw, Type target)
+    internal static bool HasCatchAll(Type t)
+    {
+        lock (_catchAllCache)
+        {
+            if (_catchAllCache.TryGetValue(t, out var cached)) return cached;
+            var has = t.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                .Any(p => p.GetCustomAttribute<ParameterAttribute>()?.CaptureUnmatchedValues == true);
+            _catchAllCache[t] = has;
+            return has;
+        }
+    }
+
+    internal static bool IsCoercible(Type target)
+    {
+        var t = Nullable.GetUnderlyingType(target) ?? target;
+        if (t.IsAssignableFrom(typeof(string))) return true;
+        if (t.IsEnum) return true;
+        return Type.GetTypeCode(t) is TypeCode.Boolean or TypeCode.Char
+            or TypeCode.Byte or TypeCode.SByte or TypeCode.Int16 or TypeCode.UInt16
+            or TypeCode.Int32 or TypeCode.UInt32 or TypeCode.Int64 or TypeCode.UInt64
+            or TypeCode.Single or TypeCode.Double or TypeCode.Decimal;
+    }
+
+    /* Accepts what Razor authors write: a leading '@' or @( … ), Type.Member enum
+       values, [Flags] combined with '|', numeric suffixes (1.5f, 10m) and @null.
+       Throws on bad values; BuildParameters goes through TryCoerce instead. */
+    internal static object? Coerce(string raw, Type target)
     {
         var underlying = Nullable.GetUnderlyingType(target) ?? target;
         if (underlying == typeof(string)) return raw;
-        if (underlying == typeof(bool)) return bool.Parse(raw);
-        if (underlying.IsEnum) return Enum.Parse(underlying, raw, ignoreCase: true);
-        if (underlying == typeof(int)) return int.Parse(raw, CultureInfo.InvariantCulture);
-        if (underlying == typeof(long)) return long.Parse(raw, CultureInfo.InvariantCulture);
-        if (underlying == typeof(double)) return double.Parse(raw, CultureInfo.InvariantCulture);
-        if (underlying == typeof(decimal)) return decimal.Parse(raw, CultureInfo.InvariantCulture);
-        return raw;
+
+        var v = StripRazor(raw);
+        var nullable = !target.IsValueType || Nullable.GetUnderlyingType(target) is not null;
+        if (v == "null" && nullable) return null;
+        if (underlying.IsAssignableFrom(typeof(string))) return raw;
+        if (underlying == typeof(bool)) return v.Length == 0 || bool.Parse(v); // bare attribute → true
+        if (underlying.IsEnum) return ParseEnum(underlying, v);
+        if (underlying == typeof(char))
+        {
+            var ch = v.Trim('\'');
+            if (ch.Length != 1) throw new FormatException($"'{raw}' is not a single character.");
+            return ch[0];
+        }
+        if (IsCoercible(underlying))
+        {
+            var num = v.Replace("_", "");
+            try { return Convert.ChangeType(num, underlying, CultureInfo.InvariantCulture); }
+            catch (FormatException)
+            {
+                var trimmed = num.TrimEnd('f', 'F', 'd', 'D', 'm', 'M', 'l', 'L', 'u', 'U');
+                return Convert.ChangeType(trimmed, underlying, CultureInfo.InvariantCulture);
+            }
+        }
+        throw new NotSupportedException($"Can't coerce an attribute string to {target.Name}.");
+    }
+
+    internal static bool TryCoerce(string raw, Type target, out object? value)
+    {
+        try
+        {
+            value = Coerce(raw, target);
+            return true;
+        }
+        catch (Exception ex) when (ex is FormatException or OverflowException or ArgumentException
+                                       or InvalidCastException or NotSupportedException)
+        {
+            value = null;
+            return false;
+        }
+    }
+
+    private static string StripRazor(string raw)
+    {
+        var v = raw.Trim();
+        if (v.StartsWith('@')) v = v[1..].Trim();
+        if (v.StartsWith('(') && v.EndsWith(')')) v = v[1..^1].Trim();
+        return v;
+    }
+
+    private static object ParseEnum(Type enumType, string v)
+    {
+        var parts = v.Split(['|', ','], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (parts.Length == 0) throw new FormatException($"Empty value for enum {enumType.Name}.");
+        if (parts.Length == 1) return Enum.Parse(enumType, Member(parts[0]), ignoreCase: true);
+
+        var unsigned = Type.GetTypeCode(Enum.GetUnderlyingType(enumType)) is TypeCode.Byte or TypeCode.UInt16 or TypeCode.UInt32 or TypeCode.UInt64;
+        ulong bits = 0;
+        foreach (var part in parts)
+        {
+            var parsed = Enum.Parse(enumType, Member(part), ignoreCase: true);
+            bits |= unsigned
+                ? Convert.ToUInt64(parsed, CultureInfo.InvariantCulture)
+                : unchecked((ulong)Convert.ToInt64(parsed, CultureInfo.InvariantCulture));
+        }
+        return unsigned ? Enum.ToObject(enumType, bits) : Enum.ToObject(enumType, unchecked((long)bits));
+
+        static string Member(string s) => s[(s.LastIndexOf('.') + 1)..];
     }
 }

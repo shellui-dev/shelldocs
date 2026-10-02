@@ -2,15 +2,13 @@
 @implements IDisposable
 @using ShellDocs.Core
 
-@* Scroll-spy is set up by shelldocs.js — it scans for [data-toc-list] on
-   DOMContentLoaded and after Blazor enhanced-nav, calls shelldocsToc.attach
-   with the id list from data-toc-ids. Anchor scroll uses native href="#id"
-   navigation; no Blazor click handler needed. Works on static-prerender deploys. *@
+@* shelldocs.js attaches the scroll-spy from [data-toc-list] / [data-toc-ids];
+   links are plain #anchors, so it works without a Blazor runtime. *@
 @if (_items.Count > 0)
 {
     <nav class="toc" aria-label="On this page">
         <div class="toc-title">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            <ShellIcons.Icons.List />
             <span>On this page</span>
         </div>
         <ul class="toc-list" data-toc-list data-toc-ids="@_idsAttr">

@@ -1,5 +1,7 @@
+@using ShellIcons.Icons
 @inject SearchState State
 @inject SearchIndex Index
+@inject DocsVersionResolver Versions
 @inject NavigationManager Nav
 @inject IJSRuntime JS
 @implements IDisposable
@@ -9,13 +11,14 @@
     <div class="search-backdrop" @onclick="State.Close">
         <div class="search-panel" @onclick:stopPropagation>
             <div class="search-input-row">
-                <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+                <Search Class="search-icon" />
                 <input @ref="_inputEl"
                        type="text"
                        class="search-input"
                        placeholder="Search docs…"
                        @bind="_query"
                        @bind:event="oninput"
+                       @bind:after="Recalc"
                        @onkeydown="OnKey"
                        autocomplete="off"
                        spellcheck="false" />
@@ -40,11 +43,11 @@
                             <span class="search-result-kind">
                                 @if (r.Entry.Kind == SearchEntryKind.Page)
                                 {
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                    <File StrokeWidth="1.75" />
                                 }
                                 else
                                 {
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6v12M15 6v12M4 9h5M15 9h5M4 15h5M15 15h5"/></svg>
+                                    <Hash StrokeWidth="1.75" />
                                 }
                             </span>
                             <span class="search-result-body">
@@ -65,12 +68,12 @@
 
             <div class="search-footer">
                 <span class="search-hint">
-                    <kbd class="kbd-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></kbd>
-                    <kbd class="kbd-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg></kbd>
+                    <kbd class="kbd-icon"><ArrowUp /></kbd>
+                    <kbd class="kbd-icon"><ArrowDown /></kbd>
                     navigate
                 </span>
                 <span class="search-hint">
-                    <kbd class="kbd-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 10l-5 5 5 5M4 15h11a5 5 0 0 0 5-5V4"/></svg></kbd>
+                    <kbd class="kbd-icon"><CornerDownLeft /></kbd>
                     open
                 </span>
                 <span class="search-hint"><kbd>Esc</kbd> close</span>
@@ -143,10 +146,7 @@
                 if (_highlightedIndex >= 0 && _highlightedIndex < _results.Count)
                     Jump(_results[_highlightedIndex].Entry);
                 break;
-            default:
-                // Any other key = user is typing; rerun search on next binding cycle.
-                InvokeAsync(Recalc);
-                break;
+            // Typing recalculates via @bind:after; keydown fires before _query updates.
         }
     }
 
@@ -158,7 +158,9 @@
 
     private void Recalc()
     {
-        _results = Rank(_query, Index.Entries).Take(30).ToList();
+        // Current version + anything outside every version root.
+        var scoped = Versions.FilterSearch(Index.Entries, DocsVersionResolver.PathOf(Nav)).ToList();
+        _results = Rank(_query, scoped).Take(30).ToList();
         if (_highlightedIndex >= _results.Count) _highlightedIndex = 0;
     }
 
@@ -202,8 +204,7 @@
 
         if (e.Kind == SearchEntryKind.Page) score += 2;
 
-        // Only surface a snippet when the match came from the body (title/desc
-        // is already shown; snippet is only useful for otherwise-hidden matches).
+        // Snippets only for body matches — title/description are already shown.
         var snippet = bodyHit && !string.IsNullOrEmpty(e.Body)
             ? BuildSnippet(e.Body!, tokens)
             : null;
@@ -211,8 +212,7 @@
         return new Scored(e, score, snippet);
     }
 
-    /* Center the snippet on the first token match, ~150 chars, with ellipses
-       when trimmed. Case-preserving. */
+    // ~150 chars centred on the first token match.
     private static string? BuildSnippet(string body, string[] tokens)
     {
         var lower = body.ToLowerInvariant();

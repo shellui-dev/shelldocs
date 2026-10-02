@@ -90,9 +90,7 @@ else
         return rows;
     }
 
-    // Compact C#-ish rendering: `string`, `string?`, `int`, `bool`, `RenderFragment?`,
-    // `IReadOnlyDictionary<string, object>?`. Enough signal for docs without dragging
-    // the full reflection namespace tree.
+    // Compact C#-style names (`string?`, `RenderFragment?`) — enough for docs.
     private static string FormatType(Type t)
     {
         var underlying = Nullable.GetUnderlyingType(t);
@@ -119,7 +117,6 @@ else
 
     private static string? ReadDefault(PropertyInfo prop, object? instance)
     {
-        // Explicit [DefaultValue("...")] wins.
         var dva = prop.GetCustomAttribute<DefaultValueAttribute>();
         if (dva is not null) return FormatValue(dva.Value);
 
@@ -129,7 +126,7 @@ else
         catch { return null; }
         if (value is null) return null;
 
-        // RenderFragment defaults are opaque — render as em-dash by returning null.
+        // RenderFragment defaults are opaque; null renders as an em dash.
         if (value is RenderFragment) return null;
         var formatted = FormatValue(value);
         // A `string.Empty` from an initializer isn't a meaningful default to show.

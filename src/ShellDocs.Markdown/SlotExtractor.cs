@@ -19,10 +19,6 @@ internal class SlotExtractor
         @"</(?<name>[A-Z][A-Za-z0-9]*)\s*>",
         RegexOptions.Compiled);
 
-    private static readonly Regex Attribute = new(
-        @"(?<name>[A-Za-z][A-Za-z0-9]*)\s*=\s*""(?<value>[^""]*)""",
-        RegexOptions.Compiled);
-
     public SlotExtractor(TypeRegistry registry)
     {
         _registry = registry;
@@ -33,9 +29,8 @@ internal class SlotExtractor
         var slots = new List<Slot>();
         var warnings = new List<string>();
 
-        // Mask code fences so component-tag scanning skips them.
-        // razor:preview fences get replaced with a placeholder slot marker in-line;
-        // other fences get a mask token that's restored verbatim at the end.
+        // Mask fences so tag scanning skips them; razor:preview fences become
+        // slot placeholders, the rest are restored verbatim at the end.
         var maskedFences = new Dictionary<string, string>();
         var processed = FenceBlock.Replace(markdown, m =>
         {
@@ -65,8 +60,7 @@ internal class SlotExtractor
             processed = processed.Replace(id, original);
         }
 
-        // Sort slots by the position of their placeholder in the processed text
-        // so the returned list reflects document order.
+        // Return slots in document order.
         var ordered = slots.OrderBy(s => processed.IndexOf(s.Id, StringComparison.Ordinal)).ToList();
         return (processed, ordered, warnings);
     }
@@ -117,11 +111,8 @@ internal class SlotExtractor
                     cursor = open.Index + open.Length;
                     continue;
                 }
-                /* Preserve original indentation — SlotRenderer.Dedent normalizes
-                   the common leading whitespace before feeding to Markdig, and
-                   Trim()-ing here would strip the first line's indent and defeat
-                   that (Markdig would then treat the remaining 4-space-indented
-                   lines as an indented code block). */
+                /* No Trim(): SlotRenderer.Dedent needs the first line's indent,
+                   or Markdig reads the remaining lines as an indented code block. */
                 childRaw = text.Substring(open.Index + open.Length, closeStart - (open.Index + open.Length));
                 endIndex = closeEnd;
             }
@@ -137,44 +128,26 @@ internal class SlotExtractor
 
     private PreviewSlot? TryBuildPreviewSlot(string code, List<string> warnings)
     {
-        var open = OpeningTag.Match(code);
-        if (!open.Success)
+        var parser = new PreviewParser(_registry, warnings);
+        var nodes = parser.Parse(code);
+
+        if (parser.FirstComponent is { } first)
         {
-            warnings.Add("razor:preview fence must start with a component tag.");
-            return null;
+            return new PreviewSlot(NewSlotId(), first.ComponentType, first.Parameters, code, "razor",
+                first.ChildContentRaw, Nodes: nodes);
         }
 
-        var name = open.Groups["name"].Value;
-        var type = _registry.Resolve(name);
-        var attrs = ParseAttributes(open.Groups["attrs"].Value);
-
-        /* Extract inner ChildContent for non-self-closing tags even in the
-           error case — Copy button in the error state should still hand back
-           the exact source the author authored. */
-        string? childContentRaw = null;
-        if (!open.Groups["self"].Success)
+        if (parser.FirstUnknown is { } unknown)
         {
-            var range = FindMatchingClose(code, name, open.Index + open.Length);
-            if (range.Start >= 0)
-            {
-                childContentRaw = code.Substring(open.Index + open.Length, range.Start - (open.Index + open.Length));
-            }
-        }
-
-        if (type is null)
-        {
-            /* Unknown component. Emit an error PreviewSlot so PreviewFrame can
-               render a visible "Unknown component <X>" panel in the browser.
-               Returning null here (the pre-fix behavior) caused the whole
-               fence to render as a plain code block — silent failure that sent
-               authors hunting for a nonexistent component bug. Warning still
-               emitted for build logs. */
+            // Error slot → a visible panel, rather than silently rendering a code block.
+            var name = unknown.Name;
             var msg = $"Unknown component <{name}>. Register it via `o.RegisterComponent<{name}>()` or `o.RegisterComponentsFromAssembly<TMarker>()`.";
-            warnings.Add($"razor:preview references unknown component <{name}>.");
-            return new PreviewSlot(NewSlotId(), null, attrs, code, "razor", childContentRaw, Error: msg);
+            return new PreviewSlot(NewSlotId(), null, PreviewParser.ToParameters(unknown.Attributes), code, "razor",
+                parser.FirstUnknownChildRaw, Error: msg);
         }
 
-        return new PreviewSlot(NewSlotId(), type, attrs, code, "razor", childContentRaw);
+        warnings.Add("razor:preview fence must contain a component tag.");
+        return null;
     }
 
     private static (int Start, int End) FindMatchingClose(string text, string name, int fromIndex)
@@ -212,15 +185,9 @@ internal class SlotExtractor
         return null;
     }
 
+    // Full names (`@bind-Value`, not `Value`) so SlotRenderer can skip directive attributes.
     private static IReadOnlyDictionary<string, string> ParseAttributes(string attrsText)
-    {
-        var result = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (Match m in Attribute.Matches(attrsText ?? ""))
-        {
-            result[m.Groups["name"].Value] = m.Groups["value"].Value;
-        }
-        return result;
-    }
+        => PreviewParser.ToParameters(RazorTagScanner.ParseAttributes(attrsText));
 
     private static string PlaceholderHtml(string kind, string id) =>
         $"<div data-shelldocs-slot=\"{kind}\" data-shelldocs-id=\"{id}\"></div>";

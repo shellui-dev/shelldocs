@@ -1,0 +1,61 @@
+@namespace ShellDocs.Components.Content
+@inject TypeRegistry Registry
+@inject ShellDocsOptions Options
+
+@* For stateful demos that need @code and so can't be a razor:preview fence.
+   The source tab shows {DemoSourceRoot}/.../{Component}.razor. *@
+<PreviewFrame Content="@_content"
+              Code="@(_source ?? $"<DemoPreview Component=\"{Component}\" />")"
+              Title="@Title"
+              Error="@_error"
+              ErrorTitle="DemoPreview error" />
+
+@code {
+    [Parameter, EditorRequired] public string? Component { get; set; }
+    [Parameter] public string? Title { get; set; }
+
+    private RenderFragment? _content;
+    private string? _source;
+    private string? _error;
+
+    protected override void OnParametersSet()
+    {
+        _content = null;
+        _source = null;
+        _error = null;
+
+        if (string.IsNullOrWhiteSpace(Component))
+        {
+            _error = "DemoPreview needs a Component=\"Name\" attribute.";
+            return;
+        }
+
+        var type = Registry.Resolve(Component);
+        if (type is null)
+        {
+            _error = $"Unknown demo component <{Component}>. Register it via `o.RegisterComponentsFromAssembly<TMarker>(\"Your.Demos.Namespace\")`.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(Options.DemoSourceRoot))
+        {
+            _error = $"No source for <{Component}>: set `ShellDocsOptions.DemoSourceRoot` to the folder containing {Component}.razor.";
+            return;
+        }
+
+        _source = DemoSourceCache.Get(Options.DemoSourceRoot, Component);
+        if (_source is null)
+        {
+            // Don't echo DemoSourceRoot: it would leak a server path into the page.
+            _error = $"Demo source not found: no {Component}.razor under ShellDocsOptions.DemoSourceRoot.";
+            return;
+        }
+
+        _content = builder =>
+        {
+            builder.OpenComponent<DynamicComponent>(0);
+            builder.AddAttribute(1, "Type", type);
+            builder.CloseComponent();
+        };
+    }
+}

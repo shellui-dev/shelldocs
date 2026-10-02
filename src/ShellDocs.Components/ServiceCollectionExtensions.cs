@@ -21,13 +21,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<CodeGroupSyncState>();
         services.AddScoped<DocsPageState>();
 
-        /* Auto-register the shipped content primitives so `razor:preview` blocks
-           in markdown can reference <Callout>, <Card>, <Steps>, <FileTree> etc.
-           without the consumer calling RegisterComponent<T>() themselves.
-           Dogfoods RegisterComponentsFromAssembly against our own Content
-           namespace — new primitives added under Content/ auto-appear here
-           without a maintainer edit to this file. Internal render machinery
-           (MarkdownContent, PreviewFrame) opts out via [ShellDocsIgnore]. */
+        /* Built-in content primitives are always available to markdown. Render
+           machinery (MarkdownContent, PreviewFrame) opts out via [ShellDocsIgnore]. */
         options.RegisterComponentsFromAssembly<Callout>(t => t.Namespace == "ShellDocs.Components.Content");
 
         services.AddSingleton<TypeRegistry>(_ => options.BuildTypeRegistry());
@@ -42,6 +37,7 @@ public static class ServiceCollectionExtensions
             return NavigationGraphBuilder.Build(options.ContentRoot);
         });
         services.AddSingleton<SearchIndex>(sp => SearchIndex.FromGraph(sp.GetRequiredService<NavigationGraph>()));
+        services.AddSingleton<DocsVersionResolver>();
 
         return services;
     }

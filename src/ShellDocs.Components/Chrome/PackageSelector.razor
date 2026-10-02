@@ -1,34 +1,46 @@
+@using ShellIcons.Icons
 @inject NavigationManager Nav
 @inject ShellDocsOptions Options
+@inject DocsVersionResolver Versions
+@implements IDisposable
 
-@* Dropdown open/close handled by shelldocs.js — delegated click on
-   .pkg-trigger flips [data-open] on the .pkg root; outside-click closes.
-   Menu is always rendered; CSS hides it unless [data-open="true"]. *@
+@* Open/close is handled by shelldocs.js via [data-open]; the menu is always
+   rendered and hidden by CSS, and options are plain links. *@
 @if (Options.Packages.Count > 1)
 {
+    var path = DocsVersionResolver.PathOf(Nav);
+    var version = Versions.Current(path);
+    var selected = Versions.SelectPackage(path) ?? Options.Packages[0];
     <div class="pkg" data-open="false">
         <button type="button" class="pkg-trigger" aria-haspopup="listbox" aria-expanded="false">
             <span class="pkg-mark">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="@(Selected.IconPath ?? DefaultIcon)"/>
-                </svg>
+                @if (selected.IconPath is { } markPath)
+                {
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="@markPath"/></svg>
+                }
+                else
+                {
+                    <Box StrokeWidth="1.75" />
+                }
             </span>
-            <span class="pkg-value">@Selected.Title</span>
-            <svg class="pkg-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="6 9 12 15 18 9"/>
-            </svg>
+            <span class="pkg-value">@selected.Title</span>
+            <ChevronDown Class="pkg-chevron" />
         </button>
 
         <div class="pkg-menu" role="listbox">
             @foreach (var pkg in Options.Packages)
             {
-                var isSel = pkg.Id == Selected.Id;
-                @* Plain <a> — native navigation, no Blazor round-trip. *@
-                <a class="pkg-option @(isSel ? "selected" : "")" role="option" aria-selected="@isSel" href="@pkg.RootUrl">
+                var isSel = pkg.Id == selected.Id;
+                <a class="pkg-option @(isSel ? "selected" : "")" role="option" aria-selected="@(isSel ? "true" : "false")" href="@Versions.GetPackageHref(pkg, version)">
                     <span class="pkg-option-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="@(pkg.IconPath ?? DefaultIcon)"/>
-                        </svg>
+                        @if (pkg.IconPath is { } optionPath)
+                        {
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="@optionPath"/></svg>
+                        }
+                        else
+                        {
+                            <Box StrokeWidth="1.75" />
+                        }
                     </span>
                     <span class="pkg-option-body">
                         <span class="pkg-option-title">@pkg.Title</span>
@@ -36,7 +48,7 @@
                     </span>
                     @if (isSel)
                     {
-                        <svg class="pkg-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        <Check Class="pkg-option-check" StrokeWidth="2.5" />
                     }
                 </a>
             }
@@ -45,19 +57,11 @@
 }
 
 @code {
-    private const string DefaultIcon = "M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z M3.27 6.96 12 12.01l8.73-5.05 M12 22.08V12";
+    // No parameters change on navigation, so the parent's re-render would skip us.
+    protected override void OnInitialized() => Nav.LocationChanged += OnLocationChanged;
 
-    // Longest RootUrl prefix wins — "/docs/components" beats "/docs" for "/docs/components/callout".
-    private DocsPackage Selected
-    {
-        get
-        {
-            var path = new Uri(Nav.Uri).AbsolutePath;
-            return Options.Packages
-                .Where(p => path.StartsWith(p.RootUrl, StringComparison.OrdinalIgnoreCase))
-                .OrderByDescending(p => p.RootUrl.Length)
-                .FirstOrDefault()
-                ?? Options.Packages[0];
-        }
-    }
+    private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+        => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Nav.LocationChanged -= OnLocationChanged;
 }

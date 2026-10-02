@@ -63,10 +63,8 @@ public static class NavigationGraphBuilder
         var consumedSlugs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var consumedFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        // Pages/folders in meta.hidden route (URLs still resolve) but never
-        // appear in the sidebar tree. Seeded into consumed sets so both the
-        // explicit-render loop and the auto-append loop skip them; the actual
-        // nodes get pushed into `hidden` so the graph can still index their URLs.
+        // meta.hidden entries route but stay out of the tree: pre-consume them so
+        // neither loop below renders them, and hand the nodes to the graph's index.
         foreach (var slug in meta.Hidden)
         {
             consumedSlugs.Add(slug);
@@ -75,8 +73,7 @@ public static class NavigationGraphBuilder
                 hidden.Add(hiddenPage);
             if (folderNameToChildren.TryGetValue(slug, out var hiddenFolder))
             {
-                // Wrap the folder's children in a section node so the graph's
-                // Index() walk (which recurses .Children) reaches every page.
+                // Wrapped so the graph's index walk reaches every page in the folder.
                 var section = new NavigationNode
                 {
                     Title = TitleFromFolderName(slug),
@@ -94,11 +91,9 @@ public static class NavigationGraphBuilder
             if (node is not null) result.Add(node);
         }
 
-        /* meta.json controls ORDERING for anything it lists; presence is
-           driven by the file tree. Files or subfolders the meta didn't
-           mention get appended at the end (alphabetically) so a page dropped
-           via `shelldocs add` or by hand appears immediately, without the
-           consumer touching meta.json. */
+        /* meta.json orders what it lists; the file tree decides presence. Unlisted
+           files and folders are appended alphabetically so new pages show up
+           without touching meta.json. */
         foreach (var (name, tuple) in folderNameToChildren.OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase))
         {
             if (consumedFolders.Contains(name)) continue;

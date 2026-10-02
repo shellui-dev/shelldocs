@@ -46,8 +46,7 @@
     overflow-x: auto;
 }
 
-/* When the tab body is a real fenced code block, the inner <pre> already has
-   its own padding — strip our wrapper padding so we don't stack. */
+/* A fenced code block brings its own padding; don't stack ours on top. */
 ::deep .code-group-content:has(> pre),
 ::deep .code-group-content:has(> .shelldocs-codeblock) {
     padding: 0;

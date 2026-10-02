@@ -3,20 +3,14 @@ using Xunit;
 
 namespace ShellDocs.Tests;
 
-/* The Tokens RCL ships one static asset: tokens.css. If anyone renames the
-   file, changes the package id, or accidentally drops the file from the
-   build, these tests fail loud before it hits a consumer. */
+// Fails loudly if tokens.css is renamed, moved, or dropped from the package.
 public class DesignTokensTests
 {
     private static string LoadTokensCss()
     {
-        // MSBuild copies the RCL's static web assets into a predictable location
-        // under the test project's output. Walk up from the test assembly to find
-        // the package's wwwroot/tokens.css.
         var testAssembly = Assembly.GetExecutingAssembly().Location;
         var testDir = Path.GetDirectoryName(testAssembly)!;
 
-        // Traverse the well-known static-web-asset path emitted by the Razor SDK.
         var candidates = new[]
         {
             Path.Combine(testDir, "wwwroot", "_content", "ShellDocs.Tokens", "tokens.css"),

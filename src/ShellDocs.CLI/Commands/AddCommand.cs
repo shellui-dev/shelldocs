@@ -4,15 +4,8 @@ using Spectre.Console;
 
 namespace ShellDocs.CLI.Commands;
 
-/* `shelldocs add <template> <name>` — scaffolds a starter markdown page from a
-   template into the project's content root. Templates:
-     component — content/docs/components/<slug>.md   (razor:preview + TypeTable skeleton)
-     guide     — content/docs/guides/<slug>.md       (Steps skeleton)
-     page      — content/docs/<slug>.md              (blank frontmatter + title)
-
-   Slugifies component-style names ("MyBigCard" → "my-big-card"), preserves
-   kebab/snake input verbatim, and refuses to overwrite an existing file unless
-   --force is passed. */
+/* `shelldocs add <template> <name>`: component → content/docs/components,
+   guide → content/docs/guides, page → content/docs. Won't overwrite without --force. */
 internal static class AddCommand
 {
     public static int Run(string template, string name, string dir, bool force)
@@ -83,9 +76,7 @@ internal static class AddCommand
         return withDashes.ToLowerInvariant();
     }
 
-    /* Component name stays PascalCase for the display (matches how <Button> etc.
-       are referenced in razor:preview). If input already contains spaces, keep
-       the first-letter-uppercase form. */
+    // PascalCase, matching how the component is referenced in razor:preview.
     private static string DisplayName(string raw)
     {
         var trimmed = raw.Trim();

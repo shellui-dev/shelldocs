@@ -39,12 +39,46 @@ That's a working docs site. See [shelldocs.dev/docs/getting-started/quick-start]
   ```
 - **Static site output.** `shelldocs build` produces static HTML ready for GitHub Pages, Vercel, Netlify, Cloudflare, anywhere. Base-href rewrite + SPA 404 fallback included.
 
+## Versioned docs
+
+Put each version in its own content folder with the same sub-structure (`content/docs/v0.3/...`, `content/docs/v0.2.1/...`; dots in folder names are fine) and register them:
+
+```csharp
+o.AddVersion("v0.3",   "v0.3.0", "/docs/v0.3",   "Current stable", latest: true);
+o.AddVersion("v0.2.1", "v0.2.1", "/docs/v0.2.1", "Previous release");
+
+// "{version}" in a package root resolves to the current version's Id.
+o.AddPackage("shellui.cli", "ShellUI.CLI", "Command line", "/docs/{version}/cli", icon);
+```
+
+The current version is the one whose `RootUrl` prefixes the path (segment-aware), otherwise the `latest` one. With 2+ versions a `<VersionSelector />` renders under the package selector (and in the mobile drawer; in the `TopNav` layout it sits in the header). Switching versions keeps the same page when it exists, else the current package's root, else the version's first page. Switching packages keeps the version. Inside a version the sidebar shows only that version's tree, prev/next never crosses into another version, search shows the current version plus pages outside every version, and the version folder is left out of the breadcrumb. Everything is server-rendered `<a href>`s plus `shelldocs.js` delegation, so it works on static hosts.
+
+> Routes declared as `/docs/{*Path:nonfile}` don't match a URL whose **last** segment has a dot (`/docs/v0.2.1`). Pages below it (`/docs/v0.2.1/introduction`) are fine, and the selectors never link to a bare version root unless it has an `index.md`. If you add one, drop `:nonfile` from the route.
+
+## Component previews
+
+- **`razor:preview` fences render everything** — several sibling components, HTML wrappers (`<div class="flex gap-2">…</div>`) and text, in order, inside one frame. The source tab shows the whole fence.
+- **Razor-shaped attribute values work:** `Variant="ButtonVariant.Destructive"`, `@ButtonVariant.Destructive`, `@true`, `@42`, `[Flags]` values as `Bold | Italic`.
+- **Attributes a static preview can't evaluate are skipped, not fatal:** `OnClick="HandleClick"`, `@onclick`, `@bind-*`, `@ref`, non-primitive parameter types, unparseable values. Each logs a warning and the component still renders.
+- **Stateful demos from real files.** For demos that need `@code` (dialogs, bound selects, toasts, charts with data), write a `.razor` component, register it, and drop `<DemoPreview Component="ButtonClickDemo" Title="Optional" />` into markdown. The source tab shows `{DemoSourceRoot}/**/ButtonClickDemo.razor`:
+
+  ```csharp
+  o.RegisterComponentsFromAssembly<App>("MyDocs.Demos");
+  o.DemoSourceRoot = Path.Combine(builder.Environment.ContentRootPath, "Demos");
+  ```
+
+  The Razor SDK drops `.razor` files from build/publish output, so ship them explicitly. Use a `None` item, because `Content Update` doesn't survive publish:
+
+  ```xml
+  <None Include="Demos/**/*.razor" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  ```
+
 ## Package family
 
 | Package | Purpose |
 |---|---|
 | [`ShellDocs.CLI`](src/ShellDocs.CLI) | Global tool. `shelldocs init`, `add`, `dev`, `build` |
-| [`ShellDocs.Components`](src/ShellDocs.Components) | RCL. Chrome (layout, sidebar, header, search) + content primitives (Callout, Card, Steps, CodeGroup, FileTree, TypeTable, ComponentPreview) |
+| [`ShellDocs.Components`](src/ShellDocs.Components) | RCL. Chrome (layout, sidebar, header, search, version/package selectors) + content primitives (Callout, Card, Steps, CodeGroup, FileTree, TypeTable, ComponentPreview, DemoPreview). Icons via [ShellIcons.Blazor](https://www.nuget.org/packages/ShellIcons.Blazor) |
 | [`ShellDocs.Markdown`](src/ShellDocs.Markdown) | Markdig pipeline. Frontmatter parser, `razor:preview` fence extractor, inline Razor tag extractor, per-property type coercion |
 | [`ShellDocs.Core`](src/ShellDocs.Core) | Navigation graph, search index, plain-text extraction. No UI |
 | [`ShellDocs.Tokens`](src/ShellDocs.Tokens) | Design-system CSS variables. shadcn-compatible names for interop with ShellUI and Tailwind-shaped design systems |

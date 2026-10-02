@@ -1,0 +1,29 @@
+.demo-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    border: 1px solid transparent;
+    border-radius: calc(var(--radius) - 2px);
+    font-family: inherit;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 150ms, border-color 150ms, opacity 150ms;
+}
+.demo-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Markdown-authored child content arrives wrapped in <p>. */
+.demo-btn ::deep p { margin: 0; display: inline; color: inherit; font: inherit; }
+
+.demo-btn-small  { font-size: 0.75rem;   padding: 0.3rem 0.65rem; }
+.demo-btn-medium { font-size: 0.8125rem; padding: 0.45rem 0.9rem; }
+.demo-btn-large  { font-size: 0.9375rem; padding: 0.6rem 1.15rem; }
+
+.demo-btn-default     { background: var(--primary); color: var(--primary-foreground); }
+.demo-btn-default:hover:not(:disabled) { opacity: 0.9; }
+.demo-btn-destructive { background: var(--error, oklch(0.637 0.237 25.331)); color: white; }
+.demo-btn-destructive:hover:not(:disabled) { opacity: 0.9; }
+.demo-btn-outline     { background: transparent; border-color: var(--border); color: var(--foreground); }
+.demo-btn-outline:hover:not(:disabled) { background: var(--muted); }
+.demo-btn-secondary   { background: var(--muted); color: var(--foreground); }
+.demo-btn-secondary:hover:not(:disabled) { background: var(--accent); }

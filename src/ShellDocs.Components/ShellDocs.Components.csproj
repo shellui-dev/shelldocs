@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <SupportedPlatform Include="browser" />
+    <InternalsVisibleTo Include="ShellDocs.Tests" />
   </ItemGroup>
 
   <ItemGroup>
@@ -16,6 +17,7 @@
     <ProjectReference Include="..\ShellDocs.Tokens\ShellDocs.Tokens.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="ShellIcons.Blazor" />
     <!-- ShellUI.Components ref lands once shellui is published to NuGet. -->
     <!-- <PackageReference Include="ShellUI.Components" /> -->
   </ItemGroup>

@@ -10,9 +10,8 @@ public class ShellDocsOptions
     public string SiteName { get; set; } = "";
     public string? SiteTagline { get; set; }
     public string? GitHubRepo { get; set; }
-    // Absolute base URL, e.g. "https://shelldocs.dev". Consumed by
-    // `shelldocs build` to emit sitemap.xml, robots.txt, and og:url meta.
-    // Skip those artifacts silently when unset.
+    // Absolute base URL ("https://shelldocs.dev") for sitemap.xml, robots.txt and
+    // og:url in `shelldocs build`; those are skipped when unset.
     public string? SiteUrl { get; set; }
 
     public string? LogoLight { get; set; }
@@ -27,12 +26,13 @@ public class ShellDocsOptions
     public List<NavLink> PrimaryNav { get; } = new();
     // 0 or 1 entries hides the sidebar package selector entirely.
     public List<DocsPackage> Packages { get; } = new();
+    // Fewer than 2 hides the version selector; any entry scopes sidebar, prev/next,
+    // search and breadcrumb to the current version.
+    public List<DocsVersion> Versions { get; } = new();
+    // Searched recursively for X.razor to show as <DemoPreview Component="X" />'s source.
+    public string? DemoSourceRoot { get; set; }
     public List<Type> RegisteredComponents { get; } = new();
-    /* Per-type tag alias — when a type appears here, BuildTypeRegistry uses this
-       string as the markdown-facing tag name instead of the type's short name.
-       Consumers use this to expose a component under a different name in docs
-       (e.g. RegisterComponent<Button>("Btn")). Last-write-wins if the same type
-       is registered under multiple aliases. */
+    // Markdown tag name per type, from RegisterComponent<T>(tagName). Last registration wins.
     public Dictionary<Type, string> ComponentAliases { get; } = new();
 
     public ShellDocsOptions RegisterComponent<T>() where T : ComponentBase
@@ -69,10 +69,7 @@ public class ShellDocsOptions
         return this;
     }
 
-    /* Scan the assembly that TMarker lives in for all public, concrete,
-       non-generic ComponentBase-derived types and register each. Skips types
-       tagged with [ShellDocsIgnore]. Duplicate registrations against the same
-       tag name are silently ignored downstream in TypeRegistry. */
+    // Registers every public, concrete, non-generic component in the assembly, skipping [ShellDocsIgnore].
     public ShellDocsOptions RegisterComponentsFromAssembly<TMarker>(Func<Type, bool>? filter = null)
         => RegisterComponentsFromAssembly(typeof(TMarker).Assembly, filter);
 
@@ -111,9 +108,7 @@ public class ShellDocsOptions
         try { types = assembly.GetTypes(); }
         catch (ReflectionTypeLoadException ex)
         {
-            /* An assembly with a partially-loadable type surface still yields
-               its resolvable types via the exception's Types property (nulls
-               are the unresolvable ones). Salvage what we can. */
+            // Partially loadable assemblies still expose their resolvable types.
             types = ex.Types.Where(t => t is not null).ToArray()!;
         }
         foreach (var t in types)
@@ -143,6 +138,17 @@ public class ShellDocsOptions
     public ShellDocsOptions AddPackage(string id, string title, string description, string rootUrl, string? iconPath = null)
     {
         Packages.Add(new DocsPackage(id, title, description, rootUrl, iconPath));
+        return this;
+    }
+
+    // `id` replaces the "{version}" token in package RootUrls.
+    public ShellDocsOptions AddVersion(string id, string label, string rootUrl, string? description = null, bool latest = false)
+    {
+        if (string.IsNullOrWhiteSpace(id))
+            throw new ArgumentException("id must be non-empty.", nameof(id));
+        if (string.IsNullOrWhiteSpace(rootUrl))
+            throw new ArgumentException("rootUrl must be non-empty.", nameof(rootUrl));
+        Versions.Add(new DocsVersion(id, label, rootUrl, description, latest));
         return this;
     }
 
@@ -180,7 +186,14 @@ public record NavLink(string Label, string Href, List<NavMenuItem>? Children = n
 public record NavMenuItem(string Label, string Href, string? Description = null, string? IconSvg = null);
 
 // IconPath is a raw SVG `d` attribute value on a 24×24 viewBox — not a URL.
-public record DocsPackage(string Id, string Title, string Description, string RootUrl, string? IconPath = null);
+// RootUrl may contain the "{version}" token (see DocsPackage.VersionToken).
+public record DocsPackage(string Id, string Title, string Description, string RootUrl, string? IconPath = null)
+{
+    public const string VersionToken = "{version}";
+    public bool IsVersioned => RootUrl.Contains(VersionToken, StringComparison.Ordinal);
+}
+
+public record DocsVersion(string Id, string Label, string RootUrl, string? Description, bool IsLatest);
 
 public enum ShellDocsTheme
 {
@@ -189,10 +202,8 @@ public enum ShellDocsTheme
     Nextra
 }
 
-/* Which docs-layout chrome to render. TopNav is the classic build (DocsHeader
-   spanning the top + sidebar below). Sidebar drops the top nav and moves
-   brand + search + collapse into the sidebar itself — floating shadcn
-   sidebar-04 / Claude-Code aesthetic. */
+// TopNav: DocsHeader across the top, sidebar below. Sidebar: no top nav — brand,
+// search and collapse live in a floating sidebar.
 public enum DocsLayoutVariant
 {
     TopNav = 0,

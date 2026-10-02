@@ -1,9 +1,6 @@
 namespace ShellDocs.Components.Content;
 
-/* Cross-page sync for <CodeGroup SyncKey="package-manager">. When the reader
-   picks "pnpm" on one CodeGroup, every other CodeGroup on the page with the
-   same SyncKey jumps to "pnpm" too. Scoped per circuit so the choice sticks
-   within a session; localStorage persistence is a follow-up. */
+// Keeps every <CodeGroup> with the same SyncKey on the same tab, per circuit.
 public class CodeGroupSyncState
 {
     private readonly Dictionary<string, string> _selected = new(StringComparer.Ordinal);

@@ -83,7 +83,6 @@ public class AssemblyScanTests
         Assert.Throws<ArgumentException>(() => options.RegisterComponent(typeof(NotAComponent)));
     }
 
-    // ---- test doubles used by the scan (all live in this assembly) ----
     public class TestMarker { }
     public class ScannableAlpha : ComponentBase { }
     public class ScannableBeta : ComponentBase { }

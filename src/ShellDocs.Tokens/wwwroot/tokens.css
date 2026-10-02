@@ -1,12 +1,5 @@
-/* ShellDocs Design Tokens
-   ─────────────────────────────────────────────────────────────────────
-   The palette + scale that ShellDocs itself, and any UI library layered
-   on top (ShellUI, third-party), consume via CSS variables on :root.
-   Override any variable in a stylesheet loaded AFTER this file to
-   customise; the whole system responds through the cascade.
-
-   Docs: docs/TOKENS.md
-   ───────────────────────────────────────────────────────────────────── */
+/* ShellDocs design tokens. Override any variable in a stylesheet loaded after
+   this one; see docs/TOKENS.md. */
 
 @import url('https://rsms.me/inter/inter.css');
 
