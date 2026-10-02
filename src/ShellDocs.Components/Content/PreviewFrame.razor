@@ -10,7 +10,8 @@
    so they work without a Blazor runtime. Both panels are always rendered; CSS
    shows the one named by [data-preview-tab]. Fed either a PreviewSlot
    (razor:preview fence) or Content + Code (DemoPreview, ComponentPreview). *@
-<div class="preview-frame" id="@Id" data-preview-tab="preview">
+@* not-prose: page typography stays out of live examples. *@
+<div class="preview-frame not-prose" id="@Id" data-preview-tab="preview">
     @if (!string.IsNullOrEmpty(Title))
     {
         <div class="preview-title">@Title</div>
