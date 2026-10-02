@@ -33,6 +33,14 @@ internal static class SlotRenderer
         }
     };
 
+    // Child content inside a razor:preview is Razor, not markdown.
+    public static RenderFragment FromRazor(MarkdownRenderer renderer, string raw, ILogger? logger = null)
+    {
+        var (nodes, warnings) = renderer.ParseRazor(raw);
+        foreach (var warning in warnings) logger?.LogWarning("ShellDocs: {Warning}", warning);
+        return RenderNodes(renderer, nodes, logger);
+    }
+
     private static void Emit(RenderTreeBuilder builder, ref int seq, MarkdownRenderer renderer, ComponentSlot slot, ILogger? logger)
     {
         builder.OpenComponent<DynamicComponent>(seq++);
@@ -61,7 +69,7 @@ internal static class SlotRenderer
                 case PreviewComponentNode comp:
                     builder.OpenComponent<DynamicComponent>(0);
                     builder.AddAttribute(1, "Type", comp.ComponentType);
-                    builder.AddAttribute(2, "Parameters", BuildParameters(renderer, comp.ComponentType, comp.Parameters, comp.ChildContentRaw, logger));
+                    builder.AddAttribute(2, "Parameters", BuildParameters(renderer, comp.ComponentType, comp.Parameters, comp.ChildContentRaw, logger, razorChildren: true));
                     builder.CloseComponent();
                     break;
 
@@ -114,14 +122,20 @@ internal static class SlotRenderer
     /* Never throws. Anything static markup can't set — directive attributes,
        EventCallback/delegate params, unsupported types, unparseable values, unknown
        attributes without a CaptureUnmatchedValues catch-all — is skipped with a
-       warning and the component still renders. */
+       warning and the component still renders. With razorChildren (razor:preview)
+       child content is parsed as Razor; otherwise it's markdown, as in prose. */
     public static IDictionary<string, object> BuildParameters(
         MarkdownRenderer renderer,
         Type componentType,
         IReadOnlyDictionary<string, string> attrs,
         string? childContentRaw,
-        ILogger? logger = null)
+        ILogger? logger = null,
+        bool razorChildren = false)
     {
+        RenderFragment Fragment(string raw) => razorChildren
+            ? FromRazor(renderer, raw, logger)
+            : FromMarkup(renderer, raw, logger);
+
         var dict = new Dictionary<string, object>(StringComparer.Ordinal);
         var props = GetParameterProps(componentType);
         var catchAll = HasCatchAll(componentType);
@@ -167,7 +181,7 @@ internal static class SlotRenderer
                     var extracted = ExtractNamedSlot(remaining, slotName);
                     if (extracted.Content is not null)
                     {
-                        dict[slotName] = FromMarkup(renderer, extracted.Content, logger);
+                        dict[slotName] = Fragment(extracted.Content);
                         remaining = extracted.Remaining;
                     }
                 }
@@ -178,7 +192,7 @@ internal static class SlotRenderer
                 // Only a plain RenderFragment ChildContent can take markup; a
                 // missing or templated (RenderFragment<T>) one would throw.
                 if (props.TryGetValue("ChildContent", out var cc) && cc.PropertyType == typeof(RenderFragment))
-                    dict["ChildContent"] = FromMarkup(renderer, remaining, logger);
+                    dict["ChildContent"] = Fragment(remaining);
                 else
                     Skip(logger, componentType, "ChildContent", "component has no RenderFragment ChildContent parameter");
             }

@@ -3,6 +3,7 @@
 @using System.Text
 @using ShellDocs.Markdown
 @inject TypeRegistry Registry
+@inject MarkdownRenderer Renderer
 @inject ILogger<ComponentPreview> Logger
 
 <PreviewFrame Content="@(_target is null ? null : RenderTarget)"
@@ -73,7 +74,18 @@
                 }
             }
         }
-        if (ChildContent is not null) dict["ChildContent"] = ChildContent;
+        // The children are a Razor example for the target: parse them as Razor
+        // (named slots included) rather than reuse the markdown-rendered ChildContent.
+        if (!string.IsNullOrWhiteSpace(ChildContentSource))
+        {
+            var empty = new Dictionary<string, string>();
+            foreach (var (k, v) in SlotRenderer.BuildParameters(Renderer, target, empty, ChildContentSource, Logger, razorChildren: true))
+                dict[k] = v;
+        }
+        else if (ChildContent is not null)
+        {
+            dict["ChildContent"] = ChildContent;
+        }
         return dict;
     }
 

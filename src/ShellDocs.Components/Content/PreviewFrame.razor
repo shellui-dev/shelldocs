@@ -135,5 +135,5 @@
 
     // Only reached when ErrorMessage is null, i.e. ComponentType is non-null.
     private IDictionary<string, object> BuildParameters(IReadOnlyDictionary<string, string> attrs, string? childContentRaw) =>
-        SlotRenderer.BuildParameters(Renderer, Preview!.ComponentType!, attrs, childContentRaw, Logger);
+        SlotRenderer.BuildParameters(Renderer, Preview!.ComponentType!, attrs, childContentRaw, Logger, razorChildren: true);
 }
