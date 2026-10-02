@@ -54,14 +54,14 @@ Turns markdown into HTML plus typed component slots. Depends on `ShellDocs.Core`
 
 ### `ShellDocs.Components`
 
-The Razor class library everyone references. Depends on `ShellDocs.Core`, `ShellDocs.Markdown`, `ShellDocs.Tokens`, `ShellIcons.Blazor`.
+The Razor class library everyone references. Depends on `ShellDocs.Core`, `ShellDocs.Markdown`, `ShellDocs.Tokens`, `ShellIcons.Blazor` and the ASP.NET Core shared framework (it reads content from disk and runs middleware, so it's server-side).
 
 - `AddShellDocs(options)` and `ShellDocsOptions`.
 - Layouts: `DocsLayout` (`TopNav` / `Sidebar` variants), `HomeLayout`.
 - Chrome: `DocsHeader`, `DocsSidebar`, `DocsSidebarHeader`, `DocsMobileBar`, `PackageSelector`, `VersionSelector`, `DocsBreadcrumb`, `PrevNextNav`, `TableOfContents`, `SearchDialog`, `ThemeToggle`, `DocsFooter`, `BrandLogo`.
 - Content primitives (auto-registered for markdown): `Callout`, `Card`, `CardGrid`, `LinkCard`, `Steps`/`Step`, `FileTree`/`FileTreeItem`, `Tabs`/`Tab`, `CodeGroup`/`CodeTab`, `TypeTable`/`TypeRow`, `AutoTypeTable`, `ComponentPreview`, `DemoPreview`.
 - Render machinery (`[ShellDocsIgnore]`, not reachable from markdown): `MarkdownContent`, `PreviewFrame`.
-- Services: `DocsPageState` (scoped), `DocsVersionResolver` (singleton).
+- Services: `DocsPageState` (scoped), `DocsVersionResolver` and `DocsRedirects` (singletons), plus the redirect middleware.
 - `wwwroot/shelldocs.js` and `wwwroot/shelldocs-theme.css`.
 
 ### `ShellDocs.Tokens`
@@ -124,6 +124,8 @@ Placeholders plus a slot list keep everything at render time: no generated Razor
 - `ComponentSlot` → `<DynamicComponent>` with parameters from `SlotRenderer.BuildParameters`.
 - `PreviewSlot` → `<PreviewFrame Id="preview-N">`, where `SlotRenderer.RenderNodes` emits elements and components as real render-tree nodes, so wrappers keep their children under interactive re-renders.
 
+**Generic components** register under their bare name (`TypeRegistry.TagNameOf`) as open definitions. `SlotRenderer.Component` closes one per use with `GenericComponents.Close`, reading attributes named after the type parameters (`TItem="int"`, resolved from C# spellings across loaded assemblies) or falling back to `object`; one it can't close renders a `.shelldocs-render-error` element instead. A non-generic component with the same name keeps the tag.
+
 Component child markup is rendered recursively. Inline tags in prose take markdown bodies (`SlotRenderer.FromMarkup`, dedented first, since Markdig treats 4-space indentation as a code block). Inside a `razor:preview` and in `<ComponentPreview>` the body is Razor: `SlotRenderer.FromRazor` parses it with `PreviewParser` and emits real elements, so wrappers around nested components stay intact. Child tags named after a `RenderFragment` parameter (`<Icon>` → `Alert.Icon`) are routed into that slot.
 
 **Parameter coercion.** Attribute values are strings. `BuildParameters` matches them to `[Parameter]` properties case-insensitively and coerces string, bool, char, numeric primitives and enums, accepting Razor forms: a leading `@`, `@( … )`, `Type.Member` enum values, `A | B` flags, numeric suffixes, `@null`. It never throws. Anything static markup can't set is skipped with a logged warning: directive attributes, delegate/`EventCallback` parameters, unsupported types, unparseable values, unknown attributes on components without a `CaptureUnmatchedValues` catch-all, and child content on components without a plain `RenderFragment ChildContent`.
@@ -168,6 +170,16 @@ Runtime queries: `ResolveByUrl` is a case-insensitive dictionary lookup on norma
 | Breadcrumb | Version folder node removed |
 
 All answers are computed at render time and emitted as plain `<a href>`, so prerendered pages behave identically.
+
+### Redirects
+
+`DocsRedirects` (singleton) maps URLs that aren't pages to a target, computed once from the graph and versions:
+
+- content folders and version roots → their first page, within the folder's version scope (a folder holding version folders → its first unversioned page, else the latest version's);
+- unversioned URLs that exist in the latest version → that page;
+- `AddRedirect` rules on top: segment-aware prefixes that may chain into the computed redirects. They are the only thing that can redirect an existing page.
+
+`DocsRedirectMiddleware` runs first in the pipeline (added by an `IStartupFilter`, so no `Program.cs` change) and answers 302 for computed redirects or 301 for permanent rules, keeping `PathBase` and the query string. Running before routing is what makes `/docs/v0.2.1` work. It also serves the full map at `/_shelldocs/redirects.json` for `shelldocs build`. `EnableRedirects = false` leaves it out.
 
 ---
 
@@ -223,11 +235,12 @@ One neutral, shadcn-shaped palette of CSS variables in `ShellDocs.Tokens/tokens.
 
 `shelldocs build`:
 
-1. `dotnet publish -c Release` into `obj/shelldocs-publish` (mirroring `content/` into it if the csproj didn't copy it).
+1. `dotnet publish -c Release` into `obj/shelldocs-publish`, then copies in any `content/` file publish left out (a csproj that copies `meta.json` but not `.md`).
 2. Builds the navigation graph and collects every URL (visible and hidden) plus `/`.
 3. `PrerenderRunner` starts the published app on a free port, requests each URL and writes `<output>/<path>/index.html`.
-4. Merges the published `wwwroot/` into the output without overwriting prerendered HTML.
-5. Optionally rewrites `<base href>` in every HTML file, copies `index.html` to `404.html`, and with `--site-url` writes `sitemap.xml`, `robots.txt` and `og:*` meta.
+4. Reads the app's redirect map and writes a redirect page for each source URL without a prerendered page (meta refresh plus `location.replace`, relative to `<base href>`).
+5. Merges the published `wwwroot/` into the output without overwriting prerendered HTML.
+6. Optionally rewrites `<base href>` in every HTML file, copies `index.html` to `404.html`, and with `--site-url` writes `sitemap.xml`, `robots.txt` and `og:*` meta.
 
 ---
 

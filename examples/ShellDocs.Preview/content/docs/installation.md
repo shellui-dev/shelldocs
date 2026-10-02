@@ -55,4 +55,6 @@ shelldocs build
 - `--spa-fallback` copies `index.html` to `404.html`.
 - `--site-url https://docs.example.com` emits `sitemap.xml`, `robots.txt` and `og:` meta tags.
 
-In the static output, navigation, sidebar sections, the mobile menu, the version and package selectors, tabs, preview tabs and menus, the table of contents, the theme toggle and code copy all work through `shelldocs.js`. Search, the desktop sidebar-collapse button and stateful demo components still need a running Blazor app (Server or WebAssembly).
+In the static output, navigation, sidebar sections, the mobile menu, the version and package selectors, tabs, preview tabs and menus, the table of contents, the theme toggle and code copy all work through `shelldocs.js`. Search, the desktop sidebar-collapse button and stateful demo components still need a running Blazor Server app (interactive server rendering).
+
+URLs that aren't pages (folders, version roots, unversioned URLs that moved into a version) become redirect pages in the static output, the same redirects the running app answers.

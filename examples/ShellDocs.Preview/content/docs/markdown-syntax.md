@@ -21,6 +21,8 @@ order: 10
 ---
 ```
 
+With `o.RenderPageTitle = true`, ShellDocs renders `title` as the page's heading and `description` as a lead paragraph, so pages don't need a `# Title` line. A page whose body starts with its own `# Heading` keeps it.
+
 ## Standard markdown works
 
 Headings, lists, tables, code fences, images, links — all standard:
@@ -72,3 +74,17 @@ Examples are centred. Add `stretch` to the info string (`razor:preview stretch`)
 ```
 
 Preview frames are marked `not-prose`, so the page's typography (paragraph margins, list padding, link underlines) never reaches the components inside. Add the class to any other element that should opt out.
+
+### Generic components
+
+Generic components (`@typeparam TValue`) register under their bare name. Set the type argument the way Razor does, as an attribute named after the type parameter. Attribute values are then coerced to the closed type:
+
+```razor:preview
+<div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+    <ValueBadge TValue="int" Label="Downloads" Value="1200" />
+    <ValueBadge TValue="decimal" Label="Price" Value="9.99" />
+    <ValueBadge TValue="string" Label="Status" Value="stable" />
+</div>
+```
+
+Type arguments accept C# spellings (`int`, `int?`, `List<string>`, `MyApp.Models.Product`). Without one, ShellDocs uses `object` when the constraints allow it and logs a warning; a type it can't resolve shows an inline error. `<ComponentPreview Component="ValueBadge" TValue="int" … />` works the same way.
