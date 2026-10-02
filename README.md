@@ -39,7 +39,7 @@ Already have a Blazor project? Run `shelldocs init --attach` inside it: it adds 
   ```
   Your components win name collisions with ShellDocs' built-ins, which stay available as `<DocsCard>`, `<DocsCallout>`, `<DocsTabs>`, and so on.
 - **Content primitives.** `Callout`, `Card` / `CardGrid` / `LinkCard`, `Steps`, `FileTree`, `Tabs`, `CodeGroup`, `TypeTable` / `AutoTypeTable`, `ComponentPreview`, `DemoPreview`.
-- **Static export.** `shelldocs build` prerenders every page to static HTML for GitHub Pages, Cloudflare Pages, Netlify or S3, with base-href rewriting, a SPA 404 fallback, and sitemap / robots / `og:` meta from `--site-url`. Navigation, sidebar sections, the mobile menu, selectors, tabs, preview toolbars, the TOC and code copy work there through `shelldocs.js`. Search, the theme-toggle button, desktop sidebar collapse and stateful demos need a running Blazor app.
+- **Static export.** `shelldocs build` prerenders every page to static HTML for GitHub Pages, Cloudflare Pages, Netlify or S3. Optional flags rewrite `<base href>` (`--base-href`), add a SPA `404.html` (`--spa-fallback`), and write sitemap / robots / `og:` meta (`--site-url`). Navigation, sidebar sections, the mobile menu, selectors, tabs, preview toolbars, the TOC and code copy work there through `shelldocs.js`. Search, the theme-toggle button, desktop sidebar collapse and stateful demos need a running Blazor app.
 
 ## Versioned docs
 

@@ -89,14 +89,15 @@ The tag push triggers `.github/workflows/release.yml`:
 1. Builds Release
 2. Runs the test suite
 3. Packs every `IsPackable=true` project
-4. Pushes each `.nupkg` to nuget.org (`--skip-duplicate` so re-runs are safe)
-5. Creates a GitHub Release from the tag with auto-generated notes
+4. Checks nuget.org and fails if the `Directory.Build.props` version is already published for any of the six packages (bump the version and re-tag)
+5. Logs in via Trusted Publishing and pushes each `.nupkg` (`--skip-duplicate`)
+6. Creates a GitHub Release from the tag with auto-generated notes
 
-Watch the run under Actions. If NuGet push fails on one package (e.g. `409 Conflict — already exists`), `--skip-duplicate` handles it silently; a real failure (bad API key, network) will surface as a red X.
+Watch the run under Actions. A version that's already on nuget.org stops the run at step 4, before anything is pushed; a login or push failure (Trusted Publishing policy, `NUGET_USER`, network) shows as a red X on steps 5–6.
 
 ## Dry-run without publishing
 
-To validate the whole workflow without shipping to NuGet, go to Actions → Release → Run workflow → check "Pack and validate only". Runs build + pack, skips the push step.
+To validate the whole workflow without shipping to NuGet, go to Actions → Release → Run workflow → check "Pack and validate only". Runs build, test and pack, and skips the version check, login, push and GitHub Release.
 
 ## After the release
 
