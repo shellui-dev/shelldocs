@@ -3,6 +3,7 @@
 @using System.Text
 @using ShellDocs.Markdown
 @inject TypeRegistry Registry
+@inject ILogger<ComponentPreview> Logger
 
 @* Expand/collapse and copy are handled by shelldocs.js (data-preview-*). *@
 <div class="component-preview collapsed">
@@ -60,9 +61,27 @@
         {
             foreach (var (k, v) in ExtraProps)
             {
-                dict[k] = (v is string s && props.TryGetValue(k, out var prop))
-                    ? SlotRenderer.Coerce(s, prop.PropertyType)
-                    : v;
+                if (!props.TryGetValue(k, out var prop))
+                {
+                    if (!k.StartsWith('@') && SlotRenderer.HasCatchAll(target)) dict[k] = v;
+                    else Logger.LogWarning("ShellDocs: skipped attribute '{Attribute}' on <{Component}> — no matching [Parameter].", k, target.Name);
+                    continue;
+                }
+                if (v is not string s)
+                {
+                    dict[prop.Name] = v;
+                    continue;
+                }
+                // A bad value skips the attribute instead of crashing the page.
+                if (SlotRenderer.IsCoercible(prop.PropertyType) && SlotRenderer.TryCoerce(s, prop.PropertyType, out var coerced))
+                {
+                    if (coerced is not null) dict[prop.Name] = coerced;
+                }
+                else
+                {
+                    Logger.LogWarning("ShellDocs: skipped attribute '{Attribute}' on <{Component}> — can't coerce \"{Value}\" to {Type}.",
+                        k, target.Name, s, prop.PropertyType.Name);
+                }
             }
         }
         if (ChildContent is not null) dict["ChildContent"] = ChildContent;

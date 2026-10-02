@@ -19,10 +19,6 @@ internal class SlotExtractor
         @"</(?<name>[A-Z][A-Za-z0-9]*)\s*>",
         RegexOptions.Compiled);
 
-    private static readonly Regex Attribute = new(
-        @"(?<name>[A-Za-z][A-Za-z0-9]*)\s*=\s*""(?<value>[^""]*)""",
-        RegexOptions.Compiled);
-
     public SlotExtractor(TypeRegistry registry)
     {
         _registry = registry;
@@ -132,37 +128,26 @@ internal class SlotExtractor
 
     private PreviewSlot? TryBuildPreviewSlot(string code, List<string> warnings)
     {
-        var open = OpeningTag.Match(code);
-        if (!open.Success)
+        var parser = new PreviewParser(_registry, warnings);
+        var nodes = parser.Parse(code);
+
+        if (parser.FirstComponent is { } first)
         {
-            warnings.Add("razor:preview fence must start with a component tag.");
-            return null;
+            return new PreviewSlot(NewSlotId(), first.ComponentType, first.Parameters, code, "razor",
+                first.ChildContentRaw, Nodes: nodes);
         }
 
-        var name = open.Groups["name"].Value;
-        var type = _registry.Resolve(name);
-        var attrs = ParseAttributes(open.Groups["attrs"].Value);
-
-        // Extracted even for unknown tags so Copy returns the authored source.
-        string? childContentRaw = null;
-        if (!open.Groups["self"].Success)
-        {
-            var range = FindMatchingClose(code, name, open.Index + open.Length);
-            if (range.Start >= 0)
-            {
-                childContentRaw = code.Substring(open.Index + open.Length, range.Start - (open.Index + open.Length));
-            }
-        }
-
-        if (type is null)
+        if (parser.FirstUnknown is { } unknown)
         {
             // Error slot → a visible panel, rather than silently rendering a code block.
+            var name = unknown.Name;
             var msg = $"Unknown component <{name}>. Register it via `o.RegisterComponent<{name}>()` or `o.RegisterComponentsFromAssembly<TMarker>()`.";
-            warnings.Add($"razor:preview references unknown component <{name}>.");
-            return new PreviewSlot(NewSlotId(), null, attrs, code, "razor", childContentRaw, Error: msg);
+            return new PreviewSlot(NewSlotId(), null, PreviewParser.ToParameters(unknown.Attributes), code, "razor",
+                parser.FirstUnknownChildRaw, Error: msg);
         }
 
-        return new PreviewSlot(NewSlotId(), type, attrs, code, "razor", childContentRaw);
+        warnings.Add("razor:preview fence must contain a component tag.");
+        return null;
     }
 
     private static (int Start, int End) FindMatchingClose(string text, string name, int fromIndex)
@@ -200,15 +185,9 @@ internal class SlotExtractor
         return null;
     }
 
+    // Full names (`@bind-Value`, not `Value`) so SlotRenderer can skip directive attributes.
     private static IReadOnlyDictionary<string, string> ParseAttributes(string attrsText)
-    {
-        var result = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (Match m in Attribute.Matches(attrsText ?? ""))
-        {
-            result[m.Groups["name"].Value] = m.Groups["value"].Value;
-        }
-        return result;
-    }
+        => PreviewParser.ToParameters(RazorTagScanner.ParseAttributes(attrsText));
 
     private static string PlaceholderHtml(string kind, string id) =>
         $"<div data-shelldocs-slot=\"{kind}\" data-shelldocs-id=\"{id}\"></div>";

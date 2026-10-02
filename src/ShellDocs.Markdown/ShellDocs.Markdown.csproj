@@ -12,4 +12,8 @@
     <PackageReference Include="YamlDotNet" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="ShellDocs.Tests" />
+  </ItemGroup>
+
 </Project>

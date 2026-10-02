@@ -2,6 +2,7 @@
 @inject MarkdownRenderer Renderer
 @inject IJSRuntime JS
 @inject DocsPageState PageState
+@inject ILogger<MarkdownContent> Logger
 
 <div class="shelldocs-prose">
     @if (_parts is null)
@@ -51,5 +52,5 @@
     }
 
     private IDictionary<string, object> BuildParameters(ComponentSlot slot) =>
-        SlotRenderer.BuildParameters(Renderer, slot.ComponentType, slot.Parameters, slot.ChildContentRaw);
+        SlotRenderer.BuildParameters(Renderer, slot.ComponentType, slot.Parameters, slot.ChildContentRaw, Logger);
 }

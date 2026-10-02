@@ -1,28 +1,34 @@
 @using ShellDocs.Markdown
 @attribute [ShellDocsIgnore]
 @inject MarkdownRenderer Renderer
+@inject ILogger<PreviewFrame> Logger
 
 @* Expand/collapse and copy are handled by shelldocs.js (data-preview-*). *@
 <div class="preview-frame collapsed">
     <div class="preview-render">
-        @if (Preview!.ComponentType is not null)
-        {
-            <DynamicComponent Type="Preview!.ComponentType"
-                              Parameters="BuildParameters(Preview!.Parameters, Preview!.ChildContentRaw)" />
-        }
-        else
+        @if (ErrorMessage is not null)
         {
             <div class="preview-error" role="alert">
                 <svg class="preview-error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                 <div class="preview-error-body">
                     <div class="preview-error-title">razor:preview error</div>
-                    <div class="preview-error-message">@(Preview!.Error ?? "Unknown error.")</div>
+                    <div class="preview-error-message">@ErrorMessage</div>
                 </div>
             </div>
         }
+        else if (Preview.Nodes is { Count: > 0 } nodes)
+        {
+            @* Every top-level sibling of the fence, in order. *@
+            @SlotRenderer.RenderNodes(Renderer, nodes, Logger)
+        }
+        else
+        {
+            <DynamicComponent Type="Preview!.ComponentType"
+                              Parameters="BuildParameters(Preview!.Parameters, Preview!.ChildContentRaw)" />
+        }
     </div>
     <div class="preview-code-wrap">
-        <pre class="preview-code language-razor"><code class="language-razor">@Preview!.Code</code></pre>
+        <pre class="preview-code language-razor"><code class="language-razor">@Preview.Code</code></pre>
         <div class="preview-fade">
             <button type="button" class="preview-expand" data-preview-toggle="expand">View Code</button>
         </div>
@@ -39,7 +45,9 @@
 @code {
     [Parameter, EditorRequired] public PreviewSlot Preview { get; set; } = default!;
 
-    // Only reached when ComponentType is non-null.
+    private string? ErrorMessage => Preview.ComponentType is null ? Preview.Error ?? "Unknown error." : null;
+
+    // Only reached when ErrorMessage is null, i.e. ComponentType is non-null.
     private IDictionary<string, object> BuildParameters(IReadOnlyDictionary<string, string> attrs, string? childContentRaw) =>
-        SlotRenderer.BuildParameters(Renderer, Preview!.ComponentType!, attrs, childContentRaw);
+        SlotRenderer.BuildParameters(Renderer, Preview!.ComponentType!, attrs, childContentRaw, Logger);
 }
