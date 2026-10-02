@@ -15,3 +15,8 @@
 .theme-toggle:hover { color: var(--foreground); background: var(--muted); }
 .theme-toggle:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 .theme-toggle ::deep svg { width: 1rem; height: 1rem; }
+
+/* Both icons render; the dark class picks one, so a theme flipped by any script shows here. */
+.theme-toggle ::deep .theme-icon-dark { display: none; }
+:root.dark .theme-toggle ::deep .theme-icon-light { display: none; }
+:root.dark .theme-toggle ::deep .theme-icon-dark { display: inline; }

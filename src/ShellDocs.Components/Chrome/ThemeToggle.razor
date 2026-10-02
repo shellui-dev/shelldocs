@@ -1,45 +1,48 @@
 @using ShellIcons.Icons
 @inject IJSRuntime JS
 @inject ThemeState Theme
-@implements IDisposable
+@implements IAsyncDisposable
 
-<button type="button" class="theme-toggle" @onclick="OnClick" aria-label="Toggle theme">
-    @if (Theme.IsDark)
-    {
-        <Moon />
-    }
-    else
-    {
-        <Sun />
-    }
+@* Clicks are handled by shelldocs.js and CSS picks the icon from <html class="dark">,
+   so the toggle works without a Blazor runtime. *@
+<button type="button" class="theme-toggle" data-theme-toggle aria-label="Toggle theme">
+    <Sun Class="theme-icon-light" />
+    <Moon Class="theme-icon-dark" />
 </button>
 
 @code {
-    protected override void OnInitialized() => Theme.OnChange += StateHasChanged;
+    private DotNetObjectReference<ThemeToggle>? _ref;
+    private IJSObjectReference? _subscription;
 
+    // Keeps ThemeState in step with the dark class, whoever flips it.
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!firstRender || Theme.IsInitialized) return;
+        if (!firstRender) return;
         try
         {
-            var current = await JS.InvokeAsync<string>("eval",
-                "document.documentElement.classList.contains('dark') ? 'dark' : 'light'");
-            Theme.Init(current == "dark");
+            _ref = DotNetObjectReference.Create(this);
+            _subscription = await JS.InvokeAsync<IJSObjectReference>("shelldocsTheme.subscribe", _ref);
+            var dark = await JS.InvokeAsync<bool>("shelldocsTheme.isDark");
+            if (Theme.IsInitialized) Theme.Set(dark);
+            else Theme.Init(dark);
         }
         catch { }
     }
 
-    private async Task OnClick()
+    [JSInvokable]
+    public void ThemeChanged(bool isDark) => Theme.Set(isDark);
+
+    public async ValueTask DisposeAsync()
     {
-        Theme.Toggle();
         try
         {
-            await JS.InvokeVoidAsync("eval", Theme.IsDark
-                ? "document.documentElement.classList.add('dark'); try { localStorage.setItem('shelldocs-theme','dark'); } catch{}"
-                : "document.documentElement.classList.remove('dark'); try { localStorage.setItem('shelldocs-theme','light'); } catch{}");
+            if (_subscription is not null)
+            {
+                await _subscription.InvokeVoidAsync("dispose");
+                await _subscription.DisposeAsync();
+            }
         }
         catch { }
+        _ref?.Dispose();
     }
-
-    public void Dispose() => Theme.OnChange -= StateHasChanged;
 }
