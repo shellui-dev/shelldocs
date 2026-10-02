@@ -287,7 +287,15 @@ window.shelldocsChrome = (function () {
         });
     }
 
-    // Preview frames: Preview | Code tabs + copy.
+    /* Preview frames: Preview | Code tabs + copy. The chosen tab is remembered per
+       page + frame id, because Blazor replaces the prerendered DOM when an
+       interactive circuit starts — without this, a tab picked before then resets. */
+    var previewTabs = {};
+
+    function previewKey(frame) {
+        return frame.id ? location.pathname + '#' + frame.id : null;
+    }
+
     function selectPreviewTab(frame, value, focus) {
         frame.setAttribute('data-preview-tab', value);
         frame.querySelectorAll('[data-preview-tab-target]').forEach(function (tab) {
@@ -296,6 +304,8 @@ window.shelldocsChrome = (function () {
             tab.setAttribute('tabindex', selected ? '0' : '-1');
             if (selected && focus) tab.focus();
         });
+        var key = previewKey(frame);
+        if (key) previewTabs[key] = value;
     }
 
     function onPreviewClick(e) {
@@ -339,6 +349,29 @@ window.shelldocsChrome = (function () {
         selectPreviewTab(tab.closest('.preview-frame'), next.getAttribute('data-preview-tab-target'), true);
     }
 
+    function restorePreviewTabs(root) {
+        var frames = root.matches && root.matches('.preview-frame[id]')
+            ? [root]
+            : (root.querySelectorAll ? root.querySelectorAll('.preview-frame[id]') : []);
+        Array.prototype.forEach.call(frames, function (frame) {
+            var saved = previewTabs[previewKey(frame)];
+            if (saved && frame.getAttribute('data-preview-tab') !== saved) selectPreviewTab(frame, saved, false);
+        });
+    }
+
+    function watchForReplacedFrames() {
+        if (!window.MutationObserver) return;
+        new MutationObserver(function (records) {
+            for (var r = 0; r < records.length; r++) {
+                var added = records[r].addedNodes;
+                for (var n = 0; n < added.length; n++) {
+                    if (added[n].nodeType !== 1) continue;
+                    restorePreviewTabs(added[n]);
+                }
+            }
+        }).observe(document.documentElement, { childList: true, subtree: true });
+    }
+
     // Re-run on enhancedload: heading IDs change per page, so the old observer is stale.
     function initToc() {
         document.querySelectorAll('[data-toc-list]').forEach(function (list) {
@@ -353,26 +386,20 @@ window.shelldocsChrome = (function () {
         });
     }
 
-    var delegatesAttached = false;
-    function attachDelegates() {
-        if (delegatesAttached) return;
-        delegatesAttached = true;
-        document.addEventListener('click', onSidebarClick);
-        document.addEventListener('click', onDropdownClick);
-        document.addEventListener('keydown', onDropdownKeydown);
-        document.addEventListener('click', onPreviewClick);
-        document.addEventListener('keydown', onPreviewKeydown);
-    }
-
-    function boot() {
-        attachDelegates();
-        initToc();
-    }
+    /* Document-level listeners attach immediately: waiting for DOMContentLoaded
+       (which also waits on module scripts such as the Shiki import) left early
+       clicks on prerendered chrome with no handler. */
+    document.addEventListener('click', onSidebarClick);
+    document.addEventListener('click', onDropdownClick);
+    document.addEventListener('keydown', onDropdownKeydown);
+    document.addEventListener('click', onPreviewClick);
+    document.addEventListener('keydown', onPreviewKeydown);
+    watchForReplacedFrames();
 
     if (document.readyState !== 'loading') {
-        boot();
+        initToc();
     } else {
-        document.addEventListener('DOMContentLoaded', boot);
+        document.addEventListener('DOMContentLoaded', initToc);
     }
     document.addEventListener('enhancedload', initToc);
 
