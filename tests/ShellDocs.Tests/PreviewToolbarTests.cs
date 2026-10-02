@@ -89,7 +89,7 @@ public class PreviewToolbarTests
             ["ExtraProps"] = new Dictionary<string, object> { ["Variant"] = "Outline" }
         });
 
-        Assert.Contains("class=\"preview-frame\"", html);
+        Assert.Contains("class=\"preview-frame not-prose\"", html);
         Assert.Contains("id=\"example-button-", html);
         Assert.Contains("data-variant=\"Outline\"", html);
         Assert.Contains("&lt;Button Variant=&quot;Outline&quot; /&gt;", html);

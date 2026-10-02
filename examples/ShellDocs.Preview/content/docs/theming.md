@@ -26,4 +26,4 @@ Override any of these in a stylesheet loaded after `tokens.css` and every compon
 
 ## Dark mode
 
-Dark mode is the `dark` class on `<html>`. The `ThemeToggle` in the header / sidebar footer saves the choice in `localStorage` and falls back to `prefers-color-scheme` on the first visit; an inline script in `App.razor` applies it before first paint. The toggle button itself needs a running Blazor app; on a static build the saved or system preference still applies.
+Dark mode is the `dark` class on `<html>`. The `ThemeToggle` in the header / sidebar footer saves the choice in `localStorage` and falls back to `prefers-color-scheme` on the first visit; an inline script in `App.razor` applies it before first paint. The toggle is handled by `shelldocs.js`, so it works on static builds too. Whatever flips the class, including a component library's own theme toggle, is saved the same way, so the choice sticks across pages.

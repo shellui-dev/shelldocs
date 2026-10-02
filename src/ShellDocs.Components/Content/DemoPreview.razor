@@ -10,13 +10,16 @@
               Error="@_error"
               ErrorTitle="DemoPreview error"
               Id="@(Id ?? $"demo-{PreviewLinks.Slug(Component)}")"
-              Name="@Component" />
+              Name="@Component"
+              Layout="@Layout" />
 
 @code {
     [Parameter, EditorRequired] public string? Component { get; set; }
     [Parameter] public string? Title { get; set; }
     // Anchor id; defaults to demo-{component-slug}. Set it when a page shows the same demo twice.
     [Parameter] public string? Id { get; set; }
+    // "center" (default) or "stretch"; see PreviewFrame.
+    [Parameter] public string? Layout { get; set; }
 
     private RenderFragment? _content;
     private string? _source;

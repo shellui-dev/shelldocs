@@ -1,5 +1,27 @@
 window.ShellDocs = window.ShellDocs || {};
 
+/* Blazor raises enhancedload through Blazor.addEventListener, not as a DOM event.
+   blazor.web.js loads after this file, so attach once it has run. */
+window.shelldocsOnEnhancedLoad = (function () {
+    var pending = [];
+    var attached = false;
+    function attach() {
+        if (attached || !window.Blazor || typeof window.Blazor.addEventListener !== 'function') return;
+        attached = true;
+        window.Blazor.addEventListener('enhancedload', function () {
+            pending.forEach(function (fn) { fn(); });
+        });
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', attach);
+    }
+    window.addEventListener('load', attach);
+    return function (fn) {
+        pending.push(fn);
+        attach();
+    };
+})();
+
 // Cmd/Ctrl+K opens <SearchDialog> via the DotNetObjectReference it registers on first render.
 window.shelldocsSearch = (function () {
     var dotnet = null;
@@ -29,20 +51,69 @@ window.shelldocsSearch = (function () {
     };
 })();
 
-/* Enhanced navigation swaps the DOM and strips the .dark class the inline
-   head script set, so re-apply the saved theme after every enhanced load. */
-(function () {
-    function applyTheme() {
+/* Theme. <html class="dark"> is the source of truth: whoever flips it (a
+   ThemeToggle, or a component library's own toggle) gets saved under
+   'shelldocs-theme' and pushed to every subscribed ThemeToggle's ThemeState.
+   Enhanced navigation strips the class the head script set and the saved theme
+   is re-applied straight after, so the observer sees no net change. */
+window.shelldocsTheme = (function () {
+    var KEY = 'shelldocs-theme';
+    var root = document.documentElement;
+    var subscribers = [];
+
+    function isDark() { return root.classList.contains('dark'); }
+
+    function apply() {
         var saved = null;
-        try { saved = localStorage.getItem('shelldocs-theme'); } catch (e) {}
+        try { saved = localStorage.getItem(KEY); } catch (e) {}
         var systemDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-        var isDark = (saved || (systemDark ? 'dark' : 'light')) === 'dark';
-        document.documentElement.classList.toggle('dark', isDark);
+        root.classList.toggle('dark', (saved || (systemDark ? 'dark' : 'light')) === 'dark');
     }
-    applyTheme();
-    document.addEventListener('enhancedload', applyTheme);
-    window.shelldocsApplyTheme = applyTheme;
+
+    function set(dark) { root.classList.toggle('dark', !!dark); }
+
+    apply();
+    var lastDark = isDark();
+
+    function onChange() {
+        var dark = isDark();
+        if (dark === lastDark) return;
+        lastDark = dark;
+        try { localStorage.setItem(KEY, dark ? 'dark' : 'light'); } catch (e) {}
+        subscribers.slice().forEach(function (ref) {
+            ref.invokeMethodAsync('ThemeChanged', dark).catch(function () {});
+        });
+    }
+
+    if (window.MutationObserver) {
+        new MutationObserver(onChange).observe(root, { attributes: true, attributeFilter: ['class'] });
+    }
+
+    // Delegated, so the toggle works on static hosts too.
+    document.addEventListener('click', function (e) {
+        var btn = e.target.closest && e.target.closest('[data-theme-toggle]');
+        if (btn) set(!isDark());
+    });
+
+    window.shelldocsOnEnhancedLoad(apply);
+
+    return {
+        isDark: isDark,
+        set: set,
+        apply: apply,
+        // ThemeToggle passes a DotNetObjectReference; the handle unsubscribes it.
+        subscribe: function (dotnetRef) {
+            subscribers.push(dotnetRef);
+            return {
+                dispose: function () {
+                    var i = subscribers.indexOf(dotnetRef);
+                    if (i >= 0) subscribers.splice(i, 1);
+                }
+            };
+        }
+    };
 })();
+window.shelldocsApplyTheme = window.shelldocsTheme.apply;
 
 /* Shiki highlighting. The source <pre> belongs to Blazor (or to a markup block
    Blazor tracks), so it is never replaced or edited: it gets [data-shiki="source"]
@@ -585,7 +656,7 @@ window.shelldocsChrome = (function () {
     document.addEventListener('keydown', onTabsKeydown);
     document.addEventListener('click', onMobileNavClick);
     document.addEventListener('keydown', onMobileNavKeydown);
-    document.addEventListener('enhancedload', closeMobileNav);
+    window.shelldocsOnEnhancedLoad(closeMobileNav);
     watchForReplacedFrames();
 
     function initPage() {
@@ -598,7 +669,7 @@ window.shelldocsChrome = (function () {
     } else {
         document.addEventListener('DOMContentLoaded', initPage);
     }
-    document.addEventListener('enhancedload', initPage);
+    window.shelldocsOnEnhancedLoad(initPage);
 
     return { initToc: initToc };
 })();

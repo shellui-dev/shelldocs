@@ -39,7 +39,7 @@ Already have a Blazor project? Run `shelldocs init --attach` inside it: it adds 
   ```
   Your components win name collisions with ShellDocs' built-ins, which stay available as `<DocsCard>`, `<DocsCallout>`, `<DocsTabs>`, and so on.
 - **Content primitives.** `Callout`, `Card` / `CardGrid` / `LinkCard`, `Steps`, `FileTree`, `Tabs`, `CodeGroup`, `TypeTable` / `AutoTypeTable`, `ComponentPreview`, `DemoPreview`.
-- **Static export.** `shelldocs build` prerenders every page to static HTML for GitHub Pages, Cloudflare Pages, Netlify or S3. Optional flags rewrite `<base href>` (`--base-href`), add a SPA `404.html` (`--spa-fallback`), and write sitemap / robots / `og:` meta (`--site-url`). Navigation, sidebar sections, the mobile menu, selectors, tabs, preview toolbars, the TOC and code copy work there through `shelldocs.js`. Search, the theme-toggle button, desktop sidebar collapse and stateful demos need a running Blazor app.
+- **Static export.** `shelldocs build` prerenders every page to static HTML for GitHub Pages, Cloudflare Pages, Netlify or S3. Optional flags rewrite `<base href>` (`--base-href`), add a SPA `404.html` (`--spa-fallback`), and write sitemap / robots / `og:` meta (`--site-url`). Navigation, sidebar sections, the mobile menu, selectors, tabs, preview toolbars, the TOC and code copy work there through `shelldocs.js`. So does the theme toggle. Search, desktop sidebar collapse and stateful demos need a running Blazor app.
 
 ## Versioned docs
 
@@ -69,6 +69,9 @@ It's all server-rendered links plus `shelldocs.js`, so it works on static hosts.
 
 - **Preview | Code toolbar on every example**, with copy and a ⋯ menu: *Open in new tab*, *Report a bug*, *Suggest something*. The issue links go to `https://github.com/{GitHubRepo}/issues/new`, pre-filled with the example and page URL; point them elsewhere with `o.IssueTrackerUrl`.
 - **`razor:preview` fences render everything.** Several sibling components, HTML wrappers (`<div class="flex gap-2">…</div>`) and text render in order inside one frame, and the Code tab shows the whole fence.
+- **Child content is Razor.** Component bodies inside a fence are parsed like the fence itself, so `<Navbar><div>…<ThemeToggle /></div></Navbar>` keeps its structure and nothing is wrapped in `<p>`.
+- **Page typography stays out.** Preview frames are `not-prose`, so prose margins, list padding and link underlines don't reach your components.
+- **Centred or stretched.** Examples are centred; `razor:preview stretch` (or `Layout="stretch"` on `<DemoPreview>` / `<ComponentPreview>`) lets charts, inputs and tables fill the frame.
 - **Razor-shaped attribute values work:** `Variant="ButtonVariant.Destructive"`, `@ButtonVariant.Destructive`, `@true`, `@42`, `[Flags]` values as `Bold | Italic`.
 - **Attributes a static preview can't evaluate are skipped, not fatal:** `OnClick="HandleClick"`, `@onclick`, `@bind-*`, `@ref`, non-primitive parameter types, unparseable values. Each logs a warning and the component still renders.
 - **Inline code stays code.** `` `<Button>` `` in prose renders as literal code, not a component.

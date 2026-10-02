@@ -3,6 +3,7 @@
 @using System.Text
 @using ShellDocs.Markdown
 @inject TypeRegistry Registry
+@inject MarkdownRenderer Renderer
 @inject ILogger<ComponentPreview> Logger
 
 <PreviewFrame Content="@(_target is null ? null : RenderTarget)"
@@ -10,13 +11,16 @@
               Error="@(_target is null ? $"Unknown component <{Component}>." : null)"
               ErrorTitle="ComponentPreview error"
               Id="@_id"
-              Name="@Component" />
+              Name="@Component"
+              Layout="@Layout" />
 
 @code {
     [Parameter, EditorRequired] public string? Component { get; set; }
     [Parameter] public RenderFragment? ChildContent { get; set; }
     // Raw child markup from SlotRenderer, used to rebuild the source view.
     [Parameter] public string? ChildContentSource { get; set; }
+    // "center" (default) or "stretch"; see PreviewFrame.
+    [Parameter] public string? Layout { get; set; }
     [Parameter(CaptureUnmatchedValues = true)]
     public IReadOnlyDictionary<string, object>? ExtraProps { get; set; }
 
@@ -73,7 +77,18 @@
                 }
             }
         }
-        if (ChildContent is not null) dict["ChildContent"] = ChildContent;
+        // The children are a Razor example for the target: parse them as Razor
+        // (named slots included) rather than reuse the markdown-rendered ChildContent.
+        if (!string.IsNullOrWhiteSpace(ChildContentSource))
+        {
+            var empty = new Dictionary<string, string>();
+            foreach (var (k, v) in SlotRenderer.BuildParameters(Renderer, target, empty, ChildContentSource, Logger, razorChildren: true))
+                dict[k] = v;
+        }
+        else if (ChildContent is not null)
+        {
+            dict["ChildContent"] = ChildContent;
+        }
         return dict;
     }
 

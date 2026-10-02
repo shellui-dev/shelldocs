@@ -4,6 +4,23 @@ All notable changes to ShellDocs land here. Format follows [Keep a Changelog](ht
 
 ## [Unreleased]
 
+### Added
+
+- **Preview layout.** `razor:preview stretch` (fence info string), or `Layout="stretch"` on `<DemoPreview>` / `<ComponentPreview>` / `PreviewFrame`, lets block-level components (charts, inputs, tables) fill the frame instead of shrinking to their content. `center` stays the default.
+- **`not-prose` class.** Every `.shelldocs-prose` rule skips `.not-prose` subtrees. Preview frames carry it; add it to any element that should keep page typography out.
+
+### Changed
+
+- **`razor:preview` child content is parsed as Razor, not markdown.** Component bodies inside a fence (and `<ComponentPreview>` bodies) go through the same node parser as the fence itself: elements wrap nested components exactly as written and nothing is wrapped in `<p>`. Inline component tags in prose still take markdown bodies.
+- **`ThemeToggle` works without a Blazor runtime.** Clicks are handled by `shelldocs.js` and both icons render, with CSS picking one from `<html class="dark">`.
+
+### Fixed
+
+- **Prose styles leaked into previews.** Paragraph margins, list padding, heading sizes and link underlines from `.shelldocs-prose` hit live components and beat Tailwind's layered utilities (gaps inside cards and menus, underlined nav links).
+- **Nested markup inside a preview component was mangled.** `<Navbar><div><a/>…<ThemeToggle/></div></Navbar>` closed the `<div>` before the nested component and wrapped loose text in `<p>`.
+- **Theme state only followed ShellDocs' own toggle.** A component library flipping `<html class="dark">` left the stored theme and `ThemeState` stale. `shelldocs.js` now watches the class, saves it under `shelldocs-theme` and pushes it into `ThemeState`.
+- **`enhancedload` handlers never ran.** Blazor raises the event through `Blazor.addEventListener`, not as a DOM event, so re-applying the theme, re-attaching the TOC and closing the mobile nav after enhanced navigation (static SSR apps) silently did nothing.
+
 ## [0.1.9-alpha] — 2026-10-02
 
 A Preview | Code toolbar for every example, fixes for chrome that reset or ignored early clicks, consumer components no longer losing to built-ins with the same name, and code spans that stay code.

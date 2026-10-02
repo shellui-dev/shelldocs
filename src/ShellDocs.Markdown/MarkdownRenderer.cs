@@ -34,4 +34,14 @@ public class MarkdownRenderer
     }
 
     public RenderedDocument RenderFile(string path) => Render(File.ReadAllText(path));
+
+    // Razor markup (component child content inside a razor:preview) parsed into
+    // nodes the way the fence itself is: no markdown pass, so nothing gets wrapped
+    // in <p> and elements around nested components stay intact.
+    public (IReadOnlyList<PreviewNode> Nodes, IReadOnlyList<string> Warnings) ParseRazor(string markup)
+    {
+        var warnings = new List<string>();
+        var nodes = new PreviewParser(_registry, warnings).Parse(markup ?? "");
+        return (nodes, warnings);
+    }
 }

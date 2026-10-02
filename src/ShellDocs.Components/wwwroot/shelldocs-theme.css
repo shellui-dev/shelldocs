@@ -23,19 +23,21 @@ body { margin: 0; min-height: 100vh; }
 ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 8px; border: 2px solid var(--background); }
 ::-webkit-scrollbar-thumb:hover { background: var(--muted-foreground); }
 
-/* Prose */
+/* Prose. Every rule skips .not-prose subtrees (preview frames, or any element a
+   consumer marks), so live components keep their own spacing and link styles.
+   :where() keeps the exclusion at zero specificity. */
 .shelldocs-prose { color: var(--foreground); font-size: 0.95rem; line-height: 1.7; }
 .shelldocs-prose > *:first-child { margin-top: 0; }
 .shelldocs-prose > *:last-child { margin-bottom: 0; }
 
-.shelldocs-prose h1 { font-size: 2.125rem; font-weight: 700; letter-spacing: -0.025em; margin: 0 0 0.75rem; line-height: 1.2; color: var(--foreground); }
-.shelldocs-prose h2 { font-size: 1.5rem; font-weight: 600; letter-spacing: -0.02em; margin: 2.5rem 0 0.75rem; line-height: 1.3; scroll-margin-top: calc(var(--header-height) + 2rem); }
-.shelldocs-prose h3 { font-size: 1.125rem; font-weight: 600; letter-spacing: -0.015em; margin: 1.75rem 0 0.5rem; line-height: 1.4; scroll-margin-top: calc(var(--header-height) + 2rem); }
-.shelldocs-prose h4 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
+.shelldocs-prose h1:where(:not(.not-prose, .not-prose *)) { font-size: 2.125rem; font-weight: 700; letter-spacing: -0.025em; margin: 0 0 0.75rem; line-height: 1.2; color: var(--foreground); }
+.shelldocs-prose h2:where(:not(.not-prose, .not-prose *)) { font-size: 1.5rem; font-weight: 600; letter-spacing: -0.02em; margin: 2.5rem 0 0.75rem; line-height: 1.3; scroll-margin-top: calc(var(--header-height) + 2rem); }
+.shelldocs-prose h3:where(:not(.not-prose, .not-prose *)) { font-size: 1.125rem; font-weight: 600; letter-spacing: -0.015em; margin: 1.75rem 0 0.5rem; line-height: 1.4; scroll-margin-top: calc(var(--header-height) + 2rem); }
+.shelldocs-prose h4:where(:not(.not-prose, .not-prose *)) { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
 
-.shelldocs-prose p { margin: 1rem 0; color: var(--foreground); }
+.shelldocs-prose p:where(:not(.not-prose, .not-prose *)) { margin: 1rem 0; color: var(--foreground); }
 
-.shelldocs-prose a {
+.shelldocs-prose a:where(:not(.not-prose, .not-prose *)) {
     color: var(--foreground);
     text-decoration: underline;
     text-underline-offset: 3px;
@@ -44,11 +46,11 @@ body { margin: 0; min-height: 100vh; }
     transition: text-decoration-color 150ms;
     font-weight: 500;
 }
-.shelldocs-prose a:hover { text-decoration-color: var(--foreground); }
+.shelldocs-prose a:hover:where(:not(.not-prose, .not-prose *)) { text-decoration-color: var(--foreground); }
 
-.shelldocs-prose strong { font-weight: 600; color: var(--foreground); }
+.shelldocs-prose strong:where(:not(.not-prose, .not-prose *)) { font-weight: 600; color: var(--foreground); }
 
-.shelldocs-prose code {
+.shelldocs-prose code:where(:not(.not-prose, .not-prose *)) {
     font-family: var(--font-mono);
     font-size: 0.85em;
     background: var(--muted);
@@ -59,11 +61,11 @@ body { margin: 0; min-height: 100vh; }
     font-feature-settings: 'ss01';
 }
 
-.shelldocs-prose ul, .shelldocs-prose ol { padding-left: 1.5rem; margin: 1rem 0; }
-.shelldocs-prose li { margin: 0.35rem 0; }
-.shelldocs-prose li::marker { color: var(--muted-foreground); }
+.shelldocs-prose ul:where(:not(.not-prose, .not-prose *)), .shelldocs-prose ol:where(:not(.not-prose, .not-prose *)) { padding-left: 1.5rem; margin: 1rem 0; }
+.shelldocs-prose li:where(:not(.not-prose, .not-prose *)) { margin: 0.35rem 0; }
+.shelldocs-prose li:where(:not(.not-prose, .not-prose *))::marker { color: var(--muted-foreground); }
 
-.shelldocs-prose blockquote {
+.shelldocs-prose blockquote:where(:not(.not-prose, .not-prose *)) {
     border-left: 3px solid var(--border-strong);
     padding: 0.75rem 0 0.75rem 1rem;
     margin: 1.25rem 0;
@@ -71,9 +73,9 @@ body { margin: 0; min-height: 100vh; }
     background: color-mix(in oklch, var(--muted) 60%, transparent);
     border-radius: 0 var(--radius) var(--radius) 0;
 }
-.shelldocs-prose blockquote p { margin: 0; }
+.shelldocs-prose blockquote p:where(:not(.not-prose, .not-prose *)) { margin: 0; }
 
-.shelldocs-prose table {
+.shelldocs-prose table:where(:not(.not-prose, .not-prose *)) {
     border-collapse: collapse;
     width: 100%;
     margin: 1.25rem 0;
@@ -82,13 +84,13 @@ body { margin: 0; min-height: 100vh; }
     border-radius: var(--radius);
     overflow: hidden;
 }
-.shelldocs-prose th, .shelldocs-prose td { padding: 0.625rem 0.875rem; text-align: left; border-bottom: 1px solid var(--border); }
-.shelldocs-prose th { font-weight: 600; color: var(--foreground); background: var(--muted); font-size: 0.8125rem; }
-.shelldocs-prose tr:last-child td { border-bottom: 0; }
-.shelldocs-prose tr:hover { background: color-mix(in oklch, var(--muted) 40%, transparent); }
+.shelldocs-prose th:where(:not(.not-prose, .not-prose *)), .shelldocs-prose td:where(:not(.not-prose, .not-prose *)) { padding: 0.625rem 0.875rem; text-align: left; border-bottom: 1px solid var(--border); }
+.shelldocs-prose th:where(:not(.not-prose, .not-prose *)) { font-weight: 600; color: var(--foreground); background: var(--muted); font-size: 0.8125rem; }
+.shelldocs-prose tr:last-child td:where(:not(.not-prose, .not-prose *)) { border-bottom: 0; }
+.shelldocs-prose tr:hover:where(:not(.not-prose, .not-prose *)) { background: color-mix(in oklch, var(--muted) 40%, transparent); }
 
-.shelldocs-prose hr { border: 0; border-top: 1px solid var(--border); margin: 2.5rem 0; }
-.shelldocs-prose img { border-radius: var(--radius); border: 1px solid var(--border); max-width: 100%; height: auto; }
+.shelldocs-prose hr:where(:not(.not-prose, .not-prose *)) { border: 0; border-top: 1px solid var(--border); margin: 2.5rem 0; }
+.shelldocs-prose img:where(:not(.not-prose, .not-prose *)) { border-radius: var(--radius); border: 1px solid var(--border); max-width: 100%; height: auto; }
 
 /* Code blocks — wrapped by CodeBlockEnhancer */
 .shelldocs-codeblock {

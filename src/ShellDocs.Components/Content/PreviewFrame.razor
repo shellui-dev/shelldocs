@@ -10,7 +10,8 @@
    so they work without a Blazor runtime. Both panels are always rendered; CSS
    shows the one named by [data-preview-tab]. Fed either a PreviewSlot
    (razor:preview fence) or Content + Code (DemoPreview, ComponentPreview). *@
-<div class="preview-frame" id="@Id" data-preview-tab="preview">
+@* not-prose: page typography stays out of live examples. *@
+<div class="preview-frame not-prose" id="@Id" data-preview-tab="preview">
     @if (!string.IsNullOrEmpty(Title))
     {
         <div class="preview-title">@Title</div>
@@ -59,7 +60,7 @@
         </div>
     </div>
 
-    <div class="preview-panel preview-render" role="tabpanel" id="@PartId("panel-preview")" aria-labelledby="@PartId("tab-preview")" data-preview-panel="preview">
+    <div class="preview-panel preview-render" role="tabpanel" id="@PartId("panel-preview")" aria-labelledby="@PartId("tab-preview")" data-preview-panel="preview" data-layout="@_layout">
         @if (ErrorMessage is not null)
         {
             <div class="preview-error" role="alert">
@@ -98,6 +99,9 @@
     [Parameter] public string? Title { get; set; }
     [Parameter] public string? Error { get; set; }
     [Parameter] public string ErrorTitle { get; set; } = "razor:preview error";
+    // "center" (default) centres the example; "stretch" lets block-level
+    // components (charts, inputs, tables) fill the frame's width.
+    [Parameter] public string? Layout { get; set; }
 
     // Must be deterministic: it's the anchor, and how shelldocs.js restores the
     // selected tab when Blazor replaces the prerendered DOM.
@@ -106,6 +110,7 @@
     [Parameter] public string? Name { get; set; }
 
     private string _openHref = "";
+    private string _layout = "center";
     private string? _bugHref;
     private string? _suggestHref;
 
@@ -117,6 +122,7 @@
 
     protected override void OnParametersSet()
     {
+        _layout = string.Equals(Layout ?? Preview?.Layout, "stretch", StringComparison.OrdinalIgnoreCase) ? "stretch" : "center";
         var path = DocsVersionResolver.PathOf(Nav);
         _openHref = string.IsNullOrEmpty(Id) ? path : $"{path}#{Id}";
 
@@ -134,5 +140,5 @@
 
     // Only reached when ErrorMessage is null, i.e. ComponentType is non-null.
     private IDictionary<string, object> BuildParameters(IReadOnlyDictionary<string, string> attrs, string? childContentRaw) =>
-        SlotRenderer.BuildParameters(Renderer, Preview!.ComponentType!, attrs, childContentRaw, Logger);
+        SlotRenderer.BuildParameters(Renderer, Preview!.ComponentType!, attrs, childContentRaw, Logger, razorChildren: true);
 }
