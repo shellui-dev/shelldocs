@@ -12,7 +12,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Update="content/**/*.md;content/**/meta.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="content/**/*.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Update="content/**/meta.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <!-- <DemoPreview> reads these at runtime. The Razor SDK drops .razor files from
              publish even with Content metadata, so ship them as None items. -->
     <None Include="Demos/**/*.razor" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />

@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Net;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Spectre.Console;
 
@@ -110,12 +112,70 @@ internal static class PrerenderRunner
             }
 
             AnsiConsole.MarkupLine($"[dim]prerender:[/] wrote [green]{rendered}[/] page(s)" + (failed > 0 ? $", [yellow]{failed}[/] failed" : ""));
+
+            var redirects = WriteRedirects(http, outputDir);
+            if (redirects > 0) AnsiConsole.MarkupLine($"[dim]redirects:[/] wrote [cyan]{redirects}[/] redirect page(s)");
             return new Result(failed == 0, rendered, failed);
         }
         finally
         {
             if (proc is not null) TryKill(proc);
         }
+    }
+
+    private record RedirectEntry(string From, string To);
+
+    // The app serves its redirect map (DocsRedirectMiddleware); each source URL without
+    // a prerendered page gets a page that forwards to the target. An app on an older
+    // ShellDocs, or with redirects off, answers 404 and nothing is written.
+    private static int WriteRedirects(HttpClient http, string outputDir)
+    {
+        List<RedirectEntry>? entries;
+        try
+        {
+            var response = http.GetAsync("/_shelldocs/redirects.json").GetAwaiter().GetResult();
+            if (!response.IsSuccessStatusCode) return 0;
+            var json = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+            entries = JsonSerializer.Deserialize<List<RedirectEntry>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        }
+        catch (Exception ex)
+        {
+            AnsiConsole.MarkupLine($"  [yellow]warn:[/] couldn't read the redirect map: {ex.Message}");
+            return 0;
+        }
+
+        var written = 0;
+        foreach (var entry in entries ?? new())
+        {
+            var outPath = UrlToFilePath(entry.From, outputDir);
+            if (File.Exists(outPath)) continue;
+            Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
+            File.WriteAllText(outPath, RedirectPage(entry.To));
+            written++;
+        }
+        return written;
+    }
+
+    // Target is base-relative so `--base-href` (which rewrites <base>) keeps it right.
+    internal static string RedirectPage(string to)
+    {
+        var relative = to.TrimStart('/');
+        var attr = WebUtility.HtmlEncode(relative);
+        var js = JsonSerializer.Serialize(relative);
+        return $$"""
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+            <meta charset="utf-8" />
+            <base href="/" />
+            <title>Redirecting…</title>
+            <meta name="robots" content="noindex" />
+            <meta http-equiv="refresh" content="0; url={{attr}}" />
+            <script>location.replace(new URL({{js}}, document.baseURI).href + location.search + location.hash);</script>
+            </head>
+            <body><a href="{{attr}}">Redirecting…</a></body>
+            </html>
+            """;
     }
 
     private static string InferAssemblyName(string csproj)

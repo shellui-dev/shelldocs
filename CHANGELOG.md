@@ -8,17 +8,22 @@ All notable changes to ShellDocs land here. Format follows [Keep a Changelog](ht
 
 - **Preview layout.** `razor:preview stretch` (fence info string), or `Layout="stretch"` on `<DemoPreview>` / `<ComponentPreview>` / `PreviewFrame`, lets block-level components (charts, inputs, tables) fill the frame instead of shrinking to their content. `center` stays the default.
 - **`not-prose` class.** Every `.shelldocs-prose` rule skips `.not-prose` subtrees. Preview frames carry it; add it to any element that should keep page typography out.
+- **Generic components in markdown.** `RegisterComponentsFromAssembly` now registers generic components under their bare name (`<BarChart>`), and `razor:preview`, inline tags and `<ComponentPreview>` close them from a type-parameter attribute, as Razor does: `<BarChart TItem="SalesRow" />`. Type arguments take C# spellings (`int?`, `List<string>`, full or simple type names). Without one, `object` is used when the constraints allow it (with a warning); otherwise the component renders an inline error instead of breaking the page. A non-generic component with the same name keeps the tag. `<AutoTypeTable>` lists the type parameters.
+- **Redirects.** URLs that aren't pages now redirect: content folders and version roots to their first page (`/docs` prefers unversioned pages, then the latest version), and unversioned URLs that exist in the latest version to that page (`/docs/cli/dev` → `/docs/v2.0/cli/dev`). `o.AddRedirect(from, to, permanent)` adds segment-aware prefix rules for moved content; computed redirects answer 302, rules 301. Middleware registered by `AddShellDocs` serves them before routing (so dotted version roots like `/docs/v0.2.1` work), and `shelldocs build` writes them as redirect pages. Opt out with `o.EnableRedirects = false`.
+- **`ShellDocsOptions.RenderPageTitle`.** Renders frontmatter `title` as the page heading and `description` as a lead paragraph when the body doesn't start with its own `# Heading`. Off by default.
 
 ### Changed
 
 - **`razor:preview` child content is parsed as Razor, not markdown.** Component bodies inside a fence (and `<ComponentPreview>` bodies) go through the same node parser as the fence itself: elements wrap nested components exactly as written and nothing is wrapped in `<p>`. Inline component tags in prose still take markdown bodies.
 - **`ThemeToggle` works without a Blazor runtime.** Clicks are handled by `shelldocs.js` and both icons render, with CSS picking one from `<html class="dark">`.
+- **`ShellDocs.Components` references the ASP.NET Core shared framework** (for the redirect middleware) instead of the `Microsoft.AspNetCore.Components.Web` package. It already read content from disk, so it was server-side in practice.
 
 ### Fixed
 
 - **Prose styles leaked into previews.** Paragraph margins, list padding, heading sizes and link underlines from `.shelldocs-prose` hit live components and beat Tailwind's layered utilities (gaps inside cards and menus, underlined nav links).
 - **Nested markup inside a preview component was mangled.** `<Navbar><div><a/>…<ThemeToggle/></div></Navbar>` closed the `<div>` before the nested component and wrapped loose text in `<p>`.
 - **Theme state only followed ShellDocs' own toggle.** A component library flipping `<html class="dark">` left the stored theme and `ThemeState` stale. `shelldocs.js` now watches the class, saves it under `shelldocs-theme` and pushes it into `ThemeState`.
+- **`shelldocs build` prerendered "Page not found" pages** when the csproj copied `meta.json` but not the `.md` files (`<Content Update="content/**/*.md">`). Build only mirrored `content/` when it was missing entirely; it now fills in every file publish left out. The example project's csproj is fixed too.
 - **`enhancedload` handlers never ran.** Blazor raises the event through `Blazor.addEventListener`, not as a DOM event, so re-applying the theme, re-attaching the TOC and closing the mobile nav after enhanced navigation (static SSR apps) silently did nothing.
 
 ## [0.1.9-alpha] — 2026-10-02

@@ -1,0 +1,13 @@
+@typeparam TValue
+
+@* Stand-in generic library component for exercising razor:preview type arguments. *@
+<span class="value-badge">
+    <span class="value-badge-label">@Label</span>
+    <span class="value-badge-value">@Value</span>
+    <span class="value-badge-type">@typeof(TValue).Name</span>
+</span>
+
+@code {
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public TValue? Value { get; set; }
+}

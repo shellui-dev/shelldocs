@@ -29,7 +29,7 @@ Already have a Blazor project? Run `shelldocs init --attach` inside it: it adds 
 
 ## What you get
 
-- **Markdown-first authoring.** YAML frontmatter, Shiki-highlighted code fences, live `razor:preview` examples, inline component tags mid-prose.
+- **Markdown-first authoring.** YAML frontmatter, Shiki-highlighted code fences, live `razor:preview` examples, inline component tags mid-prose. Set `o.RenderPageTitle = true` to render the frontmatter `title` and `description` as the page header instead of writing `# Title`.
 - **File-based navigation.** Drop a `.md` in `content/docs/` and it's a page. Sidebar, breadcrumb, prev/next and TOC come from the folder tree; `meta.json` controls order, dividers, subsections and hidden pages.
 - **`Cmd+K` search** across titles, headings and page text, with body snippets. The index is built in memory at startup, so there's no external service; search needs a running Blazor app (it isn't available in the static export).
 - **Blazor-native.** Your components render as real Razor components, not iframes.
@@ -63,7 +63,15 @@ The current version is the one whose `RootUrl` prefixes the path (segment-aware)
 
 It's all server-rendered links plus `shelldocs.js`, so it works on static hosts.
 
-> Routes declared as `/docs/{*Path:nonfile}` don't match a URL whose **last** segment has a dot (`/docs/v0.2.1`). Pages below it (`/docs/v0.2.1/introduction`) are fine, and the selectors never link to a bare version root unless it has an `index.md`. If you add one, drop `:nonfile` from the route.
+### Redirects
+
+URLs that aren't pages redirect instead of 404ing: content folders and version roots go to their first page (`/docs/v0.2.1` → `/docs/v0.2.1/introduction`; `/docs` prefers unversioned pages, then the latest version), and unversioned URLs that exist in the latest version go there (`/docs/cli/dev` → `/docs/v0.3/cli/dev`). Add rules for moved content:
+
+```csharp
+o.AddRedirect("/docs/v0.3.0", "/docs/v0.3");   // also /docs/v0.3.0/x → /docs/v0.3/x (301)
+```
+
+`AddShellDocs` registers middleware that answers these before routing, so a dotted version root works even though `/docs/{*Path:nonfile}` routes can't match it. `shelldocs build` writes the same redirects as static pages. Turn it off with `o.EnableRedirects = false`.
 
 ## Component previews
 
@@ -71,6 +79,7 @@ It's all server-rendered links plus `shelldocs.js`, so it works on static hosts.
 - **`razor:preview` fences render everything.** Several sibling components, HTML wrappers (`<div class="flex gap-2">…</div>`) and text render in order inside one frame, and the Code tab shows the whole fence.
 - **Child content is Razor.** Component bodies inside a fence are parsed like the fence itself, so `<Navbar><div>…<ThemeToggle /></div></Navbar>` keeps its structure and nothing is wrapped in `<p>`.
 - **Page typography stays out.** Preview frames are `not-prose`, so prose margins, list padding and link underlines don't reach your components.
+- **Generic components work.** Set the type argument as Razor does: `<BarChart TItem="SalesRow" />`, `<DataTable TItem="int" />`. Libraries' generic components are registered under their bare name.
 - **Centred or stretched.** Examples are centred; `razor:preview stretch` (or `Layout="stretch"` on `<DemoPreview>` / `<ComponentPreview>`) lets charts, inputs and tables fill the frame.
 - **Razor-shaped attribute values work:** `Variant="ButtonVariant.Destructive"`, `@ButtonVariant.Destructive`, `@true`, `@42`, `[Flags]` values as `Bold | Italic`.
 - **Attributes a static preview can't evaluate are skipped, not fatal:** `OnClick="HandleClick"`, `@onclick`, `@bind-*`, `@ref`, non-primitive parameter types, unparseable values. Each logs a warning and the component still renders.

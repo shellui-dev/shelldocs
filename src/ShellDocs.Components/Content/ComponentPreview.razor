@@ -8,7 +8,7 @@
 
 <PreviewFrame Content="@(_target is null ? null : RenderTarget)"
               Code="@_source"
-              Error="@(_target is null ? $"Unknown component <{Component}>." : null)"
+              Error="@_error"
               ErrorTitle="ComponentPreview error"
               Id="@_id"
               Name="@Component"
@@ -28,10 +28,25 @@
     private IDictionary<string, object>? _targetParams;
     private string? _source;
     private string? _id;
+    private string? _error;
+    private HashSet<string> _typeParams = new(StringComparer.OrdinalIgnoreCase);
 
     protected override void OnParametersSet()
     {
         _target = Component is null ? null : Registry.Resolve(Component);
+        _error = _target is null ? $"Unknown component <{Component}>." : null;
+        _typeParams = new(StringComparer.OrdinalIgnoreCase);
+        if (_target is { IsGenericTypeDefinition: true } open)
+        {
+            // TItem="Product" closes a generic target, as in Razor.
+            var attrs = (ExtraProps ?? new Dictionary<string, object>())
+                .Where(kv => kv.Value is string)
+                .ToDictionary(kv => kv.Key, kv => (string)kv.Value);
+            _target = GenericComponents.Close(open, attrs, out _, out var error, out var notes);
+            foreach (var note in notes) Logger.LogWarning("ShellDocs: {Note}", note);
+            if (_target is null) _error = error;
+            _typeParams = new(open.GetGenericArguments().Select(p => p.Name), StringComparer.OrdinalIgnoreCase);
+        }
         _targetParams = _target is null ? null : BuildTargetParams(_target);
         _source = BuildSource();
         // Same component twice on a page gets distinct ids via the source hash.
@@ -54,6 +69,7 @@
         {
             foreach (var (k, v) in ExtraProps)
             {
+                if (_typeParams.Contains(k)) continue;
                 if (!props.TryGetValue(k, out var prop))
                 {
                     if (!k.StartsWith('@') && SlotRenderer.HasCatchAll(target)) dict[k] = v;

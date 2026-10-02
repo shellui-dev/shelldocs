@@ -39,14 +39,14 @@ internal static class BuildCommand
         var publishExit = RunPublish(csproj, publishStage);
         if (publishExit != 0) return publishExit;
 
-        // Mirror content/ into publish: csprojs using `<Content Update="content/...">`
-        // don't copy .md files, which would prerender every page as "Page not found".
+        // Fill in content/ files publish left out: csprojs using `<Content Update="content/...">`
+        // copy meta.json but not .md files, which would prerender every page as "Page not found".
         var publishContent = Path.Combine(publishStage, "content");
-        if (!Directory.Exists(publishContent))
-        {
-            AnsiConsole.MarkupLine("[dim]content:[/] publish output has no content/ — mirroring from source");
-            CopyDirectoryOverwriting(contentRoot, publishContent);
-        }
+        var published = CountFiles(publishContent);
+        CopyDirectoryMerging(contentRoot, publishContent);
+        var filledIn = CountFiles(publishContent) - published;
+        if (filledIn > 0)
+            AnsiConsole.MarkupLine($"[dim]content:[/] copied [cyan]{filledIn}[/] file(s) from content/ that publish left out");
 
         // Home ("/") is served by Home.razor and isn't part of NavigationGraph.
         var urls = new List<string> { "/" };
@@ -136,6 +136,9 @@ internal static class BuildCommand
     }
 
     // Never overwrites — protects prerendered HTML sitting in the output tree.
+    private static int CountFiles(string dir)
+        => Directory.Exists(dir) ? Directory.GetFiles(dir, "*", SearchOption.AllDirectories).Length : 0;
+
     internal static void CopyDirectoryMerging(string source, string dest)
     {
         Directory.CreateDirectory(dest);
@@ -147,19 +150,6 @@ internal static class BuildCommand
         foreach (var subdir in Directory.GetDirectories(source))
         {
             CopyDirectoryMerging(subdir, Path.Combine(dest, Path.GetFileName(subdir)));
-        }
-    }
-
-    internal static void CopyDirectoryOverwriting(string source, string dest)
-    {
-        Directory.CreateDirectory(dest);
-        foreach (var file in Directory.GetFiles(source))
-        {
-            File.Copy(file, Path.Combine(dest, Path.GetFileName(file)), overwrite: true);
-        }
-        foreach (var subdir in Directory.GetDirectories(source))
-        {
-            CopyDirectoryOverwriting(subdir, Path.Combine(dest, Path.GetFileName(subdir)));
         }
     }
 

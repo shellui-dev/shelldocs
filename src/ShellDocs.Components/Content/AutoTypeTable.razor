@@ -73,8 +73,19 @@ else
     private static List<TypeRowInfo> BuildRows(Type target)
     {
         var rows = new List<TypeRowInfo>();
+
+        // Generic components list their type parameters first, set as TItem="…".
+        // Defaults are read from an instance closed over object, when that's allowed.
+        var instanceType = target;
+        if (target.IsGenericTypeDefinition)
+        {
+            foreach (var tp in target.GetGenericArguments())
+                rows.Add(new TypeRowInfo(tp.Name, "type parameter", null, "Generic type argument, set as an attribute.", true));
+            try { instanceType = target.MakeGenericType(target.GetGenericArguments().Select(_ => typeof(object)).ToArray()); }
+            catch (ArgumentException) { instanceType = null; }
+        }
         object? instance = null;
-        try { instance = Activator.CreateInstance(target); } catch { }
+        try { if (instanceType is not null) instance = Activator.CreateInstance(instanceType); } catch { }
 
         foreach (var prop in target.GetProperties(BindingFlags.Public | BindingFlags.Instance))
         {
@@ -83,7 +94,7 @@ else
             var name = prop.Name;
             var type = FormatType(prop.PropertyType);
             var required = prop.GetCustomAttribute<EditorRequiredAttribute>() is not null;
-            var def = ReadDefault(prop, instance);
+            var def = ReadDefault(instanceType?.GetProperty(name, BindingFlags.Public | BindingFlags.Instance) ?? prop, instance);
             var desc = XmlDocIndex.SummaryFor(prop);
             rows.Add(new TypeRowInfo(name, type, def, desc, required));
         }
@@ -95,6 +106,7 @@ else
     {
         var underlying = Nullable.GetUnderlyingType(t);
         if (underlying is not null) return FormatType(underlying) + "?";
+        if (t.IsGenericParameter) return t.Name;
         if (t == typeof(string)) return "string";
         if (t == typeof(bool)) return "bool";
         if (t == typeof(int)) return "int";

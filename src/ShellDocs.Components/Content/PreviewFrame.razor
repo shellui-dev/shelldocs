@@ -81,8 +81,7 @@
         }
         else
         {
-            <DynamicComponent Type="Preview!.ComponentType"
-                              Parameters="BuildParameters(Preview!.Parameters, Preview!.ChildContentRaw)" />
+            @SlotRenderer.Component(Renderer, Preview!.ComponentType!, Preview!.Parameters, Preview!.ChildContentRaw, Logger, razorChildren: true)
         }
     </div>
     <div class="preview-panel preview-code-panel" role="tabpanel" id="@PartId("panel-code")" aria-labelledby="@PartId("tab-code")" data-preview-panel="code">
@@ -132,13 +131,9 @@
             _bugHref = _suggestHref = null;
             return;
         }
-        var name = Name ?? Preview?.ComponentType?.Name ?? Title ?? "docs";
+        var name = Name ?? (Preview?.ComponentType is { } t ? GenericComponents.TagName(t) : null) ?? Title ?? "docs";
         var pageUrl = PreviewLinks.PageUrl(Options, path, Id);
         _bugHref = PreviewLinks.BugReport(tracker, name, pageUrl);
         _suggestHref = PreviewLinks.Suggestion(tracker, name, pageUrl);
     }
-
-    // Only reached when ErrorMessage is null, i.e. ComponentType is non-null.
-    private IDictionary<string, object> BuildParameters(IReadOnlyDictionary<string, string> attrs, string? childContentRaw) =>
-        SlotRenderer.BuildParameters(Renderer, Preview!.ComponentType!, attrs, childContentRaw, Logger, razorChildren: true);
 }

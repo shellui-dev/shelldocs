@@ -9,6 +9,9 @@ using ShellDocs.Markdown;
 
 namespace ShellDocs.Components.Content;
 
+// Sequence numbers follow the parsed markup, not source order; regions per node keep them stable.
+#pragma warning disable ASP0006
+
 // Renders markdown/HTML containing component tags as real DynamicComponents,
 // recursively, so components nest inside previews and ChildContent.
 internal static class SlotRenderer
@@ -42,12 +45,36 @@ internal static class SlotRenderer
     }
 
     private static void Emit(RenderTreeBuilder builder, ref int seq, MarkdownRenderer renderer, ComponentSlot slot, ILogger? logger)
+        => builder.AddContent(seq++, Component(renderer, slot.ComponentType, slot.Parameters, slot.ChildContentRaw, logger));
+
+    /* One registered component from markdown. Generic definitions are closed from
+       their type-parameter attributes first; one that can't be closed renders a
+       visible error instead of throwing. */
+    public static RenderFragment Component(
+        MarkdownRenderer renderer,
+        Type type,
+        IReadOnlyDictionary<string, string> attrs,
+        string? childContentRaw,
+        ILogger? logger = null,
+        bool razorChildren = false) => builder =>
     {
-        builder.OpenComponent<DynamicComponent>(seq++);
-        builder.AddAttribute(seq++, "Type", slot.ComponentType);
-        builder.AddAttribute(seq++, "Parameters", BuildParameters(renderer, slot.ComponentType, slot.Parameters, slot.ChildContentRaw, logger));
+        var closed = GenericComponents.Close(type, attrs, out var remaining, out var error, out var notes);
+        foreach (var note in notes) logger?.LogWarning("ShellDocs: {Note}", note);
+        if (closed is null)
+        {
+            logger?.LogWarning("ShellDocs: {Error}", error);
+            builder.OpenElement(0, "div");
+            builder.AddAttribute(1, "class", "shelldocs-render-error");
+            builder.AddAttribute(2, "role", "alert");
+            builder.AddContent(3, error);
+            builder.CloseElement();
+            return;
+        }
+        builder.OpenComponent<DynamicComponent>(4);
+        builder.AddAttribute(5, "Type", closed);
+        builder.AddAttribute(6, "Parameters", BuildParameters(renderer, closed, remaining, childContentRaw, logger, razorChildren));
         builder.CloseComponent();
-    }
+    };
 
     /* Elements are real render-tree elements, not markup strings, so wrappers keep
        their component children under interactive re-renders. One region per node
@@ -67,10 +94,7 @@ internal static class SlotRenderer
                     break;
 
                 case PreviewComponentNode comp:
-                    builder.OpenComponent<DynamicComponent>(0);
-                    builder.AddAttribute(1, "Type", comp.ComponentType);
-                    builder.AddAttribute(2, "Parameters", BuildParameters(renderer, comp.ComponentType, comp.Parameters, comp.ChildContentRaw, logger, razorChildren: true));
-                    builder.CloseComponent();
+                    builder.AddContent(0, Component(renderer, comp.ComponentType, comp.Parameters, comp.ChildContentRaw, logger, razorChildren: true));
                     break;
 
                 case PreviewElementNode el:

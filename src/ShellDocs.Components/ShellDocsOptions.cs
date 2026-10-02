@@ -25,6 +25,9 @@ public class ShellDocsOptions
     // Rendered as MarkupString — must be trusted content the consumer authored, not user input.
     public string? LogoSvg { get; set; }
     public ShellDocsTheme Theme { get; set; } = ShellDocsTheme.Shadcn;
+    // Renders frontmatter `title` (and `description` as a lead) as the page header
+    // when the markdown body doesn't start with its own `# Heading`.
+    public bool RenderPageTitle { get; set; }
     public DocsLayoutVariant LayoutVariant { get; set; } = DocsLayoutVariant.TopNav;
 
     public List<NavLink> PrimaryNav { get; } = new();
@@ -33,6 +36,12 @@ public class ShellDocsOptions
     // Fewer than 2 hides the version selector; any entry scopes sidebar, prev/next,
     // search and breadcrumb to the current version.
     public List<DocsVersion> Versions { get; } = new();
+    /* Redirects for URLs that aren't pages: content folders and version roots go to
+       their first page, unversioned URLs that exist in the latest version go there,
+       plus AddRedirect rules. Served by middleware that AddShellDocs registers, and
+       written as redirect pages by `shelldocs build`. */
+    public bool EnableRedirects { get; set; } = true;
+    public List<DocsRedirectRule> Redirects { get; } = new();
     // Searched recursively for X.razor to show as <DemoPreview Component="X" />'s source.
     public string? DemoSourceRoot { get; set; }
     public List<Type> RegisteredComponents { get; } = new();
@@ -76,7 +85,8 @@ public class ShellDocsOptions
         return this;
     }
 
-    // Registers every public, concrete, non-generic component in the assembly, skipping [ShellDocsIgnore].
+    // Registers every public, concrete component in the assembly, skipping [ShellDocsIgnore].
+    // Generic components register under their bare name and are closed per use (TItem="…").
     public ShellDocsOptions RegisterComponentsFromAssembly<TMarker>(Func<Type, bool>? filter = null)
         => RegisterComponentsFromAssembly(typeof(TMarker).Assembly, filter);
 
@@ -123,11 +133,20 @@ public class ShellDocsOptions
             if (t is null) continue;
             if (!t.IsClass || t.IsAbstract) continue;
             if (!t.IsPublic && !t.IsNestedPublic) continue;
-            if (t.IsGenericTypeDefinition) continue;
             if (!typeof(ComponentBase).IsAssignableFrom(t)) continue;
             if (t.IsDefined(typeof(ShellDocsIgnoreAttribute), inherit: false)) continue;
             yield return t;
         }
+    }
+
+    // Segment-aware prefix rule: AddRedirect("/docs/v0.3.0", "/docs/v0.3") also sends
+    // /docs/v0.3.0/intro to /docs/v0.3/intro. Permanent rules answer 301, others 302.
+    public ShellDocsOptions AddRedirect(string from, string to, bool permanent = true)
+    {
+        if (string.IsNullOrWhiteSpace(from) || string.IsNullOrWhiteSpace(to))
+            throw new ArgumentException("Redirect paths must be non-empty.");
+        Redirects.Add(new DocsRedirectRule(from, to, permanent));
+        return this;
     }
 
     public ShellDocsOptions AddNavLink(string label, string href)
@@ -196,8 +215,16 @@ public class ShellDocsOptions
             registry.Register(type);
             registry.Register(BuiltInAliasPrefix + type.Name, type);
         }
+        // A library shipping both Select and Select<T> keeps <Select> for the non-generic one.
+        var nonGenericTags = RegisteredComponents
+            .Where(t => !t.IsGenericTypeDefinition && !ComponentAliases.ContainsKey(t))
+            .Select(TypeRegistry.TagNameOf)
+            .ToHashSet(StringComparer.Ordinal);
         foreach (var type in RegisteredComponents)
         {
+            if (type.IsGenericTypeDefinition && !ComponentAliases.ContainsKey(type)
+                && nonGenericTags.Contains(TypeRegistry.TagNameOf(type)))
+                continue;
             if (ComponentAliases.TryGetValue(type, out var alias))
                 registry.Register(alias, type);
             else
@@ -219,6 +246,8 @@ public record DocsPackage(string Id, string Title, string Description, string Ro
 }
 
 public record DocsVersion(string Id, string Label, string RootUrl, string? Description, bool IsLatest);
+
+public record DocsRedirectRule(string From, string To, bool Permanent = true);
 
 public enum ShellDocsTheme
 {
