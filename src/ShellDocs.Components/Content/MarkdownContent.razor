@@ -3,6 +3,7 @@
 @inject IJSRuntime JS
 @inject DocsPageState PageState
 @inject ILogger<MarkdownContent> Logger
+@inject ShellDocsOptions Options
 
 <div class="shelldocs-prose">
     @if (_parts is null)
@@ -13,6 +14,16 @@
     {
         @* Ordinal ids keep anchors and saved tab state stable across renders. *@
         var previewIndex = 0;
+        @if (_title is not null)
+        {
+            <header class="docs-page-header">
+                <h1>@_title</h1>
+                @if (!string.IsNullOrWhiteSpace(_description))
+                {
+                    <p class="docs-page-description">@_description</p>
+                }
+            </header>
+        }
         @foreach (var part in _parts)
         {
             @if (part is HtmlPart html)
@@ -39,13 +50,34 @@
     [Parameter] public RenderedDocument? Document { get; set; }
 
     private IReadOnlyList<RenderPart>? _parts;
+    private string? _title;
+    private string? _description;
 
     protected override void OnParametersSet()
     {
         var doc = Document ?? (Markdown is not null ? Renderer.Render(Markdown) : null);
         _parts = doc is null ? null : SlotSplitter.Split(doc);
+        _title = _description = null;
+        if (doc is not null && Options.RenderPageTitle && !StartsWithH1(doc.Source.Body))
+        {
+            _title = NonEmpty(doc.Source.Frontmatter.GetValue<string>("title"));
+            _description = _title is null ? null : NonEmpty(doc.Source.Frontmatter.GetValue<string>("description"));
+        }
         PageState.SetDocument(doc);
     }
+
+    private static bool StartsWithH1(string body)
+    {
+        foreach (var line in body.Split('\n'))
+        {
+            var t = line.Trim();
+            if (t.Length == 0) continue;
+            return t.StartsWith("# ", StringComparison.Ordinal) || t.StartsWith("<h1", StringComparison.OrdinalIgnoreCase);
+        }
+        return false;
+    }
+
+    private static string? NonEmpty(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {

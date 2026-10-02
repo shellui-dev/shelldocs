@@ -92,6 +92,11 @@ body { margin: 0; min-height: 100vh; }
 .shelldocs-prose hr:where(:not(.not-prose, .not-prose *)) { border: 0; border-top: 1px solid var(--border); margin: 2.5rem 0; }
 .shelldocs-prose img:where(:not(.not-prose, .not-prose *)) { border-radius: var(--radius); border: 1px solid var(--border); max-width: 100%; height: auto; }
 
+/* Page header from frontmatter (ShellDocsOptions.RenderPageTitle). */
+.docs-page-header { margin-bottom: 2rem; }
+.docs-page-header h1 { margin-bottom: 0.5rem; }
+.docs-page-header .docs-page-description { margin: 0; color: var(--muted-foreground); font-size: 1.0625rem; line-height: 1.6; }
+
 /* Code blocks — wrapped by CodeBlockEnhancer */
 .shelldocs-codeblock {
     position: relative;

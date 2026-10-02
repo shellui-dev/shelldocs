@@ -25,6 +25,9 @@ public class ShellDocsOptions
     // Rendered as MarkupString — must be trusted content the consumer authored, not user input.
     public string? LogoSvg { get; set; }
     public ShellDocsTheme Theme { get; set; } = ShellDocsTheme.Shadcn;
+    // Renders frontmatter `title` (and `description` as a lead) as the page header
+    // when the markdown body doesn't start with its own `# Heading`.
+    public bool RenderPageTitle { get; set; }
     public DocsLayoutVariant LayoutVariant { get; set; } = DocsLayoutVariant.TopNav;
 
     public List<NavLink> PrimaryNav { get; } = new();
