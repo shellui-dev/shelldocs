@@ -76,7 +76,8 @@ public class ShellDocsOptions
         return this;
     }
 
-    // Registers every public, concrete, non-generic component in the assembly, skipping [ShellDocsIgnore].
+    // Registers every public, concrete component in the assembly, skipping [ShellDocsIgnore].
+    // Generic components register under their bare name and are closed per use (TItem="…").
     public ShellDocsOptions RegisterComponentsFromAssembly<TMarker>(Func<Type, bool>? filter = null)
         => RegisterComponentsFromAssembly(typeof(TMarker).Assembly, filter);
 
@@ -123,7 +124,6 @@ public class ShellDocsOptions
             if (t is null) continue;
             if (!t.IsClass || t.IsAbstract) continue;
             if (!t.IsPublic && !t.IsNestedPublic) continue;
-            if (t.IsGenericTypeDefinition) continue;
             if (!typeof(ComponentBase).IsAssignableFrom(t)) continue;
             if (t.IsDefined(typeof(ShellDocsIgnoreAttribute), inherit: false)) continue;
             yield return t;
@@ -196,8 +196,16 @@ public class ShellDocsOptions
             registry.Register(type);
             registry.Register(BuiltInAliasPrefix + type.Name, type);
         }
+        // A library shipping both Select and Select<T> keeps <Select> for the non-generic one.
+        var nonGenericTags = RegisteredComponents
+            .Where(t => !t.IsGenericTypeDefinition && !ComponentAliases.ContainsKey(t))
+            .Select(TypeRegistry.TagNameOf)
+            .ToHashSet(StringComparer.Ordinal);
         foreach (var type in RegisteredComponents)
         {
+            if (type.IsGenericTypeDefinition && !ComponentAliases.ContainsKey(type)
+                && nonGenericTags.Contains(TypeRegistry.TagNameOf(type)))
+                continue;
             if (ComponentAliases.TryGetValue(type, out var alias))
                 registry.Register(alias, type);
             else

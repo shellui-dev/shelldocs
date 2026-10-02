@@ -7,7 +7,15 @@ public class TypeRegistry
 
     public TypeRegistry Register<T>() where T : class => Register(typeof(T));
 
-    public TypeRegistry Register(Type type) => Register(type.Name, type);
+    public TypeRegistry Register(Type type) => Register(TagNameOf(type), type);
+
+    // A generic component's tag is its bare name: BarChart<TItem> is <BarChart>.
+    public static string TagNameOf(Type type)
+    {
+        var name = type.Name;
+        var tick = name.IndexOf('`');
+        return tick < 0 ? name : name[..tick];
+    }
 
     // Last registration wins; a tag re-pointed at a different type is recorded in Collisions.
     public TypeRegistry Register(string tagName, Type type)

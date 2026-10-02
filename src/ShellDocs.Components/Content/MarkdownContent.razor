@@ -23,7 +23,7 @@
             {
                 @if (slot.Slot is ComponentSlot comp)
                 {
-                    <DynamicComponent Type="comp.ComponentType" Parameters="BuildParameters(comp)" />
+                    @SlotRenderer.Component(Renderer, comp.ComponentType, comp.Parameters, comp.ChildContentRaw, Logger)
                 }
                 else if (slot.Slot is PreviewSlot preview)
                 {
@@ -52,7 +52,4 @@
         if (_parts is null) return;
         try { await JS.InvokeVoidAsync("shelldocsHighlight"); } catch { }
     }
-
-    private IDictionary<string, object> BuildParameters(ComponentSlot slot) =>
-        SlotRenderer.BuildParameters(Renderer, slot.ComponentType, slot.Parameters, slot.ChildContentRaw, Logger);
 }

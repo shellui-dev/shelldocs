@@ -28,12 +28,13 @@ public class AssemblyScanTests
     }
 
     [Fact]
-    public void RegisterComponentsFromAssembly_SkipsGenericDefinitions()
+    public void RegisterComponentsFromAssembly_IncludesGenericDefinitions_UnderTheirBareName()
     {
         var options = new ShellDocsOptions();
         options.RegisterComponentsFromAssembly<TestMarker>();
 
-        Assert.DoesNotContain(options.RegisteredComponents, t => t.Name.StartsWith("GenericShouldSkip"));
+        Assert.Contains(typeof(ScannableGeneric<>), options.RegisteredComponents);
+        Assert.Equal(typeof(ScannableGeneric<>), options.BuildTypeRegistry().Resolve("ScannableGeneric"));
     }
 
     [Fact]
@@ -87,7 +88,7 @@ public class AssemblyScanTests
     public class ScannableAlpha : ComponentBase { }
     public class ScannableBeta : ComponentBase { }
     public abstract class AbstractShouldSkip : ComponentBase { }
-    public class GenericShouldSkip<T> : ComponentBase { }
+    public class ScannableGeneric<T> : ComponentBase { }
     public class NotAComponent { }
     [ShellDocsIgnore] public class IgnoredExplicitly : ComponentBase { }
 }

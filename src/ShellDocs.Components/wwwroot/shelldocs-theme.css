@@ -162,6 +162,18 @@ body { margin: 0; min-height: 100vh; }
     font-feature-settings: 'ss01', 'cv02';
 }
 
+/* A component in markdown that can't render (e.g. a generic one whose type
+   argument doesn't resolve) shows this instead of breaking the page. */
+.shelldocs-render-error {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid color-mix(in oklch, var(--error, oklch(0.637 0.237 25.331)) 40%, var(--border));
+    border-radius: calc(var(--radius) - 2px);
+    background: color-mix(in oklch, var(--error, oklch(0.637 0.237 25.331)) 10%, transparent);
+    color: var(--foreground);
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+}
+
 /* Lock page scroll while the mobile nav is open. On <html>, not the page shell:
    overflow on the shell would make it the sticky header's scroll container, and
    the header would scroll away from above the drawer. */
