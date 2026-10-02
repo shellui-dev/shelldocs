@@ -19,6 +19,15 @@ internal class SlotExtractor
         @"</(?<name>[A-Z][A-Za-z0-9]*)\s*>",
         RegexOptions.Compiled);
 
+    /* CommonMark code span: a backtick run, content, and a closing run of the same
+       length. May wrap lines but not cross a blank line. */
+    private static readonly Regex InlineCode = new(
+        @"(?<!`)(?<ticks>`+)(?!`)(?:[^`\r\n]|\r?\n(?![ \t]*\r?\n)|`+(?!`))*?(?<!`)\k<ticks>(?!`)",
+        RegexOptions.Compiled);
+
+    // Mask token → original text, restored at the end and inside component child markup.
+    private readonly Dictionary<string, string> _masks = new();
+
     public SlotExtractor(TypeRegistry registry)
     {
         _registry = registry;
@@ -29,9 +38,8 @@ internal class SlotExtractor
         var slots = new List<Slot>();
         var warnings = new List<string>();
 
-        // Mask fences so tag scanning skips them; razor:preview fences become
-        // slot placeholders, the rest are restored verbatim at the end.
-        var maskedFences = new Dictionary<string, string>();
+        // Mask fences and code spans so tag scanning skips them; razor:preview fences
+        // become slot placeholders, the rest are restored verbatim at the end.
         var processed = FenceBlock.Replace(markdown, m =>
         {
             var indent = m.Groups["indent"].Value;
@@ -48,17 +56,12 @@ internal class SlotExtractor
                 }
             }
 
-            var maskId = NewMaskId();
-            maskedFences[maskId] = m.Value;
-            return maskId;
+            return Mask(m.Value);
         });
+        processed = InlineCode.Replace(processed, m => Mask(m.Value));
 
         processed = ReplaceComponentTags(processed, slots, warnings);
-
-        foreach (var (id, original) in maskedFences)
-        {
-            processed = processed.Replace(id, original);
-        }
+        processed = Unmask(processed);
 
         // Return slots in document order.
         var ordered = slots.OrderBy(s => processed.IndexOf(s.Id, StringComparison.Ordinal)).ToList();
@@ -93,7 +96,7 @@ internal class SlotExtractor
 
             result.Append(text, cursor, open.Index - cursor);
 
-            var attrs = ParseAttributes(open.Groups["attrs"].Value);
+            var attrs = ParseAttributes(Unmask(open.Groups["attrs"].Value));
             string? childRaw = null;
             int endIndex;
 
@@ -113,7 +116,7 @@ internal class SlotExtractor
                 }
                 /* No Trim(): SlotRenderer.Dedent needs the first line's indent,
                    or Markdig reads the remaining lines as an indented code block. */
-                childRaw = text.Substring(open.Index + open.Length, closeStart - (open.Index + open.Length));
+                childRaw = Unmask(text.Substring(open.Index + open.Length, closeStart - (open.Index + open.Length)));
                 endIndex = closeEnd;
             }
 
@@ -193,5 +196,19 @@ internal class SlotExtractor
         $"<div data-shelldocs-slot=\"{kind}\" data-shelldocs-id=\"{id}\"></div>";
 
     private static string NewSlotId() => "s" + Guid.NewGuid().ToString("N")[..12];
+    private string Mask(string original)
+    {
+        var id = NewMaskId();
+        _masks[id] = original;
+        return id;
+    }
+
+    private string Unmask(string text)
+    {
+        if (_masks.Count == 0 || text.IndexOf("SHELLDOCS_MASK_", StringComparison.Ordinal) < 0) return text;
+        foreach (var (id, original) in _masks) text = text.Replace(id, original);
+        return text;
+    }
+
     private static string NewMaskId() => "SHELLDOCS_MASK_" + Guid.NewGuid().ToString("N")[..12];
 }
