@@ -299,15 +299,43 @@ public class SlotRendererSafetyTests
     public class NoChildren : ComponentBase { }
 }
 
-public class PreviewRenderingTests
+public class PreviewRenderingTests : IDisposable
 {
-    private static ComponentRenderHarness Harness() => new(o =>
+    private readonly string _demoRoot;
+
+    public PreviewRenderingTests()
     {
-        o.ContentRoot = Path.Combine(Path.GetTempPath(), "shelldocs-no-content-" + Guid.NewGuid().ToString("N"));
+        _demoRoot = Path.Combine(Path.GetTempPath(), "shelldocs-demos-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(_demoRoot, "Buttons"));
+        File.WriteAllText(Path.Combine(_demoRoot, "Buttons", "ButtonClickDemo.razor"),
+            "<Button OnClick=\"Inc\">Clicked @count</Button>\n@code { int count; void Inc() => count++; }");
+    }
+
+    public void Dispose()
+    {
+        try { Directory.Delete(_demoRoot, recursive: true); } catch { }
+    }
+
+    private ComponentRenderHarness Harness() => new(o =>
+    {
+        o.ContentRoot = Path.Combine(_demoRoot, "no-content");
+        o.DemoSourceRoot = _demoRoot;
         o.RegisterComponent<Button>();
+        o.RegisterComponent<ButtonClickDemo>();
     });
 
     private static Dictionary<string, object?> Md(string markdown) => new() { ["Markdown"] = markdown };
+
+    public class ButtonClickDemo : ComponentBase
+    {
+        protected override void BuildRenderTree(RenderTreeBuilder b)
+        {
+            b.OpenElement(0, "span");
+            b.AddAttribute(1, "class", "demo-output");
+            b.AddContent(2, "Clicked 0");
+            b.CloseElement();
+        }
+    }
 
     [Fact]
     public async Task MultiSiblingPreview_RendersEveryComponent_InsideWrapper_InOrder()
@@ -348,5 +376,58 @@ public class PreviewRenderingTests
         var html = await Harness().RenderAsync<MarkdownContent>(Md("```razor:preview\n<Missing />\n```"));
         Assert.Contains("preview-error", html);
         Assert.Contains("Unknown component &lt;Missing&gt;", html);
+    }
+
+    [Fact]
+    public async Task DemoPreview_RendersComponent_AndRazorSourceFromDisk()
+    {
+        var html = await Harness().RenderAsync<DemoPreview>(new() { ["Component"] = "ButtonClickDemo", ["Title"] = "Click demo" });
+
+        Assert.Contains("class=\"demo-output\"", html);
+        Assert.Contains("preview-title", html);
+        Assert.Contains("Click demo", html);
+        Assert.Contains("language-razor", html);
+        Assert.Contains("@code { int count; void Inc() =&gt; count&#x2B;&#x2B;; }", html);
+        Assert.DoesNotContain("preview-error", html);
+    }
+
+    [Fact]
+    public async Task DemoPreview_IsUsableInlineInMarkdown()
+    {
+        var html = await Harness().RenderAsync<MarkdownContent>(Md("Intro.\n\n<DemoPreview Component=\"ButtonClickDemo\" />\n\nOutro."));
+        Assert.Contains("class=\"demo-output\"", html);
+        Assert.Contains("Clicked @count", html);
+    }
+
+    [Fact]
+    public async Task DemoPreview_MissingComponent_RendersErrorPanel()
+    {
+        var html = await Harness().RenderAsync<DemoPreview>(new() { ["Component"] = "NopeDemo" });
+        Assert.Contains("preview-error", html);
+        Assert.Contains("DemoPreview error", html);
+        Assert.Contains("Unknown demo component", html);
+    }
+
+    [Fact]
+    public async Task DemoPreview_MissingFile_RendersErrorPanel_WithoutLeakingPath()
+    {
+        File.Delete(Path.Combine(_demoRoot, "Buttons", "ButtonClickDemo.razor"));
+        var html = await Harness().RenderAsync<DemoPreview>(new() { ["Component"] = "ButtonClickDemo" });
+        Assert.Contains("preview-error", html);
+        Assert.Contains("Demo source not found", html);
+        Assert.DoesNotContain(_demoRoot, html);
+    }
+
+    [Fact]
+    public void DemoSourceCache_PrefersShallowestMatch_AndPicksUpEdits()
+    {
+        File.WriteAllText(Path.Combine(_demoRoot, "ButtonClickDemo.razor"), "top-level");
+        Assert.Equal("top-level", DemoSourceCache.Get(_demoRoot, "ButtonClickDemo"));
+
+        var path = Path.Combine(_demoRoot, "ButtonClickDemo.razor");
+        File.WriteAllText(path, "edited");
+        File.SetLastWriteTimeUtc(path, DateTime.UtcNow.AddMinutes(1));
+        Assert.Equal("edited", DemoSourceCache.Get(_demoRoot, "ButtonClickDemo"));
+        Assert.Null(DemoSourceCache.Get(_demoRoot, "Nothing"));
     }
 }

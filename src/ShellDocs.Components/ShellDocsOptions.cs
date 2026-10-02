@@ -29,6 +29,8 @@ public class ShellDocsOptions
     // Fewer than 2 hides the version selector; any entry scopes sidebar, prev/next,
     // search and breadcrumb to the current version.
     public List<DocsVersion> Versions { get; } = new();
+    // Searched recursively for X.razor to show as <DemoPreview Component="X" />'s source.
+    public string? DemoSourceRoot { get; set; }
     public List<Type> RegisteredComponents { get; } = new();
     // Markdown tag name per type, from RegisterComponent<T>(tagName). Last registration wins.
     public Dictionary<Type, string> ComponentAliases { get; } = new();

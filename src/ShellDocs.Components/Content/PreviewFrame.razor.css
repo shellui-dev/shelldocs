@@ -6,6 +6,15 @@
     margin: 1.5rem 0;
 }
 
+.preview-title {
+    padding: 0.55rem 1rem;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    color: var(--foreground);
+}
+
 .preview-render {
     display: flex;
     align-items: center;
