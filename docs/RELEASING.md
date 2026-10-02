@@ -66,10 +66,7 @@ Once the one-time setup is done, cutting a release is three commands.
 
 ### 1. Bump the version
 
-Bump **two** places to the same value:
-
-- `Directory.Build.props` → `<Version>0.X.Y[-suffix]</Version>` — propagates to every packable project via the shared props file
-- `src/ShellDocs.CLI/Commands/InitCommand.cs` → `private const string ShellDocsVersion = "0.X.Y[-suffix]";` — determines which `ShellDocs.*` package versions the CLI's `shelldocs init` scaffold references. If left stale, consumers scaffolding via the new CLI get old packages that lack the fresh CLI's fixes.
+Bump `Directory.Build.props` → `<Version>0.X.Y[-suffix]</Version>`. It propagates to every packable project via the shared props file, and `shelldocs init` reads the CLI's own version to pin the `ShellDocs.*` packages it scaffolds, so there's nothing else to keep in sync.
 
 For a prerelease bump: `0.1.0-alpha` → `0.1.1-alpha` (patch) or `0.2.0-alpha` (minor).
 For the first stable: strip the `-alpha` suffix → `1.0.0`.

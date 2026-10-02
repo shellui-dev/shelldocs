@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Reflection;
 using System.Text.RegularExpressions;
 using ShellDocs.Templates;
 using Spectre.Console;
@@ -12,9 +13,20 @@ namespace ShellDocs.CLI.Commands;
    Both modes are idempotent. */
 internal static class InitCommand
 {
-    // Keep in sync with <Version> in Directory.Build.props — it pins the
-    // ShellDocs.* package versions the scaffold references.
-    private const string ShellDocsVersion = "0.1.2-alpha";
+    // The ShellDocs.* version the scaffold references: the CLI's own version (all
+    // packages ship together from Directory.Build.props), so it can't go stale.
+    internal static string ShellDocsVersion { get; } = ResolveShellDocsVersion();
+
+    internal static string ResolveShellDocsVersion()
+    {
+        var info = typeof(InitCommand).Assembly
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+        if (string.IsNullOrWhiteSpace(info))
+            return typeof(InitCommand).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
+        // SourceLink appends "+<commit sha>".
+        var plus = info.IndexOf('+');
+        return plus >= 0 ? info[..plus] : info;
+    }
 
     public static int Run(string? path, string dir, bool attach, bool yes, string theme)
     {
