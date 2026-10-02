@@ -4,6 +4,12 @@ All notable changes to ShellDocs land here. Format follows [Keep a Changelog](ht
 
 ## [Unreleased]
 
+### Fixed
+
+- **Sidebar listed a folder's `index.md` twice**: once as the section label and again as a page with the same title. The label now links to the index page (highlighted when it's the current page) and the page isn't repeated; in collapsible sections the chevron is its own toggle button.
+- **Collapsed sidebar sections had no `aria-expanded`**: Blazor drops a `false` boolean attribute, so the toggle now writes `"true"` / `"false"`.
+- **Wide markdown tables widened the page on phones.** Tables render inside a `.shelldocs-table` box that scrolls horizontally.
+
 ## [0.1.10-alpha] — 2026-10-02
 
 Previews that look like the real thing (no page typography leaking in, Razor child content, stretch layout, generic components), redirects for folders, version roots and moved URLs, an optional frontmatter page header, and a theme that stays in sync with whatever flips it.
