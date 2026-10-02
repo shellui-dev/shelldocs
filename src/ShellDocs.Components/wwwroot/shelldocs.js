@@ -44,7 +44,12 @@ window.shelldocsSearch = (function () {
     window.shelldocsApplyTheme = applyTheme;
 })();
 
-// Swap <pre><code class="language-X"> for Shiki's output; data-shiki makes it idempotent.
+/* Shiki highlighting. The source <pre> belongs to Blazor (or to a markup block
+   Blazor tracks), so it is never replaced or edited: it gets [data-shiki="source"]
+   (hidden by CSS) and Shiki's output goes into a JS-owned sibling
+   [data-shiki-output]. Replacing the source used to leave Blazor updating a
+   detached node — stale code after navigation — and could throw on replaceChild.
+   Each pass re-renders an output whose source text changed and drops orphans. */
 
 function langOf(codeEl) {
     var cls = (codeEl.className || '').split(/\s+/);
@@ -54,9 +59,13 @@ function langOf(codeEl) {
     return null;
 }
 
+function shikiOutputOf(preEl) {
+    var next = preEl.nextElementSibling;
+    return next && next.hasAttribute('data-shiki-output') ? next : null;
+}
+
 function highlightOne(preEl) {
-    if (!preEl || !window.__shiki) return;
-    if (preEl.dataset.shiki === 'done') return;
+    if (!preEl || !window.__shiki || !preEl.parentNode || preEl.hasAttribute('data-shiki-output')) return;
     var code = preEl.querySelector('code');
     if (!code) return;
     var lang = langOf(code);
@@ -65,6 +74,9 @@ function highlightOne(preEl) {
     if (!window.__shiki.getLoadedLanguages().includes(lang)) return;
 
     var source = code.textContent;
+    var existing = shikiOutputOf(preEl);
+    if (existing && existing.__shikiSource === source) return;
+
     try {
         var html = window.__shiki.codeToHtml(source, {
             lang: lang,
@@ -73,20 +85,69 @@ function highlightOne(preEl) {
         });
         var tpl = document.createElement('template');
         tpl.innerHTML = html.trim();
-        var newPre = tpl.content.firstElementChild;
-        if (!newPre) return;
-        newPre.dataset.shiki = 'done';
-        preEl.parentNode.replaceChild(newPre, preEl);
+        var output = tpl.content.firstElementChild;
+        if (!output) return;
+        output.setAttribute('data-shiki-output', '');
+        output.__shikiSource = source;
+        if (existing) existing.parentNode.insertBefore(output, existing.nextSibling);
+        else preEl.parentNode.insertBefore(output, preEl.nextSibling);
+        if (existing) existing.remove();
+        preEl.setAttribute('data-shiki', 'source');
     } catch (e) { /* skip on grammar error */ }
+}
+
+function removeOrphanedShikiOutputs() {
+    document.querySelectorAll('[data-shiki-output]').forEach(function (output) {
+        var prev = output.previousElementSibling;
+        if (!prev || prev.getAttribute('data-shiki') !== 'source') output.remove();
+    });
 }
 
 window.shelldocsHighlight = function () {
     if (!window.__shiki) return;
-    document.querySelectorAll('pre:not([data-shiki]) > code[class*="language-"]')
+    removeOrphanedShikiOutputs();
+    document.querySelectorAll('pre:not([data-shiki-output]) > code[class*="language-"]')
         .forEach(function (code) { highlightOne(code.parentElement); });
 };
 
 window.shelldocsHighlightElement = function (preEl) { highlightOne(preEl); };
+
+/* Blazor updates the source text in place (e.g. navigating between pages that
+   reuse the same component) and adds new code on circuit swaps — re-run the
+   pass, batched per frame. Our own output insertions don't match the trigger. */
+(function () {
+    if (!window.MutationObserver) return;
+    var scheduled = false;
+    function schedule() {
+        if (scheduled) return;
+        scheduled = true;
+        requestAnimationFrame(function () { scheduled = false; window.shelldocsHighlight(); });
+    }
+    function touchesSource(node) {
+        var el = node.nodeType === 1 ? node : node.parentElement;
+        if (!el) return false;
+        if (el.closest && el.closest('pre[data-shiki="source"]')) return true;
+        return !!(el.matches && (el.matches('code[class*="language-"]') || el.querySelector('code[class*="language-"]')));
+    }
+    new MutationObserver(function (records) {
+        for (var r = 0; r < records.length; r++) {
+            var rec = records[r];
+            if (rec.type === 'characterData') {
+                if (touchesSource(rec.target)) return schedule();
+                continue;
+            }
+            for (var n = 0; n < rec.addedNodes.length; n++) {
+                if (touchesSource(rec.addedNodes[n])) return schedule();
+            }
+            if (rec.removedNodes.length) {
+                for (var m = 0; m < rec.removedNodes.length; m++) {
+                    var removed = rec.removedNodes[m];
+                    if (removed.nodeType === 1 && removed.getAttribute && removed.getAttribute('data-shiki') === 'source') return schedule();
+                }
+            }
+        }
+    }).observe(document.documentElement, { childList: true, characterData: true, subtree: true });
+})();
 
 window.shelldocsCopyCode = function (button) {
     var block = button.closest('.shelldocs-codeblock');
