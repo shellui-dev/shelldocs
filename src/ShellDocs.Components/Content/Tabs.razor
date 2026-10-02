@@ -1,0 +1,55 @@
+@namespace ShellDocs.Components.Content
+
+@* The strip and every panel are server-rendered; shelldocs.js switches them via
+   [data-tabs] / [data-tab-target] / [data-tab-panel], so tabs work without a
+   Blazor runtime. Groups sharing a SyncKey switch together and remember the
+   choice in localStorage. *@
+<div class="sd-tabs @Class" id="@_id" data-tabs data-tabs-value="@_active" data-tabs-sync="@SyncKey">
+    <div class="sd-tabs-list" role="tablist">
+        @for (var i = 0; i < _tabs.Count; i++)
+        {
+            var tab = _tabs[i];
+            var selected = tab.Value == _active;
+            <button type="button" role="tab" class="sd-tabs-trigger"
+                    id="@($"{_id}-tab-{i}")" aria-controls="@($"{_id}-panel-{i}")"
+                    aria-selected="@(selected ? "true" : "false")" tabindex="@(selected ? "0" : "-1")"
+                    data-tab-target="@tab.Value">@tab.Label</button>
+        }
+    </div>
+    @for (var i = 0; i < _tabs.Count; i++)
+    {
+        var tab = _tabs[i];
+        <div class="sd-tabs-panel" role="tabpanel" id="@($"{_id}-panel-{i}")" aria-labelledby="@($"{_id}-tab-{i}")"
+             data-tab-panel="@tab.Value" hidden="@(tab.Value != _active)">
+            @tab.Content
+        </div>
+    }
+</div>
+
+<CascadingValue Value="this" IsFixed="true">
+    @* <Tab> children register through the cascading value; their content is rendered in the panels above. *@
+    <div style="display:none">@ChildContent</div>
+</CascadingValue>
+
+@code {
+    // Label or Value of the tab selected on first render; defaults to the first tab.
+    [Parameter] public string? DefaultValue { get; set; }
+    // Groups with the same key switch together, across pages, remembered in localStorage.
+    [Parameter] public string? SyncKey { get; set; }
+    [Parameter] public string? Class { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private readonly List<(string Value, string Label, RenderFragment? Content)> _tabs = new();
+    private string? _active;
+
+    // Deterministic, so the prerendered id matches the interactive re-render.
+    private string _id => "tabs-" + PreviewLinks.ShortHash(SyncKey + "|" + string.Join("|", _tabs.Select(t => t.Value)));
+
+    internal void Register(string value, string label, RenderFragment? content)
+    {
+        if (_tabs.Any(t => t.Value == value)) return;
+        _tabs.Add((value, label, content));
+        _active = _tabs.FirstOrDefault(t => t.Value == DefaultValue || t.Label == DefaultValue).Value ?? _tabs[0].Value;
+        StateHasChanged();
+    }
+}
