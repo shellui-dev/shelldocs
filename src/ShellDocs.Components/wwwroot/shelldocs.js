@@ -410,6 +410,84 @@ window.shelldocsChrome = (function () {
         selectPreviewTab(tab.closest('.preview-frame'), next.getAttribute('data-preview-tab-target'), true);
     }
 
+    /* <Tabs> and <CodeGroup>: [data-tabs] roots, [data-tab-target] buttons,
+       [data-tab-panel] panels. Groups sharing [data-tabs-sync] switch together and
+       remember the choice in localStorage; others remember it per page + id so it
+       survives the circuit's DOM swap. Nested groups are kept apart via closest(). */
+    var TAB_STORE = 'shelldocs-tabs:';
+    var tabMemory = {};
+
+    function ownTabParts(root, selector) {
+        return Array.prototype.filter.call(root.querySelectorAll(selector), function (el) {
+            return el.closest('[data-tabs]') === root;
+        });
+    }
+
+    function selectTabsValue(root, value, focus) {
+        var buttons = ownTabParts(root, '[data-tab-target]');
+        if (!buttons.some(function (b) { return b.getAttribute('data-tab-target') === value; })) return false;
+        root.setAttribute('data-tabs-value', value);
+        buttons.forEach(function (b) {
+            var selected = b.getAttribute('data-tab-target') === value;
+            b.setAttribute('aria-selected', selected ? 'true' : 'false');
+            b.setAttribute('tabindex', selected ? '0' : '-1');
+            if (selected && focus) b.focus();
+        });
+        ownTabParts(root, '[data-tab-panel]').forEach(function (panel) {
+            panel.hidden = panel.getAttribute('data-tab-panel') !== value;
+        });
+        return true;
+    }
+
+    function chooseTab(root, value, focus) {
+        if (!selectTabsValue(root, value, focus)) return;
+        var sync = root.getAttribute('data-tabs-sync');
+        if (sync) {
+            try { localStorage.setItem(TAB_STORE + sync, value); } catch (e) {}
+            document.querySelectorAll('[data-tabs]').forEach(function (other) {
+                if (other !== root && other.getAttribute('data-tabs-sync') === sync) selectTabsValue(other, value, false);
+            });
+        } else if (root.id) {
+            tabMemory[location.pathname + '#' + root.id] = value;
+        }
+    }
+
+    function restoreTabs(scope) {
+        if (!scope.querySelectorAll) return;
+        var roots = Array.prototype.slice.call(scope.querySelectorAll('[data-tabs]'));
+        if (scope.matches && scope.matches('[data-tabs]')) roots.unshift(scope);
+        roots.forEach(function (root) {
+            var sync = root.getAttribute('data-tabs-sync');
+            var saved = null;
+            if (sync) { try { saved = localStorage.getItem(TAB_STORE + sync); } catch (e) {} }
+            else if (root.id) saved = tabMemory[location.pathname + '#' + root.id];
+            if (saved && root.getAttribute('data-tabs-value') !== saved) selectTabsValue(root, saved, false);
+        });
+    }
+
+    function onTabsClick(e) {
+        var btn = e.target.closest('[data-tab-target]');
+        if (!btn) return;
+        var root = btn.closest('[data-tabs]');
+        if (root) chooseTab(root, btn.getAttribute('data-tab-target'), false);
+    }
+
+    function onTabsKeydown(e) {
+        var btn = e.target.closest && e.target.closest('[data-tab-target]');
+        if (!btn) return;
+        var root = btn.closest('[data-tabs]');
+        var buttons = ownTabParts(root, '[data-tab-target]');
+        var i = buttons.indexOf(btn);
+        var next = e.key === 'ArrowRight' ? buttons[(i + 1) % buttons.length]
+            : e.key === 'ArrowLeft' ? buttons[(i - 1 + buttons.length) % buttons.length]
+            : e.key === 'Home' ? buttons[0]
+            : e.key === 'End' ? buttons[buttons.length - 1]
+            : null;
+        if (!next) return;
+        e.preventDefault();
+        chooseTab(root, next.getAttribute('data-tab-target'), true);
+    }
+
     function restorePreviewTabs(root) {
         var frames = root.matches && root.matches('.preview-frame[id]')
             ? [root]
@@ -428,6 +506,7 @@ window.shelldocsChrome = (function () {
                 for (var n = 0; n < added.length; n++) {
                     if (added[n].nodeType !== 1) continue;
                     restorePreviewTabs(added[n]);
+                    restoreTabs(added[n]);
                     restoreMobileNav(added[n]);
                 }
             }
@@ -502,17 +581,24 @@ window.shelldocsChrome = (function () {
     document.addEventListener('keydown', onDropdownKeydown);
     document.addEventListener('click', onPreviewClick);
     document.addEventListener('keydown', onPreviewKeydown);
+    document.addEventListener('click', onTabsClick);
+    document.addEventListener('keydown', onTabsKeydown);
     document.addEventListener('click', onMobileNavClick);
     document.addEventListener('keydown', onMobileNavKeydown);
     document.addEventListener('enhancedload', closeMobileNav);
     watchForReplacedFrames();
 
-    if (document.readyState !== 'loading') {
+    function initPage() {
         initToc();
-    } else {
-        document.addEventListener('DOMContentLoaded', initToc);
+        restoreTabs(document);
     }
-    document.addEventListener('enhancedload', initToc);
+
+    if (document.readyState !== 'loading') {
+        initPage();
+    } else {
+        document.addEventListener('DOMContentLoaded', initPage);
+    }
+    document.addEventListener('enhancedload', initPage);
 
     return { initToc: initToc };
 })();
