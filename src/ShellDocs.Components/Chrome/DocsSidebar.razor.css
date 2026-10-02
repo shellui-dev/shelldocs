@@ -117,9 +117,41 @@
     margin-left: 0.25rem;
     transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
 }
-::deep .sidebar-section[data-open="true"] > .sidebar-section-toggle .sidebar-section-chevron {
+::deep .sidebar-section[data-open="true"] > .sidebar-section-toggle .sidebar-section-chevron,
+::deep .sidebar-section[data-open="true"] > .sidebar-section-row .sidebar-section-chevron {
     transform: rotate(90deg);
 }
+
+/* A section whose folder has an index.md: the label links to that page; in a
+   collapsible section the chevron is its own toggle button. */
+::deep .sidebar-section-link {
+    text-decoration: none;
+    border-radius: calc(var(--radius) - 3px);
+    transition: background 150ms, color 150ms;
+}
+::deep .sidebar-section-link:hover { background: var(--muted); }
+::deep .sidebar-section-link.active { background: var(--accent); }
+::deep .sidebar-section[data-depth="0"] > .sidebar-section-link { padding: 0.3rem 0.5rem; margin: 0.15rem 0 0.35rem 0; }
+::deep .sidebar-section > .sidebar-section-label.sidebar-section-row {
+    padding: 0;
+    gap: 0;
+}
+::deep .sidebar-section-row > .sidebar-section-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    flex: 1;
+    min-width: 0;
+    color: inherit;
+    padding: 0.45rem 0.25rem 0.45rem 0.55rem;
+}
+::deep .sidebar-section-row > .sidebar-section-toggle {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.45rem 0.5rem;
+    color: inherit;
+}
+::deep .sidebar-section-row > .sidebar-section-toggle .sidebar-section-chevron { margin-left: 0; }
 
 /* grid-rows 0fr→1fr animates to natural height without a fixed max-height;
    the inner wrapper needs min-height: 0 to collapse fully. */
