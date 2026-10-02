@@ -4,6 +4,14 @@ All notable changes to ShellDocs land here. Format follows [Keep a Changelog](ht
 
 ## [Unreleased]
 
+### Added
+
+- **`scroll` preview layout.** `razor:preview scroll`, or `Layout="scroll"` on `<DemoPreview>` / `<ComponentPreview>`, lets an example wider than the frame (pagination, toolbars, OTP inputs) scroll inside it on small screens instead of spilling past the frame. Opt-in, since a scroll box clips popovers.
+
+### Changed
+
+- On phones the preview frame's side padding drops from 1.5rem to 0.75rem, and centring uses `safe center`, so an example that's still too wide starts at the left edge instead of losing both sides.
+
 ### Fixed
 
 - **Sidebar listed a folder's `index.md` twice**: once as the section label and again as a page with the same title. The label now links to the index page (highlighted when it's the current page) and the page isn't repeated; in collapsible sections the chevron is its own toggle button.

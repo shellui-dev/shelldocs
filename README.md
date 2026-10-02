@@ -80,7 +80,7 @@ o.AddRedirect("/docs/v0.3.0", "/docs/v0.3");   // also /docs/v0.3.0/x → /docs/
 - **Child content is Razor.** Component bodies inside a fence are parsed like the fence itself, so `<Navbar><div>…<ThemeToggle /></div></Navbar>` keeps its structure and nothing is wrapped in `<p>`.
 - **Page typography stays out.** Preview frames are `not-prose`, so prose margins, list padding and link underlines don't reach your components.
 - **Generic components work.** Set the type argument as Razor does: `<BarChart TItem="SalesRow" />`, `<DataTable TItem="int" />`. Libraries' generic components are registered under their bare name.
-- **Centred or stretched.** Examples are centred; `razor:preview stretch` (or `Layout="stretch"` on `<DemoPreview>` / `<ComponentPreview>`) lets charts, inputs and tables fill the frame.
+- **Centred, stretched or scrolling.** Examples are centred; `razor:preview stretch` (or `Layout="stretch"` on `<DemoPreview>` / `<ComponentPreview>`) lets charts, inputs and tables fill the frame, and `scroll` lets an example wider than a phone screen (pagination, toolbars, OTP inputs) scroll inside the frame. A scrolling frame clips popovers, so leave it off examples with dropdowns.
 - **Razor-shaped attribute values work:** `Variant="ButtonVariant.Destructive"`, `@ButtonVariant.Destructive`, `@true`, `@42`, `[Flags]` values as `Bold | Italic`.
 - **Attributes a static preview can't evaluate are skipped, not fatal:** `OnClick="HandleClick"`, `@onclick`, `@bind-*`, `@ref`, non-primitive parameter types, unparseable values. Each logs a warning and the component still renders.
 - **Inline code stays code.** `` `<Button>` `` in prose renders as literal code, not a component.

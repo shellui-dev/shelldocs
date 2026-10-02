@@ -67,7 +67,7 @@ Inline component tags in prose (outside a fence) still take markdown bodies.
 
 ### Layout
 
-Examples are centred. Add `stretch` to the info string (`razor:preview stretch`) so block-level components such as charts, inputs and tables fill the frame's width. `<DemoPreview>` and `<ComponentPreview>` take `Layout="stretch"`.
+Examples are centred. Add `stretch` to the info string (`razor:preview stretch`) so block-level components such as charts, inputs and tables fill the frame's width, or `scroll` so an example wider than a phone screen scrolls inside the frame instead of spilling past it. A scrolling frame clips popovers, so leave `scroll` off examples that open dropdowns. `<DemoPreview>` and `<ComponentPreview>` take `Layout="stretch"`.
 
 ```razor:preview stretch
 <Callout Variant="info" Text="This callout fills the frame instead of shrinking to its text." />
