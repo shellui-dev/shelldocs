@@ -1,5 +1,27 @@
 window.ShellDocs = window.ShellDocs || {};
 
+/* Blazor raises enhancedload through Blazor.addEventListener, not as a DOM event.
+   blazor.web.js loads after this file, so attach once it has run. */
+window.shelldocsOnEnhancedLoad = (function () {
+    var pending = [];
+    var attached = false;
+    function attach() {
+        if (attached || !window.Blazor || typeof window.Blazor.addEventListener !== 'function') return;
+        attached = true;
+        window.Blazor.addEventListener('enhancedload', function () {
+            pending.forEach(function (fn) { fn(); });
+        });
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', attach);
+    }
+    window.addEventListener('load', attach);
+    return function (fn) {
+        pending.push(fn);
+        attach();
+    };
+})();
+
 // Cmd/Ctrl+K opens <SearchDialog> via the DotNetObjectReference it registers on first render.
 window.shelldocsSearch = (function () {
     var dotnet = null;
@@ -40,7 +62,7 @@ window.shelldocsSearch = (function () {
         document.documentElement.classList.toggle('dark', isDark);
     }
     applyTheme();
-    document.addEventListener('enhancedload', applyTheme);
+    window.shelldocsOnEnhancedLoad(applyTheme);
     window.shelldocsApplyTheme = applyTheme;
 })();
 
@@ -585,7 +607,7 @@ window.shelldocsChrome = (function () {
     document.addEventListener('keydown', onTabsKeydown);
     document.addEventListener('click', onMobileNavClick);
     document.addEventListener('keydown', onMobileNavKeydown);
-    document.addEventListener('enhancedload', closeMobileNav);
+    window.shelldocsOnEnhancedLoad(closeMobileNav);
     watchForReplacedFrames();
 
     function initPage() {
@@ -598,7 +620,7 @@ window.shelldocsChrome = (function () {
     } else {
         document.addEventListener('DOMContentLoaded', initPage);
     }
-    document.addEventListener('enhancedload', initPage);
+    window.shelldocsOnEnhancedLoad(initPage);
 
     return { initToc: initToc };
 })();
