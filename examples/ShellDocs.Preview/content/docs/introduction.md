@@ -16,12 +16,12 @@ ShellDocs is the "just use this" answer.
 
 - Markdown authoring with YAML frontmatter and inline Razor tags
 - File-based routing over a `content/` folder
-- Cmd+K search with a build-time client-side index
+- Cmd+K search over titles, headings and page text
 - Real Blazor components rendered inline, not iframes
 - Composable with any Blazor component library
 - Tailwind + shadcn aesthetic, matching ShellUI
 - Animated with `prefers-reduced-motion` awareness
-- Static site output — deploy anywhere
+- Static site output via `shelldocs build`: deploy anywhere
 
 ## Next
 

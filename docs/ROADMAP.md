@@ -2,6 +2,8 @@
 
 Branch-by-branch implementation plan. Living doc — updated as branches ship.
 
+> **Status:** `0.1.x-alpha` releases are on NuGet; see [CHANGELOG.md](../CHANGELOG.md) for what each one shipped and [ARCHITECTURE.md](ARCHITECTURE.md) for how it works today. Branches marked ✅ shipped; the rest of this file is still the plan, and some shipped branches differ from their original description (noted inline).
+
 See [DESIGN.md](DESIGN.md) for the high-level design and [ARCHITECTURE.md](ARCHITECTURE.md) for technical details.
 
 ---
@@ -27,7 +29,7 @@ See [DESIGN.md](DESIGN.md) for the high-level design and [ARCHITECTURE.md](ARCHI
 | `ShellDocs.Markdown` | Markdig pipeline + frontmatter + Razor component embedding |
 | `ShellDocs.Components` | RCL — UI primitives (DocsLayout, CodeBlock, SearchDialog, etc.) |
 | `ShellDocs.Tokens` | Shared CSS variable definitions — the palette + spacing scale that both ShellDocs and ShellUI-in-docs consume. Single source of truth for `--background`, `--foreground`, `--primary`, `--radius`, etc. |
-| `ShellDocs.CLI` | `shelldocs init`, `shelldocs new`, `shelldocs dev`, `shelldocs build` |
+| `ShellDocs.CLI` | `shelldocs init`, `shelldocs add`, `shelldocs dev`, `shelldocs build` |
 | `ShellDocs.Templates` | Content for CLI scaffolding — starter markdown, meta.json, .csproj patches |
 | `ShellDocs.Xml` | v2 — extract `<TypeTable>` from XML doc comments |
 
@@ -141,8 +143,10 @@ Ships to `ShellDocs.CLI`.
 
 Goal: everything from DESIGN.md's primitives table shipped. Real docs sites become viable.
 
-### `feat/search-primitives`
+### ✅ `feat/search-primitives` — shipped (differently)
 Ships to `ShellDocs.Core` + `ShellDocs.Components`.
+
+*As built:* `SearchIndex.FromGraph` builds the index in memory at startup (no `search-index.json`), and `SearchDialog` is its own Blazor modal with token scoring and body snippets, not ShellUI's `<CommandPalette>`. It needs a running Blazor app. The original plan:
 
 - `SearchIndexBuilder` in `ShellDocs.Core` — walks nav graph, emits `search-index.json`
 - Wired into `shelldocs build` — index emitted alongside published site
@@ -150,7 +154,7 @@ Ships to `ShellDocs.Core` + `ShellDocs.Components`.
 - Header search button opens the dialog
 - Keyboard nav in dialog (up/down/enter/esc)
 
-### `feat/toc-primitive`
+### ✅ `feat/toc-primitive` — shipped
 Ships to `ShellDocs.Components`.
 
 - `TableOfContents` — right-rail nav, generated from `<h2>` and `<h3>` in current page
@@ -158,11 +162,11 @@ Ships to `ShellDocs.Components`.
 - Smooth-scroll on click
 - Auto-hides on mobile / narrow screens
 
-### `feat/nav-primitives`
+### ✅ `feat/nav-primitives` — shipped
 Ships to `ShellDocs.Components`.
 
 - `PrevNextNav` — auto-derived from nav graph adjacency, rendered at page bottom
-- `DocsBreadcrumb` — composes ShellUI's `<Breadcrumb>` with docs presets
+- `DocsBreadcrumb` — breadcrumb from the graph's parent chain (its own markup; no ShellUI dependency)
 
 ### ✅ `feat/content-primitives` — shipped
 Ships to `ShellDocs.Components`.
@@ -204,6 +208,15 @@ Ships to `ShellDocs.Components` + `ShellDocs.Templates` + `ShellDocs.CLI` + `She
 
 **Authoring fix (`ShellDocs.Markdown`)**
 - `SlotExtractor.ReplaceComponentTags` no longer `.Trim()`s the raw child content of inline component tags. The Trim was stripping the first line's indent and defeating `SlotRenderer.Dedent` — Markdig then interpreted the remaining 4-space-indented lines as an indented code block. Symptom was the same "literal `<pre>` around placeholder divs" bug that had already been fixed for `razor:preview` fences; the inline-tag code path was still hitting it.
+
+### ✅ Hardening releases (`0.1.3`–`0.1.9-alpha`) — shipped
+Driven by building the ShellUI docs on ShellDocs. Highlights (details in the CHANGELOG):
+
+- `feat/build-static-prerender` (0.1.5) — `shelldocs build` prerenders every URL into a static site.
+- `feat/auto-typetable-named-slots-sitemap` (0.1.6) — `<AutoTypeTable>`, named `RenderFragment` slots, `--site-url` sitemap / robots / og meta.
+- `fix/static-chrome-interactivity` (0.1.7) — sidebar, package selector, TOC and preview frames work on static hosts via `shelldocs.js`.
+- `feat/versioned-docs` (0.1.8) — `AddVersion`, `<VersionSelector>`, version-scoped chrome, multi-sibling `razor:preview`, Razor-form attribute values, `<DemoPreview>`, ShellIcons.
+- `feat/preview-toolbar` (0.1.9) — Preview | Code toolbar with ⋯ menu, `<Tabs>`, static-host `<CodeGroup>` and mobile nav, consumer components winning name collisions, code-span masking, highlighting and hydration fixes.
 
 ### `feat/animation-polish`
 Ships to `ShellDocs.Components`.
@@ -320,19 +333,24 @@ Ships to new package `ShellDocs.OpenApi`.
 | `TableOfContents` | `feat/toc-primitive` (Phase 2) |
 | `PrevNextNav` | `feat/nav-primitives` (Phase 2) |
 | `DocsBreadcrumb` | `feat/nav-primitives` (Phase 2) |
-| `DocsTabs` | `feat/content-primitives` (Phase 2) |
+| `Tabs` / `Tab` | `feat/preview-toolbar` (0.1.9) |
+| `CodeGroup` / `CodeTab` | `feat/content-primitives` (Phase 2) |
 | `Callout` | `feat/content-primitives` (Phase 2) |
 | `LinkCard` | `feat/content-primitives` (Phase 2) |
 | `FileTree` | `feat/content-primitives` (Phase 2) |
 | `Steps` | `feat/content-primitives` (Phase 2) |
 | `TypeTable` | `feat/api-reference-primitives` (Phase 2) |
+| `AutoTypeTable` | `feat/auto-typetable-named-slots-sitemap` (0.1.6) |
 | `ComponentPreview` | `feat/api-reference-primitives` (Phase 2) |
+| `DemoPreview`, `VersionSelector` | `feat/versioned-docs` (0.1.8) |
 
 ---
 
 ## Dependencies on ShellUI
 
-ShellDocs depends on `ShellUI.Components` for base primitives:
+> **Not taken (yet).** ShellDocs currently ships its own markup for every primitive and depends only on `ShellIcons.Blazor` for icons; the `ShellUI.Components` reference is commented out until ShellUI is on NuGet. The table below is the original plan.
+
+The plan was for ShellDocs to depend on `ShellUI.Components` for base primitives:
 
 | ShellUI primitive | Used by |
 |---|---|

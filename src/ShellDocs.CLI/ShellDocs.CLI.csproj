@@ -6,7 +6,7 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>shelldocs</ToolCommandName>
     <PackageId>ShellDocs.CLI</PackageId>
-    <Description>Global tool for ShellDocs — the docs framework for .NET. Commands: init, new, dev, build, preview.</Description>
+    <Description>Global tool for ShellDocs — the docs framework for .NET. Commands: init, add, dev, build.</Description>
     <RootNamespace>ShellDocs.CLI</RootNamespace>
     <AssemblyName>shelldocs</AssemblyName>
   </PropertyGroup>

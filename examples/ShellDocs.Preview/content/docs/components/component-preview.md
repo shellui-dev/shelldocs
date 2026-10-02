@@ -1,13 +1,13 @@
 ---
 title: ComponentPreview
-description: Live-render a registered component by name with declarative props and a reveal-on-click source view.
+description: Live-render a registered component by name with declarative props, inside the standard preview frame.
 category: Components
 order: 65
 ---
 
 # ComponentPreview
 
-`<ComponentPreview>` is the declarative-prop cousin of the `razor:preview` fence. Instead of authoring a full razor snippet inside a fenced code block, you pass the target component's **name** as a string plus its props as attributes, and ShellDocs renders it live — the source view is reconstructed from those same props on demand.
+`<ComponentPreview>` is the declarative-prop cousin of the `razor:preview` fence. Instead of writing a razor snippet in a fenced block, you pass the target component's **name** plus its props as attributes. ShellDocs renders it live in the same frame as every other example, with **Preview | Code** tabs, a copy button and the ⋯ menu. The Code tab shows source rebuilt from those same props.
 
 ## Basic
 
@@ -17,16 +17,16 @@ Body content that becomes the Callout's ChildContent.
 
 ## Self-closing
 
-<ComponentPreview Component="LinkCard" Title="Getting started" Description="Install ShellDocs and scaffold your first docs site." Href="/docs/quick-start" />
+<ComponentPreview Component="LinkCard" Title="Getting started" Description="Install ShellDocs and scaffold your first docs site." Href="/docs/installation" />
 
 ## Props
 
-- `Component` — required. The registered tag name (e.g. `"Callout"`, `"Card"`, `"LinkCard"`) to render. Resolved through the same `TypeRegistry` that backs `razor:preview`, so any component `AddShellDocs` registers works here.
-- Any other attribute — forwarded to the target component. Attribute values are strings in the markdown; ShellDocs coerces them to each target property's declared type (`bool`, `int`, enums, etc.) at render time.
-- `ChildContent` — the tag body becomes the target's `ChildContent` render fragment.
+- `Component` — required. The registered tag name (`"Callout"`, `"Card"`, `"LinkCard"`, …). Resolved through the same registry as `razor:preview`, so anything `AddShellDocs` or your `RegisterComponent*` calls register works.
+- Any other attribute — forwarded to the target. Values are strings in markdown and are coerced to each parameter's type (`bool`, numbers, enums including `Type.Member` and `A | B` flags). Attributes that can't be set this way are skipped with a logged warning.
+- The tag body becomes the target's `ChildContent`.
 
 ## Notes
 
-- The reconstructed source string is sorted by attribute name for stability and shows the tag as self-closing when there's no body.
-- If `Component` doesn't resolve, the render slot shows an inline `Unknown component:` error instead of throwing.
-- Prefer `razor:preview` fences for multi-component demos; `<ComponentPreview>` is optimised for single-component prop-focused examples.
+- The rebuilt source sorts attributes by name and shows the tag self-closing when there's no body.
+- If `Component` doesn't resolve, the frame shows a "ComponentPreview error" panel instead of throwing.
+- Prefer `razor:preview` fences for multi-component examples; `<ComponentPreview>` is aimed at single-component, prop-focused ones.

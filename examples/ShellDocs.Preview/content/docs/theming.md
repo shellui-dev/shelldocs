@@ -6,7 +6,7 @@ order: 1
 
 # Theming
 
-ShellDocs ships with three theme presets — **Shadcn** (default), **Fuma**, and **Nextra**. Under the hood, each preset is a set of CSS custom properties that everything else reads from.
+ShellDocs ships one neutral, shadcn-shaped palette, defined as CSS custom properties in `ShellDocs.Tokens` (`tokens.css`) that every component reads from. `ShellDocsOptions.Theme` (and `shelldocs init --theme`) is reserved for future presets and doesn't change the palette yet; restyle by overriding tokens.
 
 ## The token layer
 
@@ -22,8 +22,8 @@ Every component reads from a small set of tokens:
 | `--primary` / `--primary-foreground` | Emphasis surfaces (CTAs) |
 | `--radius` | Corner radius scale |
 
-Override any of these in your app's CSS and every component follows.
+Override any of these in a stylesheet loaded after `tokens.css` and every component follows. The full list is in `docs/TOKENS.md`.
 
 ## Dark mode
 
-Toggle by adding a `dark` class to `<html>`. ShellDocs' header comes with a `ThemeToggle` that persists via `localStorage` and reads `prefers-color-scheme` on first visit.
+Dark mode is the `dark` class on `<html>`. The `ThemeToggle` in the header / sidebar footer saves the choice in `localStorage` and falls back to `prefers-color-scheme` on the first visit; an inline script in `App.razor` applies it before first paint. The toggle button itself needs a running Blazor app; on a static build the saved or system preference still applies.

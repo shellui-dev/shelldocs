@@ -1,24 +1,40 @@
 ---
 title: CodeBlock
-description: Syntax-highlighted code with copy button, filename tab, and line highlighting.
+description: Fenced code blocks with Shiki highlighting, a language badge and a copy button.
 ---
 
 # CodeBlock
 
-Syntax-highlighted code fences with a copy button, a filename tab, and configurable line highlighting.
+There's no component to call: every fenced code block in your markdown becomes a code block with a language badge, a copy button, and syntax highlighting.
+
+```csharp
+builder.Services.AddShellDocs(o =>
+{
+    o.SiteName = "My Docs";
+    o.GitHubRepo = "acme/my-docs";
+});
+```
 
 ## Highlighting
 
-Shiki via WASM gives VSCode-parity syntax coloring across Razor, C#, JavaScript, TypeScript, JSON, YAML, Markdown, and shell.
+Highlighting is done in the browser by [Shiki](https://shiki.style) with the `github-light` / `github-dark` themes, following the site's light/dark mode. Load Shiki in your `App.razor` (`shelldocs init` adds this) and list the languages you need:
+
+```js
+import { createHighlighter } from 'https://esm.sh/shiki@1.24.0';
+window.__shiki = await createHighlighter({
+    themes: ['github-light', 'github-dark'],
+    langs: ['razor', 'csharp', 'html', 'json', 'yaml', 'bash', 'typescript', 'javascript', 'markdown']
+});
+if (window.shelldocsHighlight) window.shelldocsHighlight();
+```
+
+A fence whose language isn't loaded still renders, as plain monospaced text. Highlighting is applied beside the original code rather than replacing it, so it stays correct when Blazor re-renders a page.
 
 ## Copy button
 
-Every code block ships with a copy button in the top-right corner. Click to copy the code text (not the highlighted markup) to the clipboard.
+The copy button copies the original source text, not the highlighted markup, and shows a check mark once it succeeds.
 
-## Filename tab
+## Related
 
-Pass a `Filename` attribute to render a pill above the block with the filename. Great for `Program.cs`, `App.razor`, `wwwroot/index.html` context markers.
-
-## Status
-
-Shipping in `feat/codeblock-shiki` — the final Phase 1 branch before `0.1.0-alpha`.
+- [`<CodeGroup>`](/docs/components/code-group) — several code samples behind tabs.
+- `razor:preview` fences — a live component render with its source; see [Markdown syntax](/docs/markdown-syntax).

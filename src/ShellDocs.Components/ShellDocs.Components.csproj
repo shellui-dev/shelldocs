@@ -3,7 +3,7 @@
   <PropertyGroup>
     <IsPackable>true</IsPackable>
     <PackageId>ShellDocs.Components</PackageId>
-    <Description>Blazor RCL — DocsLayout, DocsSidebar, DocsHeader, CodeBlock, SearchDialog, TableOfContents, and every other primitive that makes a ShellDocs site look sleek.</Description>
+    <Description>Blazor RCL for ShellDocs: DocsLayout, sidebar, header, search, TOC, version and package selectors, plus content primitives (Callout, Card, Steps, Tabs, CodeGroup, FileTree, TypeTable, live component previews).</Description>
   </PropertyGroup>
 
   <ItemGroup>
