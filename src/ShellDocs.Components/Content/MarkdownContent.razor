@@ -11,6 +11,8 @@
     }
     else
     {
+        @* Ordinal ids keep anchors and saved tab state stable across renders. *@
+        var previewIndex = 0;
         @foreach (var part in _parts)
         {
             @if (part is HtmlPart html)
@@ -25,7 +27,7 @@
                 }
                 else if (slot.Slot is PreviewSlot preview)
                 {
-                    <PreviewFrame Preview="preview" />
+                    <PreviewFrame Preview="preview" Id="@($"preview-{++previewIndex}")" />
                 }
             }
         }

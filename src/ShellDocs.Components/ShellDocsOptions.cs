@@ -13,6 +13,10 @@ public class ShellDocsOptions
     // Absolute base URL ("https://shelldocs.dev") for sitemap.xml, robots.txt and
     // og:url in `shelldocs build`; those are skipped when unset.
     public string? SiteUrl { get; set; }
+    // Where the preview ⋯ menu's "Report a bug" / "Suggest something" open a new issue
+    // (title and body appended as query params). Defaults to GitHubRepo's issues/new;
+    // with neither set, those items are hidden.
+    public string? IssueTrackerUrl { get; set; }
 
     public string? LogoLight { get; set; }
     public string? LogoDark { get; set; }

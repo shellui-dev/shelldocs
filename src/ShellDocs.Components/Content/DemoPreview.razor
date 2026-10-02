@@ -8,11 +8,15 @@
               Code="@(_source ?? $"<DemoPreview Component=\"{Component}\" />")"
               Title="@Title"
               Error="@_error"
-              ErrorTitle="DemoPreview error" />
+              ErrorTitle="DemoPreview error"
+              Id="@(Id ?? $"demo-{PreviewLinks.Slug(Component)}")"
+              Name="@Component" />
 
 @code {
     [Parameter, EditorRequired] public string? Component { get; set; }
     [Parameter] public string? Title { get; set; }
+    // Anchor id; defaults to demo-{component-slug}. Set it when a page shows the same demo twice.
+    [Parameter] public string? Id { get; set; }
 
     private RenderFragment? _content;
     private string? _source;

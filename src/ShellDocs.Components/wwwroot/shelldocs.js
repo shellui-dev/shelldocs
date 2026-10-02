@@ -233,12 +233,14 @@ window.shelldocsChrome = (function () {
         if (shell) shell.setAttribute('data-open', next);
     }
 
-    // .pkg (PackageSelector) and .ver (VersionSelector): the trigger toggles
-    // [data-open]; outside click, Escape, or picking an option closes it.
-    var DROPDOWN = '.pkg, .ver';
-    var TRIGGER = '.pkg-trigger, .ver-trigger';
-    var MENU = '.pkg-menu, .ver-menu';
-    var OPTION = '.pkg-option, .ver-option';
+    // Dropdowns — .pkg (PackageSelector), .ver (VersionSelector), .preview-menu
+    // (preview ⋯ menu): the trigger toggles [data-open]; outside click, Escape,
+    // or picking an option closes it.
+    var DROPDOWN = '.pkg, .ver, .preview-menu';
+    var OPEN_DROPDOWN = '.pkg[data-open="true"], .ver[data-open="true"], .preview-menu[data-open="true"]';
+    var TRIGGER = '.pkg-trigger, .ver-trigger, .preview-menu-trigger';
+    var MENU = '.pkg-menu, .ver-menu, .preview-menu-list';
+    var OPTION = '.pkg-option, .ver-option, .preview-menu-item';
     var CHEVRON = '.pkg-chevron, .ver-chevron';
 
     function onDropdownClick(e) {
@@ -264,7 +266,7 @@ window.shelldocsChrome = (function () {
 
     function onDropdownKeydown(e) {
         if (e.key !== 'Escape') return;
-        var open = document.querySelector('.pkg[data-open="true"], .ver[data-open="true"]');
+        var open = document.querySelector(OPEN_DROPDOWN);
         if (!open) return;
         closeAllDropdowns(null);
         var trigger = open.querySelector(TRIGGER);
@@ -280,30 +282,37 @@ window.shelldocsChrome = (function () {
     }
 
     function closeAllDropdowns(except) {
-        document.querySelectorAll('.pkg[data-open="true"], .ver[data-open="true"]').forEach(function (d) {
+        document.querySelectorAll(OPEN_DROPDOWN).forEach(function (d) {
             if (d !== except) setDropdown(d, false);
         });
     }
 
+    // Preview frames: Preview | Code tabs + copy.
+    function selectPreviewTab(frame, value, focus) {
+        frame.setAttribute('data-preview-tab', value);
+        frame.querySelectorAll('[data-preview-tab-target]').forEach(function (tab) {
+            var selected = tab.getAttribute('data-preview-tab-target') === value;
+            tab.setAttribute('aria-selected', selected ? 'true' : 'false');
+            tab.setAttribute('tabindex', selected ? '0' : '-1');
+            if (selected && focus) tab.focus();
+        });
+    }
+
     function onPreviewClick(e) {
-        var toggle = e.target.closest('[data-preview-toggle]');
-        if (toggle) {
-            var mode = toggle.getAttribute('data-preview-toggle');
-            var frame = toggle.closest('.preview-frame, .component-preview');
-            if (!frame) return;
-            var expand = mode === 'expand';
-            frame.classList.toggle('expanded', expand);
-            frame.classList.toggle('collapsed', !expand);
+        var tab = e.target.closest('[data-preview-tab-target]');
+        if (tab) {
+            var tabFrame = tab.closest('.preview-frame');
+            if (tabFrame) selectPreviewTab(tabFrame, tab.getAttribute('data-preview-tab-target'), false);
             return;
         }
 
         var copy = e.target.closest('[data-preview-copy]');
         if (copy) {
-            var frame = copy.closest('.preview-frame, .component-preview');
-            if (!frame) return;
-            var code = frame.querySelector('pre code');
+            var frame = copy.closest('.preview-frame');
+            var code = frame && frame.querySelector('[data-preview-panel="code"] code');
             if (!code) return;
-            var text = code.innerText;
+            // textContent: the code panel may be display:none, where innerText loses layout.
+            var text = code.textContent;
             var writeText = navigator.clipboard && navigator.clipboard.writeText
                 ? navigator.clipboard.writeText(text)
                 : Promise.reject(new Error('clipboard unavailable'));
@@ -312,6 +321,22 @@ window.shelldocsChrome = (function () {
                 setTimeout(function () { copy.classList.remove('copied'); }, 1400);
             }).catch(function () { /* silent */ });
         }
+    }
+
+    // WAI-ARIA tabs: arrows / Home / End move between Preview and Code.
+    function onPreviewKeydown(e) {
+        var tab = e.target.closest && e.target.closest('.preview-tabs [role="tab"]');
+        if (!tab) return;
+        var tabs = Array.prototype.slice.call(tab.parentElement.querySelectorAll('[role="tab"]'));
+        var i = tabs.indexOf(tab);
+        var next = e.key === 'ArrowRight' ? tabs[(i + 1) % tabs.length]
+            : e.key === 'ArrowLeft' ? tabs[(i - 1 + tabs.length) % tabs.length]
+            : e.key === 'Home' ? tabs[0]
+            : e.key === 'End' ? tabs[tabs.length - 1]
+            : null;
+        if (!next) return;
+        e.preventDefault();
+        selectPreviewTab(tab.closest('.preview-frame'), next.getAttribute('data-preview-tab-target'), true);
     }
 
     // Re-run on enhancedload: heading IDs change per page, so the old observer is stale.
@@ -336,6 +361,7 @@ window.shelldocsChrome = (function () {
         document.addEventListener('click', onDropdownClick);
         document.addEventListener('keydown', onDropdownKeydown);
         document.addEventListener('click', onPreviewClick);
+        document.addEventListener('keydown', onPreviewKeydown);
     }
 
     function boot() {
