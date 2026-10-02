@@ -4,6 +4,37 @@ All notable changes to ShellDocs land here. Format follows [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [0.1.9-alpha] — 2026-10-02
+
+A Preview | Code toolbar for every example, fixes for chrome that reset or ignored early clicks, consumer components no longer losing to built-ins with the same name, and code spans that stay code.
+
+### Added
+
+- **Preview toolbar.** `PreviewFrame` (razor:preview fences, `<DemoPreview>`, `<ComponentPreview>`) has a header with **Preview | Code** tabs, a copy button, and a **⋯ menu**: *Open in new tab* (links to the example's anchor), *Report a bug* and *Suggest something* (new-issue links pre-filled with the example name and page URL). Tabs follow the WAI-ARIA pattern, including arrow keys, Home and End. It replaces the "View Code" fade overlay.
+- `ShellDocsOptions.IssueTrackerUrl`: where the issue links point. Defaults to `https://github.com/{GitHubRepo}/issues/new`; the items are hidden when neither is set.
+- Stable example anchors: `preview-1`, `preview-2`, … in page order, `demo-{component}`, and `example-{component}-{hash}`. `DemoPreview` takes an optional `Id`.
+- `Docs{Name}` aliases for every built-in primitive (`<DocsCard>`, `<DocsCallout>`, …), always resolving to ShellDocs' own component.
+- `TypeRegistry.Collisions` (`TypeCollision(TagName, Replaced, Winner)`); collisions are logged at startup.
+- `DocsHeader.MobileMenu`: the primary nav as a mobile menu. `HomeLayout` turns it on.
+
+### Changed
+
+- **Your components win name collisions with built-ins.** Built-ins are now registered before consumer components. Previously ShellDocs' `Card`, `Callout`, `Steps`, … silently replaced a consumer library's component of the same name (e.g. ShellUI's `Card`). The built-in stays reachable as `<DocsCard>`, and an informational log says so. Two consumer components claiming the same tag log a warning.
+- **Version folders stay out of the sidebar outside a version.** On unversioned pages the sidebar used to list every version folder (`V0.3`, `V0.2.1`, …) as collapsible sections. The version selector already covers that navigation, so they are hidden there, along with sections that hold nothing but version folders. `DocsVersionResolver.IsHiddenInSidebar(node)`.
+- `ComponentPreview` renders through `PreviewFrame`, so it gets the same toolbar. Its own `.component-preview-*` markup and CSS are gone.
+- The hamburger is driven by `shelldocs.js` (`[data-mobile-open]` on the page shell) instead of `MobileNavState` + `@onclick`, so the mobile drawer also works on static hosts. The backdrop, Escape, or picking a link closes it. `MobileNavState` is still registered but no longer used by the built-in chrome.
+- `shelldocs init` scaffolds packages at the CLI's own version (read from its assembly), instead of a hard-coded constant that had been stuck at `0.1.2-alpha`.
+
+### Fixed
+
+- **"View Code" sometimes didn't respond.** `shelldocs.js` attached its click handlers on `DOMContentLoaded`, which waits for module scripts such as the Shiki import, so early clicks on prerendered chrome were dropped. Handlers now attach as soon as the script runs.
+- **Chrome state reset when the Blazor circuit started.** Interactive render replaces the prerendered DOM, so a tab picked (or a mobile menu opened) before then snapped back. The selected tab and the mobile-nav state are restored on the replacement nodes.
+- **Highlighted code went stale or threw `replaceChild` errors.** Shiki highlighting replaced Blazor-owned `<pre>` elements, so Blazor kept updating the detached originals. After client-side navigation the Code tab showed the previous page's source, and a `<pre>` already gone made the swap throw. The source `<pre>` now stays in place (hidden once highlighted) and Shiki renders into a JS-owned sibling. That output is re-rendered when the source text changes and dropped when its source goes away.
+- **Inline code spans are no longer treated as components.** `` `<Button>` `` in prose stays literal code. Fences and code spans inside a component's child content are restored before that content renders, instead of leaking `SHELLDOCS_MASK_…` tokens.
+- **Page content showed above the open mobile drawer.** The scroll lock set `overflow: hidden` on the page shell, which made the shell the sticky mobile bar's scroll container, so after scrolling the bar slid away from above the drawer. The lock now sits on `<html>`, and the mobile bar is exactly `--header-height` tall so the drawer and backdrop meet it with no gap.
+- **Hamburger did nothing on pages without a sidebar** (e.g. the home page). It now opens the primary-nav menu.
+- Example home: feature icons used the `--accent` surface token as their colour and were nearly invisible.
+
 ## [0.1.8-alpha] — 2026-10-02
 
 Versioned docs, plus `razor:preview` fixes that let real component-library docs (ShellUI) preview what they actually write. Every new chrome interaction follows the 0.1.7 static-host pattern: server-rendered initial state, data attributes, and delegated handlers in `shelldocs.js`, with no `@onclick` state.
