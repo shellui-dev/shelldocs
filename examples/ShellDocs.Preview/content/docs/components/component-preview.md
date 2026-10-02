@@ -23,7 +23,8 @@ Body content that becomes the Callout's ChildContent.
 
 - `Component` — required. The registered tag name (`"Callout"`, `"Card"`, `"LinkCard"`, …). Resolved through the same registry as `razor:preview`, so anything `AddShellDocs` or your `RegisterComponent*` calls register works.
 - Any other attribute — forwarded to the target. Values are strings in markdown and are coerced to each parameter's type (`bool`, numbers, enums including `Type.Member` and `A | B` flags). Attributes that can't be set this way are skipped with a logged warning.
-- The tag body becomes the target's `ChildContent`.
+- `Layout` — `"center"` (default) or `"stretch"`, which lets block-level components fill the frame's width.
+- The tag body is parsed as Razor (HTML and registered components, no markdown) and becomes the target's `ChildContent`. Child tags named after one of the target's `RenderFragment` parameters fill that slot.
 
 ## Notes
 

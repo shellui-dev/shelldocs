@@ -112,7 +112,7 @@ Placeholders plus a slot list keep everything at render time: no generated Razor
 
 ### `razor:preview` fences
 
-`PreviewParser` turns the fence into ordered nodes: component nodes (registered capitalised tags; their children kept raw), element nodes (HTML, including unregistered capitalised tags) and text. `@code { }` / `@functions { }` blocks, `@* *@` comments and directive lines (`@using`, `@inject`, …) are skipped for rendering but stay in the Code tab. If no registered component is found the slot carries an `Error`, rendered as a red panel instead of a silent code block.
+`PreviewParser` turns the fence into ordered nodes: component nodes (registered capitalised tags; their children kept raw and parsed the same way, as Razor, when the component renders), element nodes (HTML, including unregistered capitalised tags) and text. `@code { }` / `@functions { }` blocks, `@* *@` comments and directive lines (`@using`, `@inject`, …) are skipped for rendering but stay in the Code tab. If no registered component is found the slot carries an `Error`, rendered as a red panel instead of a silent code block. `razor:preview stretch` in the info string sets `PreviewSlot.Layout`.
 
 ---
 
@@ -124,11 +124,11 @@ Placeholders plus a slot list keep everything at render time: no generated Razor
 - `ComponentSlot` → `<DynamicComponent>` with parameters from `SlotRenderer.BuildParameters`.
 - `PreviewSlot` → `<PreviewFrame Id="preview-N">`, where `SlotRenderer.RenderNodes` emits elements and components as real render-tree nodes, so wrappers keep their children under interactive re-renders.
 
-Component child markup is rendered recursively by `SlotRenderer.FromMarkup` (dedented first, since Markdig treats 4-space indentation as a code block). Child tags named after a `RenderFragment` parameter (`<Icon>` → `Alert.Icon`) are routed into that slot.
+Component child markup is rendered recursively. Inline tags in prose take markdown bodies (`SlotRenderer.FromMarkup`, dedented first, since Markdig treats 4-space indentation as a code block). Inside a `razor:preview` and in `<ComponentPreview>` the body is Razor: `SlotRenderer.FromRazor` parses it with `PreviewParser` and emits real elements, so wrappers around nested components stay intact. Child tags named after a `RenderFragment` parameter (`<Icon>` → `Alert.Icon`) are routed into that slot.
 
 **Parameter coercion.** Attribute values are strings. `BuildParameters` matches them to `[Parameter]` properties case-insensitively and coerces string, bool, char, numeric primitives and enums, accepting Razor forms: a leading `@`, `@( … )`, `Type.Member` enum values, `A | B` flags, numeric suffixes, `@null`. It never throws. Anything static markup can't set is skipped with a logged warning: directive attributes, delegate/`EventCallback` parameters, unsupported types, unparseable values, unknown attributes on components without a `CaptureUnmatchedValues` catch-all, and child content on components without a plain `RenderFragment ChildContent`.
 
-**`PreviewFrame`** is the frame for every example: a toolbar with Preview | Code tabs, copy and a ⋯ menu (*Open in new tab* → the example's anchor; *Report a bug* / *Suggest something* → new-issue links built by `PreviewLinks` from `IssueTrackerUrl` or `GitHubRepo`). `ComponentPreview` and `DemoPreview` feed it a ready-made `Content` fragment and `Code` string instead of a `PreviewSlot`. `DemoPreview` reads its source from the first `{DemoSourceRoot}/**/X.razor` (shallowest path wins, cached, re-read when the file changes).
+**`PreviewFrame`** is the frame for every example. It carries `not-prose` (every `.shelldocs-prose` rule skips `.not-prose` subtrees) and a `Layout` of `center` or `stretch`. It has a toolbar with Preview | Code tabs, copy and a ⋯ menu (*Open in new tab* → the example's anchor; *Report a bug* / *Suggest something* → new-issue links built by `PreviewLinks` from `IssueTrackerUrl` or `GitHubRepo`). `ComponentPreview` and `DemoPreview` feed it a ready-made `Content` fragment and `Code` string instead of a `PreviewSlot`. `DemoPreview` reads its source from the first `{DemoSourceRoot}/**/X.razor` (shallowest path wins, cached, re-read when the file changes).
 
 **`DocsPageState`** (scoped) is fed by `MarkdownContent` and recomputes current node, prev/next and breadcrumbs on navigation, so the layout chrome needs no per-page wiring.
 
@@ -195,9 +195,11 @@ Chrome that must work without a Blazor runtime follows one contract:
 | Tabs, CodeGroup | `[data-tabs]`, `[data-tab-target]`, `[data-tab-panel]` | switch on click / arrows; `[data-tabs-sync]` groups switch together and persist in `localStorage` |
 | Mobile nav | page shell `[data-mobile-open]` | hamburger toggles; backdrop, Escape, link or navigation closes; page scroll locked on `<html>` |
 | TOC | `[data-toc-list][data-toc-ids]` | IntersectionObserver scroll-spy, re-attached on `enhancedload` |
-| Theme | `<html class="dark">` | inline head script applies the saved / system theme; re-applied after enhanced navigation |
+| Theme | `<html class="dark">`, `[data-theme-toggle]` | inline head script applies the saved / system theme; the toggle flips the class and CSS picks its icon; a `MutationObserver` saves any change (including another library's toggle) and pushes it to `ThemeState`; re-applied after enhanced navigation |
 
-Still Blazor-only: search, the `ThemeToggle` button, the desktop sidebar-collapse button.
+Still Blazor-only: search, the desktop sidebar-collapse button.
+
+`enhancedload` is a Blazor event (`Blazor.addEventListener`), not a DOM event; `shelldocsOnEnhancedLoad(fn)` attaches once `blazor.web.js` has run.
 
 **Syntax highlighting.** Shiki (loaded by the app as `window.__shiki`) never replaces Blazor-owned nodes: the source `<pre>` gets `data-shiki="source"` (hidden by CSS) and the highlighted output goes into a JS-owned `[data-shiki-output]` sibling, re-rendered when the source text changes and removed when its source is gone.
 
