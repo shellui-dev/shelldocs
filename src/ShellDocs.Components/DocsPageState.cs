@@ -10,11 +10,17 @@ public sealed class DocsPageState : IDisposable
 {
     private readonly NavigationGraph _graph;
     private readonly NavigationManager _nav;
+    private readonly DocsVersionResolver? _versions;
 
     public DocsPageState(NavigationGraph graph, NavigationManager nav)
+        : this(graph, nav, null) { }
+
+    // With a resolver, prev/next stay in the page's version and the version folder leaves the breadcrumb.
+    public DocsPageState(NavigationGraph graph, NavigationManager nav, DocsVersionResolver? versions)
     {
         _graph = graph;
         _nav = nav;
+        _versions = versions;
         _nav.LocationChanged += OnLocationChanged;
     }
 
@@ -43,6 +49,12 @@ public sealed class DocsPageState : IDisposable
         {
             Prev = Next = null;
             Breadcrumbs = Array.Empty<NavigationNode>();
+        }
+        else if (_versions is { HasVersions: true } versions)
+        {
+            var current = CurrentNode;
+            (Prev, Next) = _graph.GetPrevNext(current, n => versions.InSameScope(n.Url, current.Url));
+            Breadcrumbs = _graph.GetBreadcrumb(current).Where(n => !versions.IsVersionNode(n)).ToList();
         }
         else
         {

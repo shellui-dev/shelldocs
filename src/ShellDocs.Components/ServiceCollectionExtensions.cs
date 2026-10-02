@@ -37,6 +37,7 @@ public static class ServiceCollectionExtensions
             return NavigationGraphBuilder.Build(options.ContentRoot);
         });
         services.AddSingleton<SearchIndex>(sp => SearchIndex.FromGraph(sp.GetRequiredService<NavigationGraph>()));
+        services.AddSingleton<DocsVersionResolver>();
 
         return services;
     }

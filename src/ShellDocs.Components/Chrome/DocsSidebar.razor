@@ -1,12 +1,16 @@
 @inject NavigationGraph Graph
 @inject NavigationManager Nav
 @inject ShellDocsOptions Options
+@inject DocsVersionResolver Versions
+@implements IDisposable
 
 <nav class="docs-sidebar" aria-label="Docs">
     <PackageSelector />
+    @* In TopNav the header has the desktop selector; this copy is drawer-only. *@
+    <VersionSelector Placement="@(Options.LayoutVariant == DocsLayoutVariant.TopNav ? "drawer" : "sidebar")" />
 
     <div class="sidebar-tree">
-        @foreach (var child in Graph.Root.Children)
+        @foreach (var child in Versions.GetSidebarNodes(_currentPath))
         {
             <DocsSidebarNode Node="child" Depth="0" CurrentPath="@_currentPath" />
         }
@@ -28,15 +32,13 @@
 
     protected override void OnInitialized()
     {
-        _currentPath = Nav.ToBaseRelativePath(Nav.Uri).TrimEnd('/');
-        if (!_currentPath.StartsWith('/')) _currentPath = "/" + _currentPath;
+        _currentPath = DocsVersionResolver.PathOf(Nav);
         Nav.LocationChanged += OnLocationChanged;
     }
 
     private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
     {
-        _currentPath = Nav.ToBaseRelativePath(e.Location).TrimEnd('/');
-        if (!_currentPath.StartsWith('/')) _currentPath = "/" + _currentPath;
+        _currentPath = UrlPath.Normalize(Nav.ToBaseRelativePath(e.Location));
         InvokeAsync(StateHasChanged);
     }
 

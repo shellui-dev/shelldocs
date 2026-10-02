@@ -233,31 +233,56 @@ window.shelldocsChrome = (function () {
         if (shell) shell.setAttribute('data-open', next);
     }
 
-    function onPackageClick(e) {
-        var trigger = e.target.closest('.pkg-trigger');
-        var openPkg = document.querySelector('.pkg[data-open="true"]');
+    // .pkg (PackageSelector) and .ver (VersionSelector): the trigger toggles
+    // [data-open]; outside click, Escape, or picking an option closes it.
+    var DROPDOWN = '.pkg, .ver';
+    var TRIGGER = '.pkg-trigger, .ver-trigger';
+    var MENU = '.pkg-menu, .ver-menu';
+    var OPTION = '.pkg-option, .ver-option';
+    var CHEVRON = '.pkg-chevron, .ver-chevron';
 
+    function onDropdownClick(e) {
+        var trigger = e.target.closest(TRIGGER);
         if (trigger) {
-            var pkg = trigger.closest('.pkg');
-            if (!pkg) return;
-            var isOpen = pkg.getAttribute('data-open') === 'true';
-            if (openPkg && openPkg !== pkg) closePkg(openPkg);
-            pkg.setAttribute('data-open', isOpen ? 'false' : 'true');
-            trigger.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
-            var chevron = pkg.querySelector('.pkg-chevron');
-            if (chevron) chevron.classList.toggle('open', !isOpen);
+            var root = trigger.closest(DROPDOWN);
+            if (!root) return;
+            var isOpen = root.getAttribute('data-open') === 'true';
+            closeAllDropdowns(root);
+            setDropdown(root, !isOpen);
             return;
         }
 
-        if (openPkg && !e.target.closest('.pkg-menu')) closePkg(openPkg);
+        var option = e.target.closest(OPTION);
+        if (option) {
+            var owner = option.closest(DROPDOWN);
+            if (owner) setDropdown(owner, false);
+            return;
+        }
+
+        if (!e.target.closest(MENU)) closeAllDropdowns(null);
     }
 
-    function closePkg(pkg) {
-        pkg.setAttribute('data-open', 'false');
-        var trigger = pkg.querySelector('.pkg-trigger');
-        if (trigger) trigger.setAttribute('aria-expanded', 'false');
-        var chevron = pkg.querySelector('.pkg-chevron');
-        if (chevron) chevron.classList.remove('open');
+    function onDropdownKeydown(e) {
+        if (e.key !== 'Escape') return;
+        var open = document.querySelector('.pkg[data-open="true"], .ver[data-open="true"]');
+        if (!open) return;
+        closeAllDropdowns(null);
+        var trigger = open.querySelector(TRIGGER);
+        if (trigger) trigger.focus();
+    }
+
+    function setDropdown(root, open) {
+        root.setAttribute('data-open', open ? 'true' : 'false');
+        var trigger = root.querySelector(TRIGGER);
+        if (trigger) trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+        var chevron = root.querySelector(CHEVRON);
+        if (chevron) chevron.classList.toggle('open', open);
+    }
+
+    function closeAllDropdowns(except) {
+        document.querySelectorAll('.pkg[data-open="true"], .ver[data-open="true"]').forEach(function (d) {
+            if (d !== except) setDropdown(d, false);
+        });
     }
 
     function onPreviewClick(e) {
@@ -308,7 +333,8 @@ window.shelldocsChrome = (function () {
         if (delegatesAttached) return;
         delegatesAttached = true;
         document.addEventListener('click', onSidebarClick);
-        document.addEventListener('click', onPackageClick);
+        document.addEventListener('click', onDropdownClick);
+        document.addEventListener('keydown', onDropdownKeydown);
         document.addEventListener('click', onPreviewClick);
     }
 

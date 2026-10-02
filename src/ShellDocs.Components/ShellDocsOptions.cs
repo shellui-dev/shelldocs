@@ -26,6 +26,9 @@ public class ShellDocsOptions
     public List<NavLink> PrimaryNav { get; } = new();
     // 0 or 1 entries hides the sidebar package selector entirely.
     public List<DocsPackage> Packages { get; } = new();
+    // Fewer than 2 hides the version selector; any entry scopes sidebar, prev/next,
+    // search and breadcrumb to the current version.
+    public List<DocsVersion> Versions { get; } = new();
     public List<Type> RegisteredComponents { get; } = new();
     // Markdown tag name per type, from RegisterComponent<T>(tagName). Last registration wins.
     public Dictionary<Type, string> ComponentAliases { get; } = new();
@@ -136,6 +139,17 @@ public class ShellDocsOptions
         return this;
     }
 
+    // `id` replaces the "{version}" token in package RootUrls.
+    public ShellDocsOptions AddVersion(string id, string label, string rootUrl, string? description = null, bool latest = false)
+    {
+        if (string.IsNullOrWhiteSpace(id))
+            throw new ArgumentException("id must be non-empty.", nameof(id));
+        if (string.IsNullOrWhiteSpace(rootUrl))
+            throw new ArgumentException("rootUrl must be non-empty.", nameof(rootUrl));
+        Versions.Add(new DocsVersion(id, label, rootUrl, description, latest));
+        return this;
+    }
+
     public ShellDocsOptions SetLogo(string url, string? alt = null)
     {
         LogoLight = url;
@@ -170,7 +184,14 @@ public record NavLink(string Label, string Href, List<NavMenuItem>? Children = n
 public record NavMenuItem(string Label, string Href, string? Description = null, string? IconSvg = null);
 
 // IconPath is a raw SVG `d` attribute value on a 24×24 viewBox — not a URL.
-public record DocsPackage(string Id, string Title, string Description, string RootUrl, string? IconPath = null);
+// RootUrl may contain the "{version}" token (see DocsPackage.VersionToken).
+public record DocsPackage(string Id, string Title, string Description, string RootUrl, string? IconPath = null)
+{
+    public const string VersionToken = "{version}";
+    public bool IsVersioned => RootUrl.Contains(VersionToken, StringComparison.Ordinal);
+}
+
+public record DocsVersion(string Id, string Label, string RootUrl, string? Description, bool IsLatest);
 
 public enum ShellDocsTheme
 {

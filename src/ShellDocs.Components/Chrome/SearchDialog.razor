@@ -1,5 +1,6 @@
 @inject SearchState State
 @inject SearchIndex Index
+@inject DocsVersionResolver Versions
 @inject NavigationManager Nav
 @inject IJSRuntime JS
 @implements IDisposable
@@ -16,6 +17,7 @@
                        placeholder="Search docs…"
                        @bind="_query"
                        @bind:event="oninput"
+                       @bind:after="Recalc"
                        @onkeydown="OnKey"
                        autocomplete="off"
                        spellcheck="false" />
@@ -143,9 +145,7 @@
                 if (_highlightedIndex >= 0 && _highlightedIndex < _results.Count)
                     Jump(_results[_highlightedIndex].Entry);
                 break;
-            default:
-                InvokeAsync(Recalc);
-                break;
+            // Typing recalculates via @bind:after; keydown fires before _query updates.
         }
     }
 
@@ -157,7 +157,9 @@
 
     private void Recalc()
     {
-        _results = Rank(_query, Index.Entries).Take(30).ToList();
+        // Current version + anything outside every version root.
+        var scoped = Versions.FilterSearch(Index.Entries, DocsVersionResolver.PathOf(Nav)).ToList();
+        _results = Rank(_query, scoped).Take(30).ToList();
         if (_highlightedIndex >= _results.Count) _highlightedIndex = 0;
     }
 

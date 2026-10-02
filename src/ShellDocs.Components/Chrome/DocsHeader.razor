@@ -63,6 +63,10 @@
         </nav>
 
         <div class="docs-header-actions">
+            @if (ShowVersionSelector)
+            {
+                <VersionSelector Placement="header" />
+            }
             @if (ShowSearch)
             {
                 <button type="button" class="docs-header-search" @onclick="OpenSearch" aria-label="Search">
@@ -90,8 +94,9 @@
 @implements IDisposable
 
 @code {
-    // HomeLayout hides search on marketing pages.
+    // HomeLayout hides search and the version selector on marketing pages.
     [Parameter] public bool ShowSearch { get; set; } = true;
+    [Parameter] public bool ShowVersionSelector { get; set; } = true;
 
     private const string DefaultIcon =
         "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"3\"/></svg>";
