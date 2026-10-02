@@ -84,6 +84,8 @@ body { margin: 0; min-height: 100vh; }
     border-radius: var(--radius);
     overflow: hidden;
 }
+.shelldocs-table { overflow-x: auto; max-width: 100%; }
+.shelldocs-table > table { min-width: 100%; }
 .shelldocs-prose th:where(:not(.not-prose, .not-prose *)), .shelldocs-prose td:where(:not(.not-prose, .not-prose *)) { padding: 0.625rem 0.875rem; text-align: left; border-bottom: 1px solid var(--border); }
 .shelldocs-prose th:where(:not(.not-prose, .not-prose *)) { font-weight: 600; color: var(--foreground); background: var(--muted); font-size: 0.8125rem; }
 .shelldocs-prose tr:last-child td:where(:not(.not-prose, .not-prose *)) { border-bottom: 0; }
