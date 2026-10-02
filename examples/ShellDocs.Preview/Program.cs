@@ -37,14 +37,21 @@ builder.Services.AddShellDocs(o =>
         "M12 2 4 6v6c0 5 3.5 9.5 8 10 4.5-.5 8-5 8-10V6z");
     o.AddPackage("shelldocs.markdown",  "ShellDocs.Markdown",  "Markdig extensions, slots, MDX.",   "/docs/markdown",
         "M4 4h16v16H4z M4 9h16 M9 4v16");
-    o.AddPackage("shelldocs.core",      "ShellDocs.Core",      "Navigation graph + content model.", "/docs/core",
+    // "{version}" resolves to the current version's Id, so switching packages keeps the version.
+    o.AddPackage("shelldocs.core",      "ShellDocs.Core",      "Navigation graph + content model.", "/docs/{version}/core",
         "M12 2 2 7l10 5 10-5-10-5z M2 17l10 5 10-5 M2 12l10 5 10-5");
-    o.AddPackage("shelldocs.cli",       "ShellDocs.CLI",       "Scaffold, build, publish.",         "/docs/cli",
+    o.AddPackage("shelldocs.cli",       "ShellDocs.CLI",       "Scaffold, build, publish.",         "/docs/{version}/cli",
         "m8 6-6 6 6 6 M16 6l6 6-6 6");
     o.AddPackage("shelldocs.components","ShellDocs.Components","Layouts, header, sidebar, TOC.",    "/docs/components",
         "M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z");
 
+    o.AddVersion("v2.0",   "v2.0.0", "/docs/v2.0",   "Current stable",   latest: true);
+    o.AddVersion("v1.9.1", "v1.9.1", "/docs/v1.9.1", "Previous release");
+
     // Built-in primitives (Callout, Card, Steps, …) are registered by AddShellDocs.
+    o.RegisterComponentsFromAssembly<App>("ShellDocs.Preview.Ui");
+    o.RegisterComponentsFromAssembly<App>("ShellDocs.Preview.Demos");
+    o.DemoSourceRoot = Path.Combine(builder.Environment.ContentRootPath, "Demos");
 });
 
 var app = builder.Build();
