@@ -5,7 +5,10 @@
     display: flex;
     align-items: center;
     gap: 0.25rem;
-    padding: 0.5rem 0.75rem;
+    /* Exactly --header-height: the mobile drawer and backdrop start right below it. */
+    box-sizing: border-box;
+    height: var(--header-height);
+    padding: 0 0.75rem;
     background: color-mix(in oklch, var(--background) 90%, transparent);
     backdrop-filter: saturate(180%) blur(12px);
     -webkit-backdrop-filter: saturate(180%) blur(12px);

@@ -6,8 +6,6 @@
     color: var(--foreground);
 }
 
-.docs-shell[data-mobile-open="true"] { overflow: hidden; }
-
 .docs-body {
     display: grid;
     grid-template-columns: 1fr;
