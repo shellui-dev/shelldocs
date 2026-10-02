@@ -51,14 +51,17 @@ o.AddVersion("v0.2.1", "v0.2.1", "/docs/v0.2.1", "Previous release");
 o.AddPackage("shellui.cli", "ShellUI.CLI", "Command line", "/docs/{version}/cli", icon);
 ```
 
-The current version is the one whose `RootUrl` prefixes the path (segment-aware), otherwise the `latest` one. With 2+ versions a `<VersionSelector />` renders under the package selector (and in the mobile drawer; in the `TopNav` layout it sits in the header). Switching versions keeps the same page when it exists, else the current package's root, else the version's first page. Switching packages keeps the version. Inside a version the sidebar shows only that version's tree, prev/next never crosses into another version, search shows the current version plus pages outside every version, and the version folder is left out of the breadcrumb. Everything is server-rendered `<a href>`s plus `shelldocs.js` delegation, so it works on static hosts.
+The current version is the one whose `RootUrl` prefixes the path (segment-aware), otherwise the `latest` one. With 2+ versions a `<VersionSelector />` renders under the package selector (and in the mobile drawer; in the `TopNav` layout it sits in the header). Switching versions keeps the same page when it exists, else the current package's root, else the version's first page. Switching packages keeps the version. Inside a version the sidebar shows only that version's tree (and outside one it leaves the version folders to the selector), prev/next never crosses into another version, search shows the current version plus pages outside every version, and the version folder is left out of the breadcrumb. Everything is server-rendered `<a href>`s plus `shelldocs.js` delegation, so it works on static hosts.
 
 > Routes declared as `/docs/{*Path:nonfile}` don't match a URL whose **last** segment has a dot (`/docs/v0.2.1`). Pages below it (`/docs/v0.2.1/introduction`) are fine, and the selectors never link to a bare version root unless it has an `index.md`. If you add one, drop `:nonfile` from the route.
 
 ## Component previews
 
+- **Preview | Code toolbar on every example** with copy and a ⋯ menu: *Open in new tab*, *Report a bug*, *Suggest something*. The issue links go to `https://github.com/{GitHubRepo}/issues/new` pre-filled with the example and page URL; point them elsewhere with `o.IssueTrackerUrl`.
 - **`razor:preview` fences render everything** — several sibling components, HTML wrappers (`<div class="flex gap-2">…</div>`) and text, in order, inside one frame. The source tab shows the whole fence.
 - **Razor-shaped attribute values work:** `Variant="ButtonVariant.Destructive"`, `@ButtonVariant.Destructive`, `@true`, `@42`, `[Flags]` values as `Bold | Italic`.
+- **Your components win name collisions.** If your library also has a `Card`, `Callout`, `Steps`, …, `<Card>` renders yours; ShellDocs' built-ins stay available as `<DocsCard>`, `<DocsCallout>`, and so on. Collisions are logged at startup.
+- **Inline code stays code:** `` `<Button>` `` in prose renders as literal code, not a component.
 - **Attributes a static preview can't evaluate are skipped, not fatal:** `OnClick="HandleClick"`, `@onclick`, `@bind-*`, `@ref`, non-primitive parameter types, unparseable values. Each logs a warning and the component still renders.
 - **Stateful demos from real files.** For demos that need `@code` (dialogs, bound selects, toasts, charts with data), write a `.razor` component, register it, and drop `<DemoPreview Component="ButtonClickDemo" Title="Optional" />` into markdown. The source tab shows `{DemoSourceRoot}/**/ButtonClickDemo.razor`:
 
