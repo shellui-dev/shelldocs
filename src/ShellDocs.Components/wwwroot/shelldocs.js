@@ -367,9 +367,56 @@ window.shelldocsChrome = (function () {
                 for (var n = 0; n < added.length; n++) {
                     if (added[n].nodeType !== 1) continue;
                     restorePreviewTabs(added[n]);
+                    restoreMobileNav(added[n]);
                 }
             }
         }).observe(document.documentElement, { childList: true, subtree: true });
+    }
+
+    /* Mobile nav: hamburgers toggle [data-mobile-open] on the page shell. CSS slides
+       in the docs sidebar or shows the home menu; the backdrop, Escape, picking a
+       link, or an enhanced navigation closes it. */
+    function mobileShell(el) {
+        return el.closest('.docs-shell, .home-shell') || document.documentElement;
+    }
+
+    // Survives the circuit's DOM swap the same way preview tabs do.
+    var mobileNavOpen = false;
+
+    function setMobileNav(shell, open) {
+        mobileNavOpen = open;
+        shell.setAttribute('data-mobile-open', open ? 'true' : 'false');
+        shell.querySelectorAll('[data-mobile-nav-toggle]').forEach(function (b) {
+            b.setAttribute('aria-expanded', open ? 'true' : 'false');
+        });
+    }
+
+    function closeMobileNav() {
+        mobileNavOpen = false;
+        document.querySelectorAll('[data-mobile-open="true"]').forEach(function (shell) { setMobileNav(shell, false); });
+    }
+
+    function restoreMobileNav(root) {
+        if (!mobileNavOpen || !root.matches) return;
+        var shell = root.matches('.docs-shell, .home-shell') ? root : root.querySelector('.docs-shell, .home-shell');
+        if (shell && shell.getAttribute('data-mobile-open') !== 'true') setMobileNav(shell, true);
+    }
+
+    function onMobileNavClick(e) {
+        var toggle = e.target.closest('[data-mobile-nav-toggle]');
+        if (toggle) {
+            var shell = mobileShell(toggle);
+            setMobileNav(shell, shell.getAttribute('data-mobile-open') !== 'true');
+            return;
+        }
+        if (e.target.closest('[data-mobile-nav-close]') ||
+            e.target.closest('.docs-sidebar-slot a[href], .docs-header-mobile-menu a[href]')) {
+            closeMobileNav();
+        }
+    }
+
+    function onMobileNavKeydown(e) {
+        if (e.key === 'Escape') closeMobileNav();
     }
 
     // Re-run on enhancedload: heading IDs change per page, so the old observer is stale.
@@ -394,6 +441,9 @@ window.shelldocsChrome = (function () {
     document.addEventListener('keydown', onDropdownKeydown);
     document.addEventListener('click', onPreviewClick);
     document.addEventListener('keydown', onPreviewKeydown);
+    document.addEventListener('click', onMobileNavClick);
+    document.addEventListener('keydown', onMobileNavKeydown);
+    document.addEventListener('enhancedload', closeMobileNav);
     watchForReplacedFrames();
 
     if (document.readyState !== 'loading') {

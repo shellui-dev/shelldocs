@@ -1,17 +1,10 @@
 @using ShellIcons.Icons
-@inject MobileNavState MobileNav
 @inject IJSRuntime JS
 
 <div class="docs-mobile-bar" role="toolbar" aria-label="Mobile toolbar">
-    <button type="button" class="docs-mobile-tool" @onclick="MobileNav.Toggle" aria-label="Toggle navigation">
-        @if (MobileNav.IsOpen)
-        {
-            <X />
-        }
-        else
-        {
-            <Menu />
-        }
+    <button type="button" class="docs-mobile-tool" data-mobile-nav-toggle aria-expanded="false" aria-label="Toggle navigation">
+        <Menu Class="mobile-nav-icon-open" />
+        <X Class="mobile-nav-icon-close" />
     </button>
 
     <button type="button" class="docs-mobile-tool" @onclick="OpenSearch" aria-label="Search">

@@ -30,6 +30,9 @@
     transition: color 150ms, background 150ms;
 }
 ::deep .docs-mobile-tool:hover { color: var(--foreground); background: var(--muted); }
+.docs-mobile-tool ::deep .mobile-nav-icon-close { display: none; }
+[data-mobile-open="true"] .docs-mobile-tool ::deep .mobile-nav-icon-open { display: none; }
+[data-mobile-open="true"] .docs-mobile-tool ::deep .mobile-nav-icon-close { display: block; }
 ::deep .docs-mobile-tool svg { width: 1.15rem; height: 1.15rem; }
 
 ::deep .theme-toggle { margin-left: auto; }
