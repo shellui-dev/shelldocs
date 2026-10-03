@@ -209,7 +209,7 @@ Ships to `ShellDocs.Components` + `ShellDocs.Templates` + `ShellDocs.CLI` + `She
 **Authoring fix (`ShellDocs.Markdown`)**
 - `SlotExtractor.ReplaceComponentTags` no longer `.Trim()`s the raw child content of inline component tags. The Trim was stripping the first line's indent and defeating `SlotRenderer.Dedent` — Markdig then interpreted the remaining 4-space-indented lines as an indented code block. Symptom was the same "literal `<pre>` around placeholder divs" bug that had already been fixed for `razor:preview` fences; the inline-tag code path was still hitting it.
 
-### ✅ Hardening releases (`0.1.3`–`0.1.10-alpha`) — shipped
+### ✅ Hardening releases (`0.1.3`–`0.1.11-alpha`) — shipped
 Driven by building the ShellUI docs on ShellDocs. Highlights (details in the CHANGELOG):
 
 - `feat/build-static-prerender` (0.1.5) — `shelldocs build` prerenders every URL into a static site.
@@ -217,6 +217,7 @@ Driven by building the ShellUI docs on ShellDocs. Highlights (details in the CHA
 - `fix/static-chrome-interactivity` (0.1.7) — sidebar, package selector, TOC and preview frames work on static hosts via `shelldocs.js`.
 - `feat/versioned-docs` (0.1.8) — `AddVersion`, `<VersionSelector>`, version-scoped chrome, multi-sibling `razor:preview`, Razor-form attribute values, `<DemoPreview>`, ShellIcons.
 - `feat/preview-toolbar` (0.1.9) — Preview | Code toolbar with ⋯ menu, `<Tabs>`, static-host `<CodeGroup>` and mobile nav, consumer components winning name collisions, code-span masking, highlighting and hydration fixes.
+- `fix/sidebar-index-pages` (0.1.11) — index pages as sidebar section links, `scroll` preview layout and phone-width previews, scrolling tables.
 - `fix/preview-fidelity`, `feat/generics-redirects-page-title` (0.1.10) — `not-prose` previews, Razor child content, stretch layout, generic components in markdown, redirects (middleware + static pages), `RenderPageTitle`, theme sync and a static-host `ThemeToggle`.
 
 ### `feat/animation-polish`

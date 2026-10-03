@@ -4,6 +4,10 @@ All notable changes to ShellDocs land here. Format follows [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [0.1.11-alpha] — 2026-10-03
+
+Polish from moving the ShellUI docs onto 0.1.10: the sidebar no longer repeats a folder's index page, and previews and tables behave on phones.
+
 ### Added
 
 - **`scroll` preview layout.** `razor:preview scroll`, or `Layout="scroll"` on `<DemoPreview>` / `<ComponentPreview>`, lets an example wider than the frame (pagination, toolbars, OTP inputs) scroll inside it on small screens instead of spilling past the frame. Opt-in, since a scroll box clips popovers.
@@ -356,7 +360,8 @@ Published to NuGet:
 - `<TypeTable>` is hand-authored today; XML-doc auto-generation ships in `ShellDocs.Xml` (Phase 4)
 - No `<DocsBreadcrumb>` opt-out — currently hides when the trail has ≤ 1 node, otherwise always renders
 
-[Unreleased]: https://github.com/shellui-dev/shelldocs/compare/v0.1.10-alpha...HEAD
+[Unreleased]: https://github.com/shellui-dev/shelldocs/compare/v0.1.11-alpha...HEAD
+[0.1.11-alpha]: https://github.com/shellui-dev/shelldocs/releases/tag/v0.1.11-alpha
 [0.1.10-alpha]: https://github.com/shellui-dev/shelldocs/releases/tag/v0.1.10-alpha
 [0.1.9-alpha]: https://github.com/shellui-dev/shelldocs/releases/tag/v0.1.9-alpha
 [0.1.8-alpha]: https://github.com/shellui-dev/shelldocs/releases/tag/v0.1.8-alpha
