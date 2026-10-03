@@ -11,10 +11,28 @@ else if (Node.Kind == NodeKind.Section)
     <div class="sidebar-section" data-depth="@Depth" data-open="@(_isOpen ? "true" : "false")">
         @if (!string.IsNullOrEmpty(Node.Title))
         {
-            @if (_isToggleable)
+            @* A folder's index.md is the label's link, not a second item with the same title. *@
+            @if (_index is not null && _isToggleable)
+            {
+                <div class="sidebar-section-label sidebar-section-row">
+                    <a class="sidebar-section-link @(IsActive(_index) ? "active" : "")" href="@_index.Url">
+                        @RenderLabelInner()
+                    </a>
+                    <button type="button" class="sidebar-section-toggle" aria-expanded="@(_isOpen ? "true" : "false")" aria-label="@($"Toggle {Node.Title}")">
+                        <ChevronRight Class="sidebar-section-chevron" />
+                    </button>
+                </div>
+            }
+            else if (_index is not null)
+            {
+                <a class="sidebar-section-label sidebar-section-link @(IsActive(_index) ? "active" : "")" href="@_index.Url">
+                    @RenderLabelInner()
+                </a>
+            }
+            else if (_isToggleable)
             {
                 @* Toggled by shelldocs.js so it works without a Blazor runtime. *@
-                <button type="button" class="sidebar-section-label sidebar-section-toggle" aria-expanded="@_isOpen">
+                <button type="button" class="sidebar-section-label sidebar-section-toggle" aria-expanded="@(_isOpen ? "true" : "false")">
                     @RenderLabelInner()
                     <ChevronRight Class="sidebar-section-chevron" />
                 </button>
@@ -30,7 +48,7 @@ else if (Node.Kind == NodeKind.Section)
         {
             <div class="sidebar-section-shell" data-open="@(_isOpen ? "true" : "false")">
                 <div class="sidebar-section-items">
-                    @foreach (var child in Node.Children.Where(c => !Versions.IsHiddenInSidebar(c)))
+                    @foreach (var child in VisibleChildren)
                     {
                         <DocsSidebarNode Node="child" Depth="@(Depth + 1)" CurrentPath="@CurrentPath" />
                     }
@@ -40,7 +58,7 @@ else if (Node.Kind == NodeKind.Section)
         else
         {
             <div class="sidebar-section-items">
-                @foreach (var child in Node.Children.Where(c => !Versions.IsHiddenInSidebar(c)))
+                @foreach (var child in VisibleChildren)
                 {
                     <DocsSidebarNode Node="child" Depth="@(Depth + 1)" CurrentPath="@CurrentPath" />
                 }
@@ -50,7 +68,7 @@ else if (Node.Kind == NodeKind.Section)
 }
 else
 {
-    var isActive = string.Equals(Node.Url.TrimEnd('/'), CurrentPath.TrimEnd('/'), StringComparison.OrdinalIgnoreCase);
+    var isActive = IsActive(Node);
     var itemIcon = Depth <= 1 ? SidebarIcons.Get(Node.Title) : null;
     <a class="sidebar-item @(isActive ? "active" : "")" href="@Node.Url">
         @if (itemIcon is not null)
@@ -68,11 +86,13 @@ else
 
     private bool _isOpen;
     private bool _isToggleable;
+    private NavigationNode? _index;
     private bool _initialized;
     private string _lastPath = "";
 
     protected override void OnParametersSet()
     {
+        _index = Node.Kind == NodeKind.Section && !string.IsNullOrEmpty(Node.Title) ? FindIndexPage(Node) : null;
         _isToggleable = Node.Kind == NodeKind.Section
             && Depth >= 1
             && Node.Children.Any(c => c.Kind == NodeKind.Page);
@@ -92,6 +112,24 @@ else
         }
 
         _lastPath = CurrentPath;
+    }
+
+    private IEnumerable<NavigationNode> VisibleChildren
+        => Node.Children.Where(c => c != _index && !Versions.IsHiddenInSidebar(c));
+
+    private bool IsActive(NavigationNode page)
+        => string.Equals(page.Url.TrimEnd('/'), CurrentPath.TrimEnd('/'), StringComparison.OrdinalIgnoreCase);
+
+    // The page built from the section's own folder/index.md.
+    private static NavigationNode? FindIndexPage(NavigationNode section)
+    {
+        if (string.IsNullOrEmpty(section.Path)) return null;
+        var folder = System.IO.Path.TrimEndingDirectorySeparator(System.IO.Path.GetFullPath(section.Path));
+        return section.Children.FirstOrDefault(c =>
+            c.Kind == NodeKind.Page
+            && !string.IsNullOrEmpty(c.Path)
+            && string.Equals(System.IO.Path.GetFileName(c.Path), "index.md", StringComparison.OrdinalIgnoreCase)
+            && string.Equals(System.IO.Path.GetDirectoryName(System.IO.Path.GetFullPath(c.Path)), folder, StringComparison.OrdinalIgnoreCase));
     }
 
     private static bool ContainsPath(NavigationNode node, string path)

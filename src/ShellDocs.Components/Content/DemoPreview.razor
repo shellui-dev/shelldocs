@@ -18,7 +18,7 @@
     [Parameter] public string? Title { get; set; }
     // Anchor id; defaults to demo-{component-slug}. Set it when a page shows the same demo twice.
     [Parameter] public string? Id { get; set; }
-    // "center" (default) or "stretch"; see PreviewFrame.
+    // "center" (default), "stretch" or "scroll"; see PreviewFrame.
     [Parameter] public string? Layout { get; set; }
 
     private RenderFragment? _content;

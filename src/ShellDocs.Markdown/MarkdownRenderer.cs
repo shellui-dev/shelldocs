@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Markdig;
 using ShellDocs.Core;
 
@@ -28,12 +29,19 @@ public class MarkdownRenderer
 
         var doc = Markdig.Markdown.Parse(processed, _pipeline);
         var headings = HeadingExtractor.Extract(doc);
-        var html = CodeBlockEnhancer.Enhance(doc.ToHtml(_pipeline));
+        var html = WrapTables(CodeBlockEnhancer.Enhance(doc.ToHtml(_pipeline)));
 
         return new RenderedDocument(html, slots, parsed, headings);
     }
 
     public RenderedDocument RenderFile(string path) => Render(File.ReadAllText(path));
+
+    // Tables scroll inside their own box, so a wide one doesn't widen the page on phones.
+    private static readonly Regex TableOpen = new(@"<table(\s[^>]*)?>", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    private static readonly Regex TableClose = new(@"</table>", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+    internal static string WrapTables(string html)
+        => TableClose.Replace(TableOpen.Replace(html, m => "<div class=\"shelldocs-table\">" + m.Value), "</table></div>");
 
     // Razor markup (component child content inside a razor:preview) parsed into
     // nodes the way the fence itself is: no markdown pass, so nothing gets wrapped

@@ -19,7 +19,7 @@
     [Parameter] public RenderFragment? ChildContent { get; set; }
     // Raw child markup from SlotRenderer, used to rebuild the source view.
     [Parameter] public string? ChildContentSource { get; set; }
-    // "center" (default) or "stretch"; see PreviewFrame.
+    // "center" (default), "stretch" or "scroll"; see PreviewFrame.
     [Parameter] public string? Layout { get; set; }
     [Parameter(CaptureUnmatchedValues = true)]
     public IReadOnlyDictionary<string, object>? ExtraProps { get; set; }

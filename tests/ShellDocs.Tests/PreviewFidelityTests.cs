@@ -84,7 +84,7 @@ public class PreviewFidelityTests
     }
 
     [Fact]
-    public async Task PreviewLayout_DefaultsToCenter_StretchFromFenceOrParameter()
+    public async Task PreviewLayout_DefaultsToCenter_StretchOrScrollFromFenceOrParameter()
     {
         var centered = await Render("```razor:preview\n<Button>A</Button>\n```");
         Assert.Contains("data-layout=\"center\"", centered);
@@ -94,6 +94,12 @@ public class PreviewFidelityTests
 
         var component = await Harness().RenderAsync<ComponentPreview>(new() { ["Component"] = "Button", ["Layout"] = "stretch" });
         Assert.Contains("data-layout=\"stretch\"", component);
+
+        var scrolled = await Render("```razor:preview scroll\n<Button>A</Button>\n```");
+        Assert.Contains("data-layout=\"scroll\"", scrolled);
+
+        var unknown = await Harness().RenderAsync<ComponentPreview>(new() { ["Component"] = "Button", ["Layout"] = "sideways" });
+        Assert.Contains("data-layout=\"center\"", unknown);
     }
 
     [Fact]

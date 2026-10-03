@@ -153,3 +153,15 @@ public class MarkdownRendererTests
         Assert.Empty(doc.Headings);
     }
 }
+
+public class TableWrappingTests
+{
+    [Fact]
+    public void MarkdownTables_ScrollInTheirOwnBox()
+    {
+        var html = new MarkdownRenderer().Render("| Prop | Type |\n|---|---|\n| Class | string |\n").Html;
+
+        Assert.Contains("<div class=\"shelldocs-table\"><table>", html);
+        Assert.Contains("</table></div>", html);
+    }
+}

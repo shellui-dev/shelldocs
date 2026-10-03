@@ -4,6 +4,24 @@ All notable changes to ShellDocs land here. Format follows [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [0.1.11-alpha] — 2026-10-03
+
+Polish from moving the ShellUI docs onto 0.1.10: the sidebar no longer repeats a folder's index page, and previews and tables behave on phones.
+
+### Added
+
+- **`scroll` preview layout.** `razor:preview scroll`, or `Layout="scroll"` on `<DemoPreview>` / `<ComponentPreview>`, lets an example wider than the frame (pagination, toolbars, OTP inputs) scroll inside it on small screens instead of spilling past the frame. Opt-in, since a scroll box clips popovers.
+
+### Changed
+
+- On phones the preview frame's side padding drops from 1.5rem to 0.75rem, and centring uses `safe center`, so an example that's still too wide starts at the left edge instead of losing both sides.
+
+### Fixed
+
+- **Sidebar listed a folder's `index.md` twice**: once as the section label and again as a page with the same title. The label now links to the index page (highlighted when it's the current page) and the page isn't repeated; in collapsible sections the chevron is its own toggle button.
+- **Collapsed sidebar sections had no `aria-expanded`**: Blazor drops a `false` boolean attribute, so the toggle now writes `"true"` / `"false"`.
+- **Wide markdown tables widened the page on phones.** Tables render inside a `.shelldocs-table` box that scrolls horizontally.
+
 ## [0.1.10-alpha] — 2026-10-02
 
 Previews that look like the real thing (no page typography leaking in, Razor child content, stretch layout, generic components), redirects for folders, version roots and moved URLs, an optional frontmatter page header, and a theme that stays in sync with whatever flips it.
@@ -342,7 +360,8 @@ Published to NuGet:
 - `<TypeTable>` is hand-authored today; XML-doc auto-generation ships in `ShellDocs.Xml` (Phase 4)
 - No `<DocsBreadcrumb>` opt-out — currently hides when the trail has ≤ 1 node, otherwise always renders
 
-[Unreleased]: https://github.com/shellui-dev/shelldocs/compare/v0.1.10-alpha...HEAD
+[Unreleased]: https://github.com/shellui-dev/shelldocs/compare/v0.1.11-alpha...HEAD
+[0.1.11-alpha]: https://github.com/shellui-dev/shelldocs/releases/tag/v0.1.11-alpha
 [0.1.10-alpha]: https://github.com/shellui-dev/shelldocs/releases/tag/v0.1.10-alpha
 [0.1.9-alpha]: https://github.com/shellui-dev/shelldocs/releases/tag/v0.1.9-alpha
 [0.1.8-alpha]: https://github.com/shellui-dev/shelldocs/releases/tag/v0.1.8-alpha

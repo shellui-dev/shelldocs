@@ -18,7 +18,7 @@ public record ComponentSlot(
 
 // Nodes is the whole fence in order and is what PreviewFrame renders; the other
 // fields describe the first registered component (or the first unknown tag on Error).
-// Layout comes from the fence info string (```razor:preview stretch).
+// Layout comes from the fence info string (```razor:preview stretch / scroll).
 public record PreviewSlot(
     string Id,
     Type? ComponentType,
