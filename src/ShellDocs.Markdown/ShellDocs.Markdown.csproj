@@ -14,6 +14,8 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="ShellDocs.Tests" />
+    <!-- SlotRenderer reads named-slot tags with RazorTagScanner. -->
+    <InternalsVisibleTo Include="ShellDocs.Components" />
   </ItemGroup>
 
 </Project>

@@ -1,7 +1,6 @@
 using System.Globalization;
 using System.Reflection;
 using System.Text;
-using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Rendering;
 using Microsoft.Extensions.Logging;
@@ -230,46 +229,19 @@ internal static class SlotRenderer
 
     // Removes the first balanced `<TagName>…</TagName>` (or `<TagName />`) from
     // `text`, returning its inner content and the remaining text.
-    private static (string? Content, string Remaining) ExtractNamedSlot(string text, string tagName)
+    // Tags are read with RazorTagScanner, so a '>' inside a quoted attribute value doesn't end one.
+    internal static (string? Content, string Remaining) ExtractNamedSlot(string text, string tagName)
     {
-        var open = Regex.Match(text, $@"<{Regex.Escape(tagName)}(?<attrs>\s[^>]*?)?\s*(?<self>/)?>");
-        if (!open.Success) return (null, text);
-
-        if (open.Groups["self"].Success)
+        for (var lt = text.IndexOf('<'); lt >= 0; lt = text.IndexOf('<', lt + 1))
         {
-            var head = text.Substring(0, open.Index);
-            var tail = text.Substring(open.Index + open.Length);
-            return ("", head + tail);
-        }
+            if (!RazorTagScanner.TryRead(text, lt, out var open) || open.IsClose) continue;
+            if (!string.Equals(open.Name, tagName, StringComparison.Ordinal)) continue;
 
-        var closeName = Regex.Escape(tagName);
-        var scanFrom = open.Index + open.Length;
-        var depth = 1;
-        var openRe = new Regex($@"<{closeName}(\s[^>]*?)?\s*(?<self>/)?>");
-        var closeRe = new Regex($@"</{closeName}\s*>");
-        while (depth > 0)
-        {
-            var nextOpen = openRe.Match(text, scanFrom);
-            var nextClose = closeRe.Match(text, scanFrom);
-            if (!nextClose.Success) return (null, text);
-            if (nextOpen.Success && nextOpen.Index < nextClose.Index)
-            {
-                if (!nextOpen.Groups["self"].Success) depth++;
-                scanFrom = nextOpen.Index + nextOpen.Length;
-            }
-            else
-            {
-                depth--;
-                if (depth == 0)
-                {
-                    var innerStart = open.Index + open.Length;
-                    var inner = text.Substring(innerStart, nextClose.Index - innerStart);
-                    var head = text.Substring(0, open.Index);
-                    var tail = text.Substring(nextClose.Index + nextClose.Length);
-                    return (inner, head + tail);
-                }
-                scanFrom = nextClose.Index + nextClose.Length;
-            }
+            if (open.IsSelfClosing) return ("", text[..open.Start] + text[open.End..]);
+
+            var (closeStart, closeEnd) = RazorTagScanner.FindMatchingClose(text, tagName, open.End, StringComparison.Ordinal);
+            if (closeStart < 0) return (null, text);
+            return (text[open.End..closeStart], text[..open.Start] + text[closeEnd..]);
         }
         return (null, text);
     }
