@@ -74,4 +74,30 @@ public class SlotRendererTests
         Assert.IsType<RenderFragment>(dict["Icon"]);
         Assert.IsType<RenderFragment>(dict["ChildContent"]);
     }
+
+    [Fact]
+    public void ExtractNamedSlot_AngleBracketInAnAttributeValue_DoesNotEndTheTag()
+    {
+        var (content, remaining) = SlotRenderer.ExtractNamedSlot("<Icon title=\"a > b\"><svg/></Icon>Body.", "Icon");
+
+        Assert.Equal("<svg/>", content);
+        Assert.Equal("Body.", remaining);
+    }
+
+    [Fact]
+    public void ExtractNamedSlot_NestedTagOfTheSameName_IsBalanced()
+    {
+        var (content, remaining) = SlotRenderer.ExtractNamedSlot(
+            "Lead <Footer>a <Footer note=\"x > y\" /> b <Footer>c</Footer></Footer> tail", "Footer");
+
+        Assert.Equal("a <Footer note=\"x > y\" /> b <Footer>c</Footer>", content);
+        Assert.Equal("Lead  tail", remaining);
+    }
+
+    [Fact]
+    public void ExtractNamedSlot_OtherTagsAndUnclosedSlots_AreLeftAlone()
+    {
+        Assert.Equal((null, "<Icons>x</Icons>"), SlotRenderer.ExtractNamedSlot("<Icons>x</Icons>", "Icon"));
+        Assert.Equal((null, "<Icon>never closed"), SlotRenderer.ExtractNamedSlot("<Icon>never closed", "Icon"));
+    }
 }

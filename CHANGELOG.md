@@ -4,6 +4,26 @@ All notable changes to ShellDocs land here. Format follows [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [0.1.12-alpha] — 2026-10-04
+
+Parser fixes found while rewriting the ShellDocs docs site on 0.1.11: fences and component tags are now read the way CommonMark and Razor read them, so a page that shows its own markdown source no longer breaks what follows it.
+
+### Added
+
+- **Tilde fences.** `~~~` fenced blocks are recognised like backtick ones: tags inside them stay literal, and `~~~razor:preview` renders a preview.
+
+### Fixed
+
+- **A fence longer than three backticks that showed a shorter fence broke the rest of the page.** The slot extractor only knew three-backtick fences, so a four-backtick block containing a three-backtick fence was paired with the wrong closing line: the next `razor:preview` rendered as plain code, and component tags inside the example turned into empty placeholders. Fences now follow CommonMark: three or more backticks or tildes, closed by a run of the same character at least as long. An empty fence no longer pairs with a later one, and a closing fence may be longer than the opening one or have trailing spaces.
+- **A `>` inside a quoted attribute value ended an inline component tag early**, so the component (a `<TypeRow>`, for example) silently disappeared. Inline tags are now read by the same scanner as `razor:preview`, so quoted values can hold `>`, another tag, or text that looks like an attribute (`Description='sets href="/"'`).
+- **The same `>` problem in named-slot tags.** A child tag routed into a `RenderFragment` parameter (`<Icon title="a > b">`) was cut at the first `>`, leaking the rest of the tag into the slot. Named-slot tags use the shared scanner too.
+- **Code spans in an attribute value could split the value** when the span contained a quote. Spans are restored per value after the tag is parsed.
+- **`<TypeTable>` dropped rows that shared a `Name`** (overloads, or two rows describing one thing). Rows are now tracked by component instead of by name.
+
+### Changed
+
+- An inline tag with an unterminated quote is passed through as raw markup instead of being read up to the first `>`. A tag can't span a blank line.
+
 ## [0.1.11-alpha] — 2026-10-03
 
 Polish from moving the ShellUI docs onto 0.1.10: the sidebar no longer repeats a folder's index page, and previews and tables behave on phones.
@@ -360,7 +380,8 @@ Published to NuGet:
 - `<TypeTable>` is hand-authored today; XML-doc auto-generation ships in `ShellDocs.Xml` (Phase 4)
 - No `<DocsBreadcrumb>` opt-out — currently hides when the trail has ≤ 1 node, otherwise always renders
 
-[Unreleased]: https://github.com/shellui-dev/shelldocs/compare/v0.1.11-alpha...HEAD
+[Unreleased]: https://github.com/shellui-dev/shelldocs/compare/v0.1.12-alpha...HEAD
+[0.1.12-alpha]: https://github.com/shellui-dev/shelldocs/releases/tag/v0.1.12-alpha
 [0.1.11-alpha]: https://github.com/shellui-dev/shelldocs/releases/tag/v0.1.11-alpha
 [0.1.10-alpha]: https://github.com/shellui-dev/shelldocs/releases/tag/v0.1.10-alpha
 [0.1.9-alpha]: https://github.com/shellui-dev/shelldocs/releases/tag/v0.1.9-alpha
