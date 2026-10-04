@@ -15,13 +15,7 @@ internal class SlotExtractor
         @"(?:(?<body>[\s\S]*?)\r?\n)??\k<indent>\k<fence>(?(tilde)~*|`*)[ \t]*(?=\r?\n|$)",
         RegexOptions.Multiline | RegexOptions.Compiled);
 
-    private static readonly Regex OpeningTag = new(
-        @"<(?<name>[A-Z][A-Za-z0-9]*)(?<attrs>\s[^>]*?)?\s*(?<self>/)?>",
-        RegexOptions.Compiled);
-
-    private static readonly Regex ClosingTag = new(
-        @"</(?<name>[A-Z][A-Za-z0-9]*)\s*>",
-        RegexOptions.Compiled);
+    private static readonly Regex BlankLine = new(@"\n[ \t]*\r?\n", RegexOptions.Compiled);
 
     /* CommonMark code span: a backtick run, content, and a closing run of the same
        length. May wrap lines but not cross a blank line. */
@@ -79,48 +73,42 @@ internal class SlotExtractor
 
         while (cursor < text.Length)
         {
-            var open = OpeningTag.Match(text, cursor);
-            if (!open.Success)
+            if (!TryFindOpeningTag(text, cursor, out var open))
             {
                 result.Append(text, cursor, text.Length - cursor);
                 break;
             }
 
-            var name = open.Groups["name"].Value;
-            var isSelfClosing = open.Groups["self"].Success;
+            var name = open.Name;
             var registered = _registry.Resolve(name);
 
             if (registered is null)
             {
                 warnings.Add($"Unknown component <{name}> — passed through as raw markup.");
-                result.Append(text, cursor, open.Index + open.Length - cursor);
-                cursor = open.Index + open.Length;
+                result.Append(text, cursor, open.End - cursor);
+                cursor = open.End;
                 continue;
             }
 
-            result.Append(text, cursor, open.Index - cursor);
+            result.Append(text, cursor, open.Start - cursor);
 
-            var attrs = ParseAttributes(Unmask(open.Groups["attrs"].Value));
+            var attrs = UnmaskValues(open.Attributes);
             string? childRaw = null;
-            int endIndex;
+            var endIndex = open.End;
 
-            if (isSelfClosing)
+            if (!open.IsSelfClosing)
             {
-                endIndex = open.Index + open.Length;
-            }
-            else
-            {
-                var (closeStart, closeEnd) = FindMatchingClose(text, name, open.Index + open.Length);
+                var (closeStart, closeEnd) = RazorTagScanner.FindMatchingClose(text, name, open.End, StringComparison.Ordinal);
                 if (closeStart < 0)
                 {
                     warnings.Add($"Unclosed <{name}> — passed through as raw markup.");
-                    result.Append(text, open.Index, open.Length);
-                    cursor = open.Index + open.Length;
+                    result.Append(text, open.Start, open.End - open.Start);
+                    cursor = open.End;
                     continue;
                 }
                 /* No Trim(): SlotRenderer.Dedent needs the first line's indent,
                    or Markdig reads the remaining lines as an indented code block. */
-                childRaw = Unmask(text.Substring(open.Index + open.Length, closeStart - (open.Index + open.Length)));
+                childRaw = Unmask(text[open.End..closeStart]);
                 endIndex = closeEnd;
             }
 
@@ -131,6 +119,24 @@ internal class SlotExtractor
         }
 
         return result.ToString();
+    }
+
+    /* Next component-shaped opening tag at or after `from`: an uppercase
+       alphanumeric name, read by the same scanner razor:preview uses so quoted
+       values may contain '>' or text that looks like another attribute. */
+    private static bool TryFindOpeningTag(string text, int from, out RazorTag tag)
+    {
+        for (var lt = text.IndexOf('<', from); lt >= 0; lt = text.IndexOf('<', lt + 1))
+        {
+            if (lt + 1 >= text.Length || text[lt + 1] is < 'A' or > 'Z') continue;
+            if (!RazorTagScanner.TryRead(text, lt, out tag) || tag.IsClose) continue;
+            if (!tag.Name.All(char.IsAsciiLetterOrDigit)) continue;
+            // An unterminated quote would otherwise run on to the next quote on the page.
+            if (BlankLine.Match(text, tag.Start, tag.End - tag.Start).Success) continue;
+            return true;
+        }
+        tag = default;
+        return false;
     }
 
     // `razor:preview stretch` lets block-level examples fill the frame; `scroll` lets wide ones scroll.
@@ -166,44 +172,15 @@ internal class SlotExtractor
         return null;
     }
 
-    private static (int Start, int End) FindMatchingClose(string text, string name, int fromIndex)
+    /* Attributes keep their full names (`@bind-Value`, not `Value`) so SlotRenderer
+       can skip directive attributes. Code spans are restored per value, after the
+       tag is parsed, so quotes inside a span can't split the value. */
+    private IReadOnlyDictionary<string, string> UnmaskValues(IEnumerable<KeyValuePair<string, string?>> attrs)
     {
-        var depth = 1;
-        var searchFrom = fromIndex;
-        while (depth > 0)
-        {
-            var open = FindNextTag(OpeningTag, text, name, searchFrom);
-            var close = FindNextTag(ClosingTag, text, name, searchFrom);
-
-            if (close is null) return (-1, -1);
-
-            if (open is not null && open.Index < close.Index)
-            {
-                if (!open.Groups["self"].Success) depth++;
-                searchFrom = open.Index + open.Length;
-            }
-            else
-            {
-                depth--;
-                if (depth == 0) return (close.Index, close.Index + close.Length);
-                searchFrom = close.Index + close.Length;
-            }
-        }
-        return (-1, -1);
+        var dict = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var (name, value) in attrs) dict[name] = Unmask(value ?? "");
+        return dict;
     }
-
-    private static Match? FindNextTag(Regex regex, string text, string name, int fromIndex)
-    {
-        foreach (Match m in regex.Matches(text, fromIndex))
-        {
-            if (m.Groups["name"].Value == name) return m;
-        }
-        return null;
-    }
-
-    // Full names (`@bind-Value`, not `Value`) so SlotRenderer can skip directive attributes.
-    private static IReadOnlyDictionary<string, string> ParseAttributes(string attrsText)
-        => PreviewParser.ToParameters(RazorTagScanner.ParseAttributes(attrsText));
 
     private static string PlaceholderHtml(string kind, string id) =>
         $"<div data-shelldocs-slot=\"{kind}\" data-shelldocs-id=\"{id}\"></div>";
