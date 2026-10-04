@@ -11,6 +11,6 @@
 
     protected override void OnInitialized()
     {
-        Parent?.Register(new TypeRowInfo(Name, Type, Default, Description, Required));
+        Parent?.Register(this, new TypeRowInfo(Name, Type, Default, Description, Required));
     }
 }

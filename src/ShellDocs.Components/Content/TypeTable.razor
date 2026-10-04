@@ -66,10 +66,12 @@
     [Parameter] public RenderFragment? ChildContent { get; set; }
 
     private readonly List<TypeRowInfo> _rows = new();
+    private readonly HashSet<TypeRow> _registered = new();
 
-    internal void Register(TypeRowInfo info)
+    // Keyed by the row component, not its Name: rows may share a name (overloads).
+    internal void Register(TypeRow row, TypeRowInfo info)
     {
-        if (_rows.Any(r => r.Name == info.Name)) return;
+        if (!_registered.Add(row)) return;
         _rows.Add(info);
         StateHasChanged();
     }
