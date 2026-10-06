@@ -1,4 +1,7 @@
-<img src="https://raw.githubusercontent.com/shellui-dev/shelldocs/main/assets/icon.png" alt="" width="64" />
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/shellui-dev/shelldocs/main/assets/icon-dark.png" />
+  <img src="https://raw.githubusercontent.com/shellui-dev/shelldocs/main/assets/icon.png" alt="" width="64" />
+</picture>
 
 # ShellDocs
 
