@@ -1,3 +1,5 @@
+![ShellDocs](https://raw.githubusercontent.com/shellui-dev/shelldocs/main/assets/readme-logo.svg)
+
 # ShellDocs
 
 **The docs framework for .NET.** Markdown-driven documentation sites with live Blazor component previews, versioned docs, `Cmd+K` search, and a static export. Styled with shadcn-shaped design tokens and composable with any Blazor component library. The fumadocs / shadcn pattern, ported to .NET.
