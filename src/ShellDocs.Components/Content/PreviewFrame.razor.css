@@ -237,8 +237,68 @@
     color: inherit !important;
 }
 
+/* Caption: a short muted note between the tabs and the actions. */
+.preview-caption {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: right;
+    font-size: 0.75rem;
+    color: var(--muted-foreground);
+}
+
+/* Code tabs (MAUI | Avalonia …): a segmented bar that stays visible while the code scrolls. */
+.preview-code-tabs {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    padding: 0.4rem 0.5rem;
+    border-bottom: 1px solid var(--border);
+    background: color-mix(in oklch, var(--card) 55%, var(--background));
+}
+.preview-code-tab {
+    padding: 0.2rem 0.6rem;
+    border: 1px solid transparent;
+    border-radius: calc(var(--radius) - 3px);
+    background: transparent;
+    color: var(--muted-foreground);
+    font-family: inherit;
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color 150ms, background 150ms, border-color 150ms;
+}
+.preview-code-tab:hover { color: var(--foreground); }
+.preview-code-tab:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
+.preview-code-tab[aria-selected="true"] {
+    color: var(--foreground);
+    background: var(--background);
+    border-color: var(--border);
+}
+
+/* Every variant shares one grid cell, so the block keeps the tallest one's height;
+   hidden ones stay in layout, invisible. */
+.preview-code-stack { display: grid; }
+.preview-code-variant { grid-area: 1 / 1; min-width: 0; }
+.preview-code-variant[hidden] { display: block; visibility: hidden; }
+.preview-code-missing {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem 1rem;
+    font-size: 0.8125rem;
+    color: var(--muted-foreground);
+}
+.preview-code-missing[hidden] { display: flex; }
+
 @media (max-width: 480px) {
     .preview-tab span { display: none; }
+    .preview-caption { display: none; }
     /* Phones: give the example the width; 1.5rem a side leaves little room for an OTP row. */
     .preview-render { padding: 1.5rem 0.75rem; min-height: 10rem; }
 }

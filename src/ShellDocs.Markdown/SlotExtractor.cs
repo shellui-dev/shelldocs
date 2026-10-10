@@ -10,7 +10,7 @@ internal class SlotExtractor
     /* CommonMark fenced block: a run of three or more backticks or tildes, closed by
        a run of the same character at least as long. A longer fence can show a
        shorter one in its body, so the two must not be paired with each other. */
-    private static readonly Regex FenceBlock = new(
+    internal static readonly Regex FenceBlock = new(
         @"^(?<indent>[ \t]*)(?<fence>`{3,}|(?<tilde>~{3,}))(?<lang>(?(tilde)(?!~)[^\r\n]*|[^`\r\n]*))\r?\n" +
         @"(?:(?<body>[\s\S]*?)\r?\n)??\k<indent>\k<fence>(?(tilde)~*|`*)[ \t]*(?=\r?\n|$)",
         RegexOptions.Multiline | RegexOptions.Compiled);

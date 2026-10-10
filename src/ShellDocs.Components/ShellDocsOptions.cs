@@ -17,6 +17,9 @@ public class ShellDocsOptions
     // (title and body appended as query params). Defaults to GitHubRepo's issues/new;
     // with neither set, those items are hidden.
     public string? IssueTrackerUrl { get; set; }
+    // Default note in every preview's toolbar, e.g. "Rendered with ShellUI for Blazor".
+    // A preview's own Caption replaces it.
+    public string? PreviewCaption { get; set; }
 
     public string? LogoLight { get; set; }
     public string? LogoDark { get; set; }

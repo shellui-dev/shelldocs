@@ -12,7 +12,10 @@
               ErrorTitle="ComponentPreview error"
               Id="@_id"
               Name="@Component"
-              Layout="@Layout" />
+              Layout="@Layout"
+              CodeTabs="@_codeTabs"
+              SyncKey="@SyncKey"
+              Caption="@Caption" />
 
 @code {
     [Parameter, EditorRequired] public string? Component { get; set; }
@@ -21,6 +24,10 @@
     [Parameter] public string? ChildContentSource { get; set; }
     // "center" (default), "stretch" or "scroll"; see PreviewFrame.
     [Parameter] public string? Layout { get; set; }
+    // Code tabs that replace the rebuilt source; in markdown, <CodeTab> children instead.
+    [Parameter] public IReadOnlyList<PreviewCodeTab>? CodeTabs { get; set; }
+    [Parameter] public string? SyncKey { get; set; }
+    [Parameter] public string? Caption { get; set; }
     [Parameter(CaptureUnmatchedValues = true)]
     public IReadOnlyDictionary<string, object>? ExtraProps { get; set; }
 
@@ -30,9 +37,15 @@
     private string? _id;
     private string? _error;
     private HashSet<string> _typeParams = new(StringComparer.OrdinalIgnoreCase);
+    private IReadOnlyList<PreviewCodeTab>? _codeTabs;
+    // ChildContentSource without its <CodeTab> blocks: the target's own children.
+    private string? _targetSource;
 
     protected override void OnParametersSet()
     {
+        var (parsedTabs, remaining) = CodeTabParser.Extract(ChildContentSource);
+        _codeTabs = CodeTabs is { Count: > 0 } ? CodeTabs : parsedTabs;
+        _targetSource = remaining;
         _target = Component is null ? null : Registry.Resolve(Component);
         _error = _target is null ? $"Unknown component <{Component}>." : null;
         _typeParams = new(StringComparer.OrdinalIgnoreCase);
@@ -95,13 +108,13 @@
         }
         // The children are a Razor example for the target: parse them as Razor
         // (named slots included) rather than reuse the markdown-rendered ChildContent.
-        if (!string.IsNullOrWhiteSpace(ChildContentSource))
+        if (!string.IsNullOrWhiteSpace(_targetSource))
         {
             var empty = new Dictionary<string, string>();
-            foreach (var (k, v) in SlotRenderer.BuildParameters(Renderer, target, empty, ChildContentSource, Logger, razorChildren: true))
+            foreach (var (k, v) in SlotRenderer.BuildParameters(Renderer, target, empty, _targetSource, Logger, razorChildren: true))
                 dict[k] = v;
         }
-        else if (ChildContent is not null)
+        else if (ChildContent is not null && string.IsNullOrWhiteSpace(ChildContentSource))
         {
             dict["ChildContent"] = ChildContent;
         }
@@ -119,7 +132,7 @@
                 sb.Append(' ').Append(k).Append("=\"").Append(v).Append('"');
             }
         }
-        var body = ChildContentSource?.Trim();
+        var body = _targetSource?.Trim();
         if (string.IsNullOrEmpty(body))
         {
             sb.Append(" />");

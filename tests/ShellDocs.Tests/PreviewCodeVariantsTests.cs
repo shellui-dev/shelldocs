@@ -1,0 +1,175 @@
+using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Rendering;
+using ShellDocs.Components;
+using ShellDocs.Components.Chrome;
+using ShellDocs.Components.Content;
+using Xunit;
+
+namespace ShellDocs.Tests;
+
+public class CodeTabParserTests
+{
+    [Fact]
+    public void ReadsLabelLanguageAndCode_FromFences_AndKeepsTheRest()
+    {
+        var raw = """
+
+            <CodeTab Label="MAUI">
+              ```xml
+              <Button Text="Save" />
+              ```
+            </CodeTab>
+            <span>kept</span>
+            <CodeTab Label="Avalonia">
+            ~~~csharp title
+            var b = new Button();
+            ~~~
+            </CodeTab>
+            """;
+
+        var (tabs, rest) = CodeTabParser.Extract(raw);
+
+        Assert.Equal(2, tabs.Count);
+        Assert.Equal(new PreviewCodeTab("MAUI", "<Button Text=\"Save\" />", "xml"), tabs[0]);
+        Assert.Equal(new PreviewCodeTab("Avalonia", "var b = new Button();", "csharp"), tabs[1]);
+        Assert.Contains("<span>kept</span>", rest);
+        Assert.DoesNotContain("CodeTab", rest);
+    }
+
+    [Fact]
+    public void LanguageAttribute_AndPlainBody_AndNoTabs()
+    {
+        var (tabs, _) = CodeTabParser.Extract("<CodeTab Label=\"MAUI\" Language=\"XAML\">\n    <Label Text=\"Hi\" />\n</CodeTab><CodeTab>no label</CodeTab>");
+        var tab = Assert.Single(tabs);
+        Assert.Equal("xaml", tab.Language);
+        Assert.Equal("<Label Text=\"Hi\" />", tab.Code);
+
+        var (none, rest) = CodeTabParser.Extract("<Button>Go</Button>");
+        Assert.Empty(none);
+        Assert.Equal("<Button>Go</Button>", rest);
+    }
+}
+
+public class PreviewCodeVariantsTests : IDisposable
+{
+    private readonly string _demoRoot;
+
+    public PreviewCodeVariantsTests()
+    {
+        _demoRoot = Path.Combine(Path.GetTempPath(), "shelldocs-variants-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(_demoRoot);
+        File.WriteAllText(Path.Combine(_demoRoot, "SaveDemo.razor"), "<Button>Save</Button>");
+    }
+
+    public void Dispose()
+    {
+        try { Directory.Delete(_demoRoot, recursive: true); } catch { }
+    }
+
+    public class SaveDemo : ComponentBase
+    {
+        protected override void BuildRenderTree(RenderTreeBuilder b)
+        {
+            b.OpenElement(0, "span");
+            b.AddAttribute(1, "class", "save-demo");
+            b.CloseElement();
+        }
+    }
+
+    private ComponentRenderHarness Harness(Action<ShellDocsOptions>? extra = null) => new(o =>
+    {
+        o.ContentRoot = Path.Combine(_demoRoot, "no-content");
+        o.DemoSourceRoot = _demoRoot;
+        o.RegisterComponent<Button>();
+        o.RegisterComponent<SaveDemo>();
+        extra?.Invoke(o);
+    });
+
+    private const string PlatformTabs = """
+        <CodeTab Label="MAUI">
+        ```xml
+        <Button Text="Save" />
+        ```
+        </CodeTab>
+        <CodeTab Label="Avalonia">
+        ```xml
+        <Button Content="Save" />
+        ```
+        </CodeTab>
+        """;
+
+    private static Dictionary<string, object?> Md(string markdown) => new() { ["Markdown"] = markdown };
+
+    [Fact]
+    public async Task DemoPreview_CodeTabs_ReplaceTheRazorSource()
+    {
+        var harness = Harness();
+        var html = await harness.RenderAsync<MarkdownContent>(Md(
+            "<DemoPreview Component=\"SaveDemo\" SyncKey=\"platform\" Caption=\"Rendered with ShellUI for Blazor\">\n" + PlatformTabs + "\n</DemoPreview>\n"));
+
+        Assert.Contains("class=\"save-demo\"", html);
+        Assert.DoesNotContain("&lt;Button&gt;Save&lt;/Button&gt;", html); // the Razor source is gone
+        Assert.Matches("class=\"preview-code-variants\"[^>]*data-tabs data-tabs-missing data-tabs-value=\"MAUI\" data-tabs-sync=\"platform\"", html);
+        Assert.Matches("aria-selected=\"true\" tabindex=\"0\"\\s+data-tab-target=\"MAUI\"", html);
+        Assert.Matches("aria-selected=\"false\" tabindex=\"-1\"\\s+data-tab-target=\"Avalonia\"", html);
+        Assert.Matches("data-tab-panel=\"Avalonia\" hidden", html);
+        Assert.DoesNotMatch("data-tab-panel=\"MAUI\" hidden", html);
+        Assert.Contains("&lt;Button Text=&quot;Save&quot; /&gt;", html);
+        Assert.Contains("&lt;Button Content=&quot;Save&quot; /&gt;", html);
+        Assert.Contains("class=\"language-xml\"", html);
+        // [^>]* allows for the scoped-CSS attribute.
+        Assert.Matches("data-tab-missing hidden[^>]*>\\s*Not available on <span data-tab-missing-label[^>]*></span> yet", html);
+        Assert.Contains("class=\"preview-caption\" title=\"Rendered with ShellUI for Blazor\"", html);
+        Assert.DoesNotContain(harness.Logs.Messages, m => m.Contains("skipped attribute 'ChildContent'"));
+    }
+
+    [Fact]
+    public async Task DemoPreview_WithoutCodeTabs_ShowsTheRazorSource_AsBefore()
+    {
+        var html = await Harness().RenderAsync<DemoPreview>(new() { ["Component"] = "SaveDemo" });
+
+        Assert.Contains("&lt;Button&gt;Save&lt;/Button&gt;", html);
+        Assert.DoesNotContain("preview-code-variants", html);
+        Assert.DoesNotContain("preview-caption", html);
+        Assert.Contains("data-preview-tab-target=\"code\"", html);
+    }
+
+    [Fact]
+    public async Task ComponentPreview_TakesCodeTabsOutOfTheTargetsChildren()
+    {
+        var html = await Harness().RenderAsync<MarkdownContent>(Md(
+            "<ComponentPreview Component=\"Button\" SyncKey=\"platform\">Go\n" + PlatformTabs + "\n</ComponentPreview>\n"));
+
+        Assert.Matches("<button data-variant=\"Default\"[^>]*>Go(\\s|&#xA;|&#xD;)*</button>", html);
+        Assert.Contains("data-tab-target=\"Avalonia\"", html);
+        Assert.DoesNotMatch("<button[^>]*data-variant[^>]*>[^<]*MAUI", html);
+    }
+
+    [Fact]
+    public async Task Caption_DefaultsToTheSiteOption_AndAPreviewCanOverrideIt()
+    {
+        var harness = Harness(o => o.PreviewCaption = "Rendered with ShellUI for Blazor");
+
+        var byDefault = await harness.RenderAsync<DemoPreview>(new() { ["Component"] = "SaveDemo" });
+        Assert.Contains(">Rendered with ShellUI for Blazor</div>", byDefault);
+
+        var own = await harness.RenderAsync<DemoPreview>(new() { ["Component"] = "SaveDemo", ["Caption"] = "Blazor" });
+        Assert.Contains(">Blazor</div>", own);
+    }
+
+    private static string ReadAsset(string name)
+    {
+        var testDir = Path.GetDirectoryName(typeof(PreviewCodeVariantsTests).Assembly.Location)!;
+        foreach (var candidate in new[]
+        {
+            Path.Combine(testDir, "wwwroot", "_content", "ShellDocs.Components", name),
+            Path.Combine(testDir, "..", "..", "..", "..", "..", "src", "ShellDocs.Components", "wwwroot", name)
+        })
+        {
+            var full = Path.GetFullPath(candidate);
+            if (File.Exists(full)) return File.ReadAllText(full);
+        }
+        throw new FileNotFoundException(name);
+    }
+}

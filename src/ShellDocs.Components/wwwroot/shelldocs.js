@@ -122,6 +122,9 @@ window.shelldocsApplyTheme = window.shelldocsTheme.apply;
    detached node — stale code after navigation — and could throw on replaceChild.
    Each pass re-renders an output whose source text changed and drops orphans. */
 
+// Fence languages Shiki knows under another name; XAML is highlighted as XML.
+var LANG_ALIASES = { xaml: 'xml', axaml: 'xml', cs: 'csharp', 'c#': 'csharp' };
+
 function langOf(codeEl) {
     var cls = (codeEl.className || '').split(/\s+/);
     for (var i = 0; i < cls.length; i++) {
@@ -139,7 +142,8 @@ function highlightOne(preEl) {
     if (!preEl || !window.__shiki || !preEl.parentNode || preEl.hasAttribute('data-shiki-output')) return;
     var code = preEl.querySelector('code');
     if (!code) return;
-    var lang = langOf(code);
+    var declared = langOf(code);
+    var lang = LANG_ALIASES[declared] || declared;
     if (!lang) return;
     /* Languages Shiki hasn't loaded stay as plain text. */
     if (!window.__shiki.getLoadedLanguages().includes(lang)) return;
@@ -451,7 +455,12 @@ window.shelldocsChrome = (function () {
         var copy = e.target.closest('[data-preview-copy]');
         if (copy) {
             var frame = copy.closest('.preview-frame');
-            var code = frame && frame.querySelector('[data-preview-panel="code"] code');
+            var panel = frame && frame.querySelector('[data-preview-panel="code"]');
+            // With code tabs, the visible one (none while the "not available" note shows).
+            var source = panel && panel.querySelector('[data-tabs-missing]')
+                ? panel.querySelector('[data-tab-panel]:not([hidden])')
+                : panel;
+            var code = source && source.querySelector('code');
             if (!code) return;
             // textContent: the code panel may be display:none, where innerText loses layout.
             var text = code.textContent;
@@ -494,18 +503,26 @@ window.shelldocsChrome = (function () {
         });
     }
 
+    /* A group without the value is left alone, except preview code tabs
+       ([data-tabs-missing]): they show "Not available on {value} yet" instead. */
     function selectTabsValue(root, value, focus) {
         var buttons = ownTabParts(root, '[data-tab-target]');
-        if (!buttons.some(function (b) { return b.getAttribute('data-tab-target') === value; })) return false;
+        var has = buttons.some(function (b) { return b.getAttribute('data-tab-target') === value; });
+        if (!has && !root.hasAttribute('data-tabs-missing')) return false;
         root.setAttribute('data-tabs-value', value);
-        buttons.forEach(function (b) {
+        buttons.forEach(function (b, i) {
             var selected = b.getAttribute('data-tab-target') === value;
             b.setAttribute('aria-selected', selected ? 'true' : 'false');
-            b.setAttribute('tabindex', selected ? '0' : '-1');
+            b.setAttribute('tabindex', selected || (!has && i === 0) ? '0' : '-1');
             if (selected && focus) b.focus();
         });
         ownTabParts(root, '[data-tab-panel]').forEach(function (panel) {
             panel.hidden = panel.getAttribute('data-tab-panel') !== value;
+        });
+        ownTabParts(root, '[data-tab-missing]').forEach(function (note) {
+            note.hidden = has;
+            var label = note.querySelector('[data-tab-missing-label]');
+            if (label && !has) label.textContent = value;
         });
         return true;
     }

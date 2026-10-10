@@ -2,6 +2,8 @@
 
 @code {
     [Parameter, EditorRequired] public string Label { get; set; } = "";
+    // Highlighting language for a preview's code tab when the body has no fence info (xml, csharp, …).
+    [Parameter] public string? Language { get; set; }
     [Parameter] public RenderFragment? ChildContent { get; set; }
     [CascadingParameter] public CodeGroup? Parent { get; set; }
 

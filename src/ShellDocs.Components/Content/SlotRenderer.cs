@@ -227,7 +227,8 @@ internal static class SlotRenderer
                 // missing or templated (RenderFragment<T>) one would throw.
                 if (props.TryGetValue("ChildContent", out var cc) && cc.PropertyType == typeof(RenderFragment))
                     dict["ChildContent"] = Fragment(remaining);
-                else
+                // Components that read their raw body (code tabs) take it as ChildContentSource below.
+                else if (!props.ContainsKey("ChildContentSource"))
                     Skip(logger, componentType, "ChildContent", "component has no RenderFragment ChildContent parameter");
             }
 
