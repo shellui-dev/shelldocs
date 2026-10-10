@@ -1,0 +1,35 @@
+@namespace ShellDocs.Components.Content
+@inject ShellDocsOptions Site
+
+@* A [data-tabs] group with no panels: choosing an option syncs every group with the
+   same key and saves it, through the same shelldocs.js code as <CodeGroup>.
+   data-tabs-switch lets groups with no saved choice yet follow its default.
+   MarkdownContent adds one under the page header for each AddSyncSwitch key the
+   page uses; write <SyncSwitch SyncKey="…" /> to place it yourself. *@
+@if (_options.Count > 1)
+{
+    <div class="sync-switch" role="tablist" aria-label="@SyncKey"
+         data-tabs data-tabs-switch data-tabs-sync="@SyncKey" data-tabs-value="@_options[0]">
+        @for (var i = 0; i < _options.Count; i++)
+        {
+            var option = _options[i];
+            <button type="button" role="tab" class="sync-switch-option" data-tab-target="@option"
+                    aria-selected="@(i == 0 ? "true" : "false")" tabindex="@(i == 0 ? "0" : "-1")">@option</button>
+        }
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public string SyncKey { get; set; } = "";
+    // Comma-separated; defaults to the options of the AddSyncSwitch with this key.
+    [Parameter] public string? Options { get; set; }
+
+    private IReadOnlyList<string> _options = Array.Empty<string>();
+
+    protected override void OnParametersSet()
+    {
+        _options = !string.IsNullOrWhiteSpace(Options)
+            ? Options.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            : Site.SyncSwitches.FirstOrDefault(s => s.SyncKey == SyncKey)?.Options ?? Array.Empty<string>();
+    }
+}

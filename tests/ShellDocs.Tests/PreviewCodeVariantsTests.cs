@@ -158,6 +158,42 @@ public class PreviewCodeVariantsTests : IDisposable
         Assert.Contains(">Blazor</div>", own);
     }
 
+    [Fact]
+    public async Task SyncSwitch_GoesUnderThePageHeader_OnPagesThatUseItsKey()
+    {
+        var harness = Harness(o =>
+        {
+            o.RenderPageTitle = true;
+            o.AddSyncSwitch("platform", "MAUI", "Avalonia");
+        });
+        var demo = "<DemoPreview Component=\"SaveDemo\" SyncKey=\"platform\">\n" + PlatformTabs + "\n</DemoPreview>\n";
+
+        var page = await harness.RenderAsync<MarkdownContent>(Md("---\ntitle: Button\ndescription: Saves.\n---\n\nIntro.\n\n" + demo));
+        Assert.Matches("</header>\\s*<div class=\"sync-switch\"[^>]*data-tabs data-tabs-switch data-tabs-sync=\"platform\" data-tabs-value=\"MAUI\"", page);
+        Assert.Matches("data-tab-target=\"Avalonia\"[^>]*>Avalonia</button>", page);
+        Assert.Single(Regex.Matches(page, "data-tabs-switch"));
+        Assert.DoesNotContain("blazor:onclick", page);
+
+        // Without a page header it goes right above the first block that uses the key.
+        var noHeader = await harness.RenderAsync<MarkdownContent>(Md("# Button\n\nIntro.\n\n" + demo));
+        Assert.Matches("Intro.</p>\\s*<div class=\"sync-switch\"[^>]*data-tabs-switch", noHeader);
+
+        // Placed by hand: not added a second time.
+        var manual = await harness.RenderAsync<MarkdownContent>(Md("# Button\n\n<SyncSwitch SyncKey=\"platform\" />\n\n" + demo));
+        Assert.Single(Regex.Matches(manual, "data-tabs-switch"));
+
+        var otherKey = await harness.RenderAsync<MarkdownContent>(Md("---\ntitle: Button\n---\n\n<DemoPreview Component=\"SaveDemo\" />\n"));
+        Assert.DoesNotContain("data-tabs-switch", otherKey);
+
+        var chrome = await harness.RenderAsync<DocsHeader>();
+        Assert.DoesNotContain("data-tabs-switch", chrome);
+
+        var inline = await Harness().RenderAsync<SyncSwitch>(new() { ["SyncKey"] = "pm", ["Options"] = "npm, pnpm" });
+        Assert.Contains("data-tab-target=\"pnpm\"", inline);
+
+        Assert.Throws<ArgumentException>(() => new ShellDocsOptions().AddSyncSwitch("platform", "MAUI"));
+    }
+
     private static string ReadAsset(string name)
     {
         var testDir = Path.GetDirectoryName(typeof(PreviewCodeVariantsTests).Assembly.Location)!;

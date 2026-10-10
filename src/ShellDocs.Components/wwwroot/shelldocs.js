@@ -527,6 +527,13 @@ window.shelldocsChrome = (function () {
         return true;
     }
 
+    // The page switch (<SyncSwitch>) for a key, if the page has one.
+    function switchFor(sync) {
+        return Array.prototype.find.call(document.querySelectorAll('[data-tabs-switch]'), function (sw) {
+            return sw.getAttribute('data-tabs-sync') === sync;
+        }) || null;
+    }
+
     function chooseTab(root, value, focus) {
         if (!selectTabsValue(root, value, focus)) return;
         var sync = root.getAttribute('data-tabs-sync');
@@ -547,7 +554,12 @@ window.shelldocsChrome = (function () {
         roots.forEach(function (root) {
             var sync = root.getAttribute('data-tabs-sync');
             var saved = null;
-            if (sync) { try { saved = localStorage.getItem(TAB_STORE + sync); } catch (e) {} }
+            if (sync) {
+                try { saved = localStorage.getItem(TAB_STORE + sync); } catch (e) {}
+                // Nothing chosen yet: follow the page switch's default, so blocks agree with it.
+                var sw = saved ? null : switchFor(sync);
+                if (sw && sw !== root) saved = sw.getAttribute('data-tabs-value');
+            }
             else if (root.id) saved = tabMemory[location.pathname + '#' + root.id];
             if (saved && root.getAttribute('data-tabs-value') !== saved) selectTabsValue(root, saved, false);
         });
