@@ -48,6 +48,9 @@ builder.Services.AddShellDocs(o =>
     o.AddVersion("v2.0",   "v2.0.0", "/docs/v2.0",   "Current stable",   latest: true);
     o.AddVersion("v1.9.1", "v1.9.1", "/docs/v1.9.1", "Previous release");
 
+    // Page-level MAUI | Avalonia tabs on pages whose blocks use SyncKey="platform".
+    o.AddSyncSwitch("platform", "MAUI", "Avalonia");
+
     // Built-in primitives (Callout, Card, Steps, …) are registered by AddShellDocs.
     o.RegisterComponentsFromAssembly<App>("ShellDocs.Preview.Ui");
     o.RegisterComponentsFromAssembly<App>("ShellDocs.Preview.Demos");

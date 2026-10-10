@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Live preview</title>
+    <!-- Stand-in for a live preview app (e.g. Avalonia on WebAssembly): it follows the
+         <IframePreview> contract — ?c= names the example, ?theme= sets the first theme,
+         and { type: "shelldocs-theme", theme } messages switch it afterwards. -->
+    <style>
+        :root { color-scheme: light; --bg: #ffffff; --fg: #0a0a0a; --muted: #737373; --border: #e5e5e5; --accent: #171717; --accent-fg: #fafafa; }
+        :root.dark { color-scheme: dark; --bg: #0a0a0a; --fg: #fafafa; --muted: #a3a3a3; --border: #262626; --accent: #fafafa; --accent-fg: #171717; }
+        html, body { margin: 0; height: 100%; }
+        body { display: flex; align-items: center; justify-content: center; background: var(--bg); color: var(--fg); font: 14px/1.5 system-ui, sans-serif; }
+        .card { display: grid; gap: 0.75rem; padding: 1.25rem 1.5rem; border: 1px solid var(--border); border-radius: 10px; min-width: 14rem; }
+        .meta { color: var(--muted); font-size: 12px; }
+        button { padding: 0.5rem 1rem; border: 0; border-radius: 8px; background: var(--accent); color: var(--accent-fg); font: inherit; font-weight: 500; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <strong id="name">Example</strong>
+        <button type="button" id="action">Clicked 0 times</button>
+        <div class="meta">theme: <span id="theme"></span> · messages: <span id="messages">0</span></div>
+    </div>
+    <script>
+        (function () {
+            var params = new URLSearchParams(location.search);
+            var root = document.documentElement;
+            var messages = 0, clicks = 0;
+            function setTheme(theme) {
+                root.classList.toggle('dark', theme === 'dark');
+                document.getElementById('theme').textContent = theme;
+            }
+            document.getElementById('name').textContent = 'Live preview: ' + (params.get('c') || 'example');
+            setTheme(params.get('theme') === 'dark' ? 'dark' : 'light');
+            document.getElementById('action').addEventListener('click', function () {
+                this.textContent = 'Clicked ' + (++clicks) + (clicks === 1 ? ' time' : ' times');
+            });
+            window.addEventListener('message', function (e) {
+                if (!e.data || e.data.type !== 'shelldocs-theme') return;
+                document.getElementById('messages').textContent = ++messages;
+                setTheme(e.data.theme);
+            });
+        })();
+    </script>
+</body>
+</html>
