@@ -169,10 +169,10 @@ public class RedirectTests : IDisposable
     public void AddShellDocs_RegistersTheStartupFilter_UnlessDisabled()
     {
         var on = new ServiceCollection().AddShellDocs(o => o.ContentRoot = _root);
-        Assert.Contains(on, d => d.ServiceType == typeof(IStartupFilter));
+        Assert.Contains(on, d => d.ImplementationType?.Name == "DocsRedirectStartupFilter");
 
         var off = new ServiceCollection().AddShellDocs(o => { o.ContentRoot = _root; o.EnableRedirects = false; });
-        Assert.DoesNotContain(off, d => d.ServiceType == typeof(IStartupFilter));
+        Assert.DoesNotContain(off, d => d.ImplementationType?.Name == "DocsRedirectStartupFilter");
     }
 
     [Fact]

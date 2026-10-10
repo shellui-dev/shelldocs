@@ -48,6 +48,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<DocsRedirects>();
         if (options.EnableRedirects)
             services.AddTransient<IStartupFilter, DocsRedirectStartupFilter>();
+        services.AddSingleton<DocsSearchIndexFile>();
+        services.AddTransient<IStartupFilter, DocsSearchStartupFilter>();
 
         return services;
     }
