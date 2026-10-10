@@ -1,11 +1,11 @@
 @inherits LayoutComponentBase
-@inject ShellDocs.Components.Chrome.SidebarCollapseState Collapse
 @inject ShellDocsOptions Options
 @inject IJSRuntime JS
-@implements IDisposable
 @using Microsoft.AspNetCore.Components.Sections
 
-<div class="docs-shell docs-shell-@Variant @(Collapse.IsCollapsed ? "docs-sidebar-collapsed" : "")" data-mobile-open="false">
+@* [data-sidebar-collapsed] is flipped by shelldocs.js ([data-sidebar-collapse-toggle]),
+   so collapsing works without a Blazor runtime. *@
+<div class="docs-shell docs-shell-@Variant" data-mobile-open="false" data-sidebar-collapsed="false">
     @if (Options.LayoutVariant == DocsLayoutVariant.TopNav)
     {
         <DocsHeader />
@@ -15,10 +15,11 @@
         <DocsMobileBar />
     }
 
-    @if (Options.LayoutVariant == DocsLayoutVariant.Sidebar && Collapse.IsCollapsed)
+    @if (Options.LayoutVariant == DocsLayoutVariant.Sidebar)
     {
+        @* Shown by CSS while the sidebar is collapsed. *@
         <div class="docs-collapsed-toolbar">
-            <button type="button" class="docs-collapsed-tool" @onclick="Collapse.Toggle" aria-label="Expand sidebar" title="Expand sidebar">
+            <button type="button" class="docs-collapsed-tool" data-sidebar-collapse-toggle aria-label="Expand sidebar" title="Expand sidebar">
                 <ShellIcons.Icons.PanelLeft StrokeWidth="1.75" />
             </button>
             <button type="button" class="docs-collapsed-tool" @onclick="OpenSearch" aria-label="Search" title="Search (⌘K)">
@@ -58,9 +59,5 @@
         _ => "topnav"
     };
 
-    protected override void OnInitialized() => Collapse.OnChange += StateHasChanged;
-
     private Task OpenSearch() => JS.InvokeVoidAsync("shelldocsSearch.open").AsTask();
-
-    public void Dispose() => Collapse.OnChange -= StateHasChanged;
 }

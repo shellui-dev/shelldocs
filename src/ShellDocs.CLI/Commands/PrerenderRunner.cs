@@ -94,11 +94,19 @@ internal static class PrerenderRunner
                     var response = http.GetAsync(url).GetAwaiter().GetResult();
                     if (!response.IsSuccessStatusCode)
                     {
-                        AnsiConsole.MarkupLine($"  [yellow]warn:[/] [cyan]{url}[/] returned [yellow]{(int)response.StatusCode}[/]");
+                        var why = response.StatusCode == HttpStatusCode.NotFound ? "404 (page not found)" : ((int)response.StatusCode).ToString();
+                        AnsiConsole.MarkupLine($"  [yellow]warn:[/] [cyan]{url}[/] returned [yellow]{why}[/]");
                         failed++;
                         continue;
                     }
                     var html = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                    // A docs page that rendered <DocsNotFound> where the status couldn't be set.
+                    if (IsNotFoundPage(html))
+                    {
+                        AnsiConsole.MarkupLine($"  [yellow]warn:[/] [cyan]{url}[/] rendered [yellow]Page not found[/]");
+                        failed++;
+                        continue;
+                    }
                     var outPath = UrlToFilePath(url, outputDir);
                     Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
                     File.WriteAllText(outPath, html);
@@ -115,11 +123,37 @@ internal static class PrerenderRunner
 
             var redirects = WriteRedirects(http, outputDir);
             if (redirects > 0) AnsiConsole.MarkupLine($"[dim]redirects:[/] wrote [cyan]{redirects}[/] redirect page(s)");
+            if (WriteNotFoundPage(http, outputDir)) AnsiConsole.MarkupLine("[dim]not found:[/] wrote [cyan]404.html[/]");
             return new Result(failed == 0, rendered, failed);
         }
         finally
         {
             if (proc is not null) TryKill(proc);
+        }
+    }
+
+    internal const string NotFoundMarker = "data-shelldocs-not-found";
+    // A URL no site has, so the docs route renders <DocsNotFound>.
+    internal const string NotFoundProbe = "/docs/__shelldocs-not-found__";
+
+    internal static bool IsNotFoundPage(string html) => html.Contains(NotFoundMarker, StringComparison.Ordinal);
+
+    // Static hosts (GitHub Pages, Netlify, Cloudflare Pages) serve 404.html for unknown
+    // URLs. Written from the site's own not-found view, when its docs route has one.
+    private static bool WriteNotFoundPage(HttpClient http, string outputDir)
+    {
+        try
+        {
+            var response = http.GetAsync(NotFoundProbe).GetAwaiter().GetResult();
+            var html = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+            if (response.StatusCode != HttpStatusCode.NotFound || !IsNotFoundPage(html)) return false;
+            File.WriteAllText(Path.Combine(outputDir, "404.html"), html);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            AnsiConsole.MarkupLine($"  [yellow]warn:[/] couldn't render the not-found page: {ex.Message}");
+            return false;
         }
     }
 
