@@ -167,6 +167,41 @@ public class StaticSearchTests : IDisposable
         Assert.DoesNotContain("invokeMethodAsync('OpenFromJs')", js);
     }
 
+    [Fact]
+    public void Build_CopiesTheIndexIntoTheExport()
+    {
+        var cli = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.GetName().Name == "shelldocs") ?? Assembly.Load("shelldocs");
+        var write = cli.GetType("ShellDocs.CLI.Commands.PrerenderRunner", throwOnError: true)!
+            .GetMethod("WriteSearchIndex", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)!;
+        var output = Path.Combine(_root, "out");
+        Directory.CreateDirectory(output);
+
+        using var served = new HttpClient(new StubHandler(HttpStatusCode.OK, "{\"versions\":[],\"entries\":[]}")) { BaseAddress = new Uri("http://localhost") };
+        var written = (long)write.Invoke(null, [served, output])!;
+        var path = Path.Combine(output, "_shelldocs", "search.json");
+        Assert.Equal(new FileInfo(path).Length, written);
+        Assert.Equal("{\"versions\":[],\"entries\":[]}", File.ReadAllText(path));
+
+        // A site on a ShellDocs.Components without the endpoint.
+        var older = Path.Combine(_root, "older");
+        Directory.CreateDirectory(older);
+        using var missing = new HttpClient(new StubHandler(HttpStatusCode.NotFound, "")) { BaseAddress = new Uri("http://localhost") };
+        Assert.Equal(0L, (long)write.Invoke(null, [missing, older])!);
+        Assert.False(Directory.Exists(Path.Combine(older, "_shelldocs")));
+    }
+
+    private sealed class StubHandler(HttpStatusCode status, string body) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            Assert.Equal("/_shelldocs/search.json", request.RequestUri!.AbsolutePath);
+            return Task.FromResult(new HttpResponseMessage(status) { Content = new StringContent(body) });
+        }
+
+        protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
+            => SendAsync(request, cancellationToken).GetAwaiter().GetResult();
+    }
+
     private static DefaultHttpContext Context(string path)
     {
         var ctx = new DefaultHttpContext();
