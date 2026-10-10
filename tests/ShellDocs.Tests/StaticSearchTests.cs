@@ -12,7 +12,7 @@ using Xunit;
 
 namespace ShellDocs.Tests;
 
-// The search index is served as JSON at /_shelldocs/search.json.
+// Search runs in shelldocs.js against /_shelldocs/search.json, so it needs no Blazor runtime.
 public class StaticSearchTests : IDisposable
 {
     private readonly string _root;
@@ -45,6 +45,40 @@ public class StaticSearchTests : IDisposable
         o.AddVersion("v2", "v2.0", "/docs/v2", latest: true);
         o.AddVersion("v1", "v1.0", "/docs/v1");
     }, "http://localhost/docs/introduction");
+
+    [Fact]
+    public async Task SearchDialog_IsAHiddenTemplate_WithNoBlazorHandlers()
+    {
+        var html = await Harness().RenderAsync<SearchDialog>();
+
+        Assert.Matches("<div class=\"search-backdrop\"[^>]*data-search-dialog[^>]*hidden", html);
+        Assert.Contains("data-search-input", html);
+        Assert.Contains("data-search-results", html);
+        Assert.Matches("<a class=\"search-result\"[^>]*data-search-row=\"p\"", html);
+        Assert.Matches("<a class=\"search-result\"[^>]*data-search-row=\"h\"", html);
+        Assert.Matches("<div class=\"search-empty\"[^>]*data-search-row=\"empty\"", html);
+        Assert.DoesNotContain("blazor:on", html);
+    }
+
+    [Fact]
+    public async Task SearchButtons_OpenSearchThroughShelldocsJs()
+    {
+        var sidebarLayout = await Harness().RenderAsync<DocsLayout>();
+        var topNavLayout = await Harness(DocsLayoutVariant.TopNav).RenderAsync<DocsLayout>();
+
+        foreach (var (html, css) in new[]
+        {
+            (sidebarLayout, "docs-collapsed-tool\"[^>]*aria-label=\"Search\""),
+            (sidebarLayout, "docs-sidebar-search"),
+            (sidebarLayout, "docs-mobile-tool\"[^>]*aria-label=\"Search\""),
+            (topNavLayout, "docs-header-search"),
+        })
+        {
+            var button = Regex.Match(html, "<button[^>]*" + css + "[^>]*>").Value;
+            Assert.Contains("data-search-open", button);
+            Assert.DoesNotContain("blazor:onclick", button);
+        }
+    }
 
     [Fact]
     public void IndexFile_ListsEntries_WithTheVersionThatOwnsThem()
@@ -123,6 +157,16 @@ public class StaticSearchTests : IDisposable
         Assert.Contains(filters, f => f is DocsSearchStartupFilter);
     }
 
+    [Fact]
+    public void ShelldocsJs_SearchesTheIndexInTheBrowser()
+    {
+        var js = File.ReadAllText(FindAsset("shelldocs.js"));
+        Assert.Contains("'_shelldocs/search.json'", js);
+        Assert.Contains("[data-search-dialog]", js);
+        Assert.Contains("[data-search-open]", js);
+        Assert.DoesNotContain("invokeMethodAsync('OpenFromJs')", js);
+    }
+
     private static DefaultHttpContext Context(string path)
     {
         var ctx = new DefaultHttpContext();
@@ -131,4 +175,18 @@ public class StaticSearchTests : IDisposable
         return ctx;
     }
 
+    private static string FindAsset(string name)
+    {
+        var testDir = Path.GetDirectoryName(typeof(StaticSearchTests).Assembly.Location)!;
+        foreach (var candidate in new[]
+        {
+            Path.Combine(testDir, "wwwroot", "_content", "ShellDocs.Components", name),
+            Path.Combine(testDir, "..", "..", "..", "..", "..", "src", "ShellDocs.Components", "wwwroot", name)
+        })
+        {
+            var full = Path.GetFullPath(candidate);
+            if (File.Exists(full)) return full;
+        }
+        throw new FileNotFoundException(name);
+    }
 }

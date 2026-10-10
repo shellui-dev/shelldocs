@@ -1,5 +1,6 @@
 namespace ShellDocs.Components.Chrome;
 
+// No longer used: search is driven by shelldocs.js (shelldocsSearch.open()). Kept so existing code compiles.
 public class SearchState
 {
     public bool IsOpen { get; private set; }
