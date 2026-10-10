@@ -209,7 +209,7 @@ public static class ScaffoldTemplates
             import { createHighlighter } from 'https://esm.sh/shiki@1.24.0';
             window.__shiki = await createHighlighter({
                 themes: ['github-light', 'github-dark'],
-                langs: ['razor', 'csharp', 'html', 'json', 'yaml', 'bash', 'typescript', 'javascript', 'markdown']
+                langs: ['razor', 'csharp', 'html', 'xml', 'json', 'yaml', 'bash', 'typescript', 'javascript', 'markdown']
             });
             if (window.shelldocsHighlight) window.shelldocsHighlight();
         </script>

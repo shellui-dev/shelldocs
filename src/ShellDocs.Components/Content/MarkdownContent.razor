@@ -14,6 +14,7 @@
     {
         @* Ordinal ids keep anchors and saved tab state stable across renders. *@
         var previewIndex = 0;
+        var switchesShown = false;
         @if (_title is not null)
         {
             <header class="docs-page-header">
@@ -23,6 +24,11 @@
                     <p class="docs-page-description">@_description</p>
                 }
             </header>
+            switchesShown = true;
+            @foreach (var key in _switchKeys)
+            {
+                <SyncSwitch SyncKey="@key" />
+            }
         }
         @foreach (var part in _parts)
         {
@@ -32,6 +38,15 @@
             }
             else if (part is SlotPart slot)
             {
+                @* Without a page header, the switch goes right above the first block that uses it. *@
+                @if (!switchesShown && slot.Slot is ComponentSlot { } first && UsesSwitchKey(first))
+                {
+                    switchesShown = true;
+                    @foreach (var key in _switchKeys)
+                    {
+                        <SyncSwitch SyncKey="@key" />
+                    }
+                }
                 @if (slot.Slot is ComponentSlot comp)
                 {
                     @SlotRenderer.Component(Renderer, comp.ComponentType, comp.Parameters, comp.ChildContentRaw, Logger)
@@ -52,6 +67,8 @@
     private IReadOnlyList<RenderPart>? _parts;
     private string? _title;
     private string? _description;
+    // AddSyncSwitch keys this page's blocks use and that it doesn't place itself.
+    private IReadOnlyList<string> _switchKeys = Array.Empty<string>();
 
     protected override void OnParametersSet()
     {
@@ -63,8 +80,23 @@
             _title = NonEmpty(doc.Source.Frontmatter.GetValue<string>("title"));
             _description = _title is null ? null : NonEmpty(doc.Source.Frontmatter.GetValue<string>("description"));
         }
+        _switchKeys = doc is null ? Array.Empty<string>() : SwitchKeys(doc);
         PageState.SetDocument(doc);
     }
+
+    private IReadOnlyList<string> SwitchKeys(RenderedDocument doc)
+    {
+        if (Options.SyncSwitches.Count == 0) return Array.Empty<string>();
+        var components = doc.Slots.OfType<ComponentSlot>().ToList();
+        var placed = components.Where(c => c.ComponentType == typeof(SyncSwitch)).Select(SyncKeyOf).ToHashSet();
+        var used = components.Where(c => c.ComponentType != typeof(SyncSwitch)).Select(SyncKeyOf).ToHashSet();
+        return Options.SyncSwitches.Select(s => s.SyncKey).Where(k => used.Contains(k) && !placed.Contains(k)).ToList();
+    }
+
+    private bool UsesSwitchKey(ComponentSlot slot) => _switchKeys.Contains(SyncKeyOf(slot) ?? "");
+
+    private static string? SyncKeyOf(ComponentSlot slot)
+        => slot.Parameters.FirstOrDefault(p => string.Equals(p.Key, "SyncKey", StringComparison.OrdinalIgnoreCase)).Value;
 
     private static bool StartsWithH1(string body)
     {

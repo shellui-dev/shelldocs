@@ -4,6 +4,26 @@ All notable changes to ShellDocs land here. Format follows [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [0.1.13-alpha] — 2026-10-10
+
+Code variants for cross-platform libraries: one preview with code tabs per platform (MAUI and Avalonia XAML, say), a page switch that picks the platform site-wide, captions, and live iframe previews. Also fixes one-line component bodies being wrapped in `<p>`.
+
+### Added
+
+- **Code variants on previews.** `<DemoPreview>`, `<ComponentPreview>` and `<IframePreview>` take `<CodeTab Label="…">` children with a code fence inside; the Code panel shows them as tabs instead of the Razor source, for libraries documented in several languages (MAUI and Avalonia XAML, say). The copy button copies the tab that's showing. `SyncKey` works as on `<CodeGroup>`: blocks with the same key switch together across pages and the choice is saved. A block without a tab for the current choice shows "Not available on {label} yet" and keeps its height. From `.razor`, pass `CodeTabs` (`PreviewCodeTab` records). Without code tabs nothing changes. `razor:preview` fences can't take code tabs: their body is Razor, so a fence can't nest in one.
+- **Page switch.** `o.AddSyncSwitch("platform", "MAUI", "Avalonia")` adds underlined tabs, like shadcn/ui's library switch, to every page whose blocks use that key: under the page header, or right above the first such block. `<SyncSwitch SyncKey="…" [Options="a, b"] />` places one by hand.
+- **Preview caption.** `Caption="…"` puts a short muted note in the preview toolbar; `ShellDocsOptions.PreviewCaption` sets a site-wide default.
+- **`<IframePreview Src Height Lazy SyncKey Caption Title Id>`** shows another page (a live Avalonia app compiled to WebAssembly, for instance) in the Preview panel with the same toolbar and code tabs. `shelldocs.js` loads it when scrolled into view (`Lazy="visible"`, the default), on a **Run live preview** button (`click`) or at once (`none`), appends `?theme=light|dark`, and posts `{ type: "shelldocs-theme", theme }` to the page's origin when the theme changes. The Code tab is hidden when there's no code.
+- XAML highlighting: `xaml` and `axaml` fences are highlighted as XML (`cs` as C#). The `init` template loads Shiki's `xml` grammar; existing sites add `'xml'` to the `langs` list in `App.razor`.
+
+### Changed
+
+- `SlotRenderer` no longer warns about child content for components that read their raw body (`ChildContentSource`).
+
+### Fixed
+
+- **One-line component bodies in prose were wrapped in `<p>`.** `<Badge>v0.3.2 stable</Badge>` rendered a paragraph inside the badge, so the page's paragraph margin and colour overrode it. As in MDX, a body on the same line as its tags now renders inline; a body on its own lines still becomes paragraphs.
+
 ## [0.1.12-alpha] — 2026-10-04
 
 Parser fixes found while rewriting the ShellDocs docs site on 0.1.11: fences and component tags are now read the way CommonMark and Razor read them, so a page that shows its own markdown source no longer breaks what follows it.
@@ -380,7 +400,8 @@ Published to NuGet:
 - `<TypeTable>` is hand-authored today; XML-doc auto-generation ships in `ShellDocs.Xml` (Phase 4)
 - No `<DocsBreadcrumb>` opt-out — currently hides when the trail has ≤ 1 node, otherwise always renders
 
-[Unreleased]: https://github.com/shellui-dev/shelldocs/compare/v0.1.12-alpha...HEAD
+[Unreleased]: https://github.com/shellui-dev/shelldocs/compare/v0.1.13-alpha...HEAD
+[0.1.13-alpha]: https://github.com/shellui-dev/shelldocs/releases/tag/v0.1.13-alpha
 [0.1.12-alpha]: https://github.com/shellui-dev/shelldocs/releases/tag/v0.1.12-alpha
 [0.1.11-alpha]: https://github.com/shellui-dev/shelldocs/releases/tag/v0.1.11-alpha
 [0.1.10-alpha]: https://github.com/shellui-dev/shelldocs/releases/tag/v0.1.10-alpha

@@ -1,0 +1,32 @@
+/* Underlined tabs under the page header, like shadcn/ui's library switch. */
+.sync-switch {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    margin: 0 0 1.75rem;
+}
+.sync-switch-option {
+    position: relative;
+    padding: 0.35rem 0 0.45rem;
+    border: 0;
+    background: transparent;
+    color: var(--muted-foreground);
+    font: inherit;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color 150ms;
+}
+.sync-switch-option:hover { color: var(--foreground); }
+.sync-switch-option[aria-selected="true"] { color: var(--foreground); }
+.sync-switch-option[aria-selected="true"]::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 2px;
+    border-radius: 1px;
+    background: var(--foreground);
+}
+.sync-switch-option:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 2px; }

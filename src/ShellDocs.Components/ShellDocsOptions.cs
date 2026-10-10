@@ -17,6 +17,11 @@ public class ShellDocsOptions
     // (title and body appended as query params). Defaults to GitHubRepo's issues/new;
     // with neither set, those items are hidden.
     public string? IssueTrackerUrl { get; set; }
+    // Default note in every preview's toolbar, e.g. "Rendered with ShellUI for Blazor".
+    // A preview's own Caption replaces it.
+    public string? PreviewCaption { get; set; }
+    // Page-level tab rows that drive a code-tab SyncKey site-wide (AddSyncSwitch).
+    public List<DocsSyncSwitch> SyncSwitches { get; } = new();
 
     public string? LogoLight { get; set; }
     public string? LogoDark { get; set; }
@@ -149,6 +154,19 @@ public class ShellDocsOptions
         return this;
     }
 
+    // AddSyncSwitch("platform", "MAUI", "Avalonia"): a tab row under the page header, on
+    // pages whose blocks use SyncKey="platform", that picks the tab every <CodeGroup>,
+    // <Tabs> and preview code panel with that key shows.
+    public ShellDocsOptions AddSyncSwitch(string syncKey, params string[] options)
+    {
+        if (string.IsNullOrWhiteSpace(syncKey))
+            throw new ArgumentException("syncKey must be non-empty.", nameof(syncKey));
+        if (options is not { Length: >= 2 })
+            throw new ArgumentException("A sync switch needs at least two options.", nameof(options));
+        SyncSwitches.Add(new DocsSyncSwitch(syncKey, options));
+        return this;
+    }
+
     public ShellDocsOptions AddNavLink(string label, string href)
     {
         PrimaryNav.Add(new NavLink(label, href));
@@ -248,6 +266,8 @@ public record DocsPackage(string Id, string Title, string Description, string Ro
 public record DocsVersion(string Id, string Label, string RootUrl, string? Description, bool IsLatest);
 
 public record DocsRedirectRule(string From, string To, bool Permanent = true);
+
+public record DocsSyncSwitch(string SyncKey, IReadOnlyList<string> Options);
 
 public enum ShellDocsTheme
 {

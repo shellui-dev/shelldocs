@@ -23,17 +23,27 @@
                 <Eye />
                 <span>Preview</span>
             </button>
-            <button type="button" role="tab" class="preview-tab" id="@PartId("tab-code")" aria-controls="@PartId("panel-code")"
-                    data-preview-tab-target="code" aria-selected="false" tabindex="-1">
-                <CodeXml />
-                <span>Code</span>
-            </button>
+            @if (_hasCode)
+            {
+                <button type="button" role="tab" class="preview-tab" id="@PartId("tab-code")" aria-controls="@PartId("panel-code")"
+                        data-preview-tab-target="code" aria-selected="false" tabindex="-1">
+                    <CodeXml />
+                    <span>Code</span>
+                </button>
+            }
         </div>
+        @if (!string.IsNullOrWhiteSpace(_caption))
+        {
+            <div class="preview-caption" title="@_caption">@_caption</div>
+        }
         <div class="preview-actions">
-            <button type="button" class="preview-action preview-copy" data-preview-copy aria-label="Copy code" title="Copy code">
-                <Copy Class="icon-copy" />
-                <Check Class="icon-check" />
-            </button>
+            @if (_hasCode)
+            {
+                <button type="button" class="preview-action preview-copy" data-preview-copy aria-label="Copy code" title="Copy code">
+                    <Copy Class="icon-copy" />
+                    <Check Class="icon-check" />
+                </button>
+            }
             <div class="preview-menu" data-open="false">
                 <button type="button" class="preview-action preview-menu-trigger" aria-haspopup="menu" aria-expanded="false" aria-label="More actions" title="More actions">
                     <EllipsisVertical />
@@ -84,9 +94,47 @@
             @SlotRenderer.Component(Renderer, Preview!.ComponentType!, Preview!.Parameters, Preview!.ChildContentRaw, Logger, razorChildren: true)
         }
     </div>
-    <div class="preview-panel preview-code-panel" role="tabpanel" id="@PartId("panel-code")" aria-labelledby="@PartId("tab-code")" data-preview-panel="code">
-        <pre class="preview-code language-@Language"><code class="language-@Language">@(Code ?? Preview?.Code)</code></pre>
-    </div>
+    @if (_hasCode)
+    {
+        <div class="preview-panel preview-code-panel" role="tabpanel" id="@PartId("panel-code")" aria-labelledby="@PartId("tab-code")" data-preview-panel="code">
+            @if (CodeTabs is { Count: > 0 } tabs)
+            {
+                @* Same [data-tabs] contract as <CodeGroup>; data-tabs-missing shows the note
+                   below when the synced choice (e.g. from the page switch) isn't one of these tabs. *@
+                <div class="preview-code-variants" id="@PartId("code")" data-tabs data-tabs-missing data-tabs-value="@tabs[0].Label" data-tabs-sync="@SyncKey">
+                    <div class="preview-code-tabs" role="tablist" aria-label="Code">
+                        @for (var i = 0; i < tabs.Count; i++)
+                        {
+                            var tab = tabs[i];
+                            <button type="button" role="tab" class="preview-code-tab"
+                                    id="@PartId($"code-tab-{i}")" aria-controls="@PartId($"code-panel-{i}")"
+                                    aria-selected="@(i == 0 ? "true" : "false")" tabindex="@(i == 0 ? "0" : "-1")"
+                                    data-tab-target="@tab.Label">@tab.Label</button>
+                        }
+                    </div>
+                    @* Panels share one grid cell, so switching (or the missing note) never changes the height. *@
+                    <div class="preview-code-stack">
+                        @for (var i = 0; i < tabs.Count; i++)
+                        {
+                            var tab = tabs[i];
+                            <div class="preview-code-variant" role="tabpanel" id="@PartId($"code-panel-{i}")" aria-labelledby="@PartId($"code-tab-{i}")"
+                                 data-tab-panel="@tab.Label" hidden="@(i != 0)">
+                                <pre class="preview-code language-@tab.Language"><code class="language-@tab.Language">@tab.Code</code></pre>
+                            </div>
+                        }
+                        <div class="preview-code-variant preview-code-missing" data-tab-missing hidden>
+                            @* String expressions keep the spaces Razor would trim around the span. *@
+                            @("Not available on ")<span data-tab-missing-label></span>@(" yet")
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <pre class="preview-code language-@Language"><code class="language-@Language">@(Code ?? Preview?.Code)</code></pre>
+            }
+        </div>
+    }
 </div>
 
 @code {
@@ -108,9 +156,19 @@
     [Parameter] public string? Id { get; set; }
     // Used in issue titles; defaults to the previewed component's type name.
     [Parameter] public string? Name { get; set; }
+    // Replace the Code panel's single source with tabs (MAUI, Avalonia, …).
+    [Parameter] public IReadOnlyList<PreviewCodeTab>? CodeTabs { get; set; }
+    // Code tabs with the same key switch together site-wide, like <CodeGroup SyncKey>.
+    [Parameter] public string? SyncKey { get; set; }
+    // Short muted note in the toolbar; defaults to ShellDocsOptions.PreviewCaption.
+    [Parameter] public string? Caption { get; set; }
+    // "Open in new tab" target; defaults to this example's anchor on the page.
+    [Parameter] public string? OpenHref { get; set; }
 
     private string _openHref = "";
     private string _layout = "center";
+    private string? _caption;
+    private bool _hasCode;
     private string? _bugHref;
     private string? _suggestHref;
 
@@ -128,8 +186,10 @@
             "scroll" => "scroll",
             _ => "center",
         };
+        _caption = Caption ?? Options.PreviewCaption;
+        _hasCode = CodeTabs is { Count: > 0 } || !string.IsNullOrEmpty(Code ?? Preview?.Code);
         var path = DocsVersionResolver.PathOf(Nav);
-        _openHref = string.IsNullOrEmpty(Id) ? path : $"{path}#{Id}";
+        _openHref = OpenHref ?? (string.IsNullOrEmpty(Id) ? path : $"{path}#{Id}");
 
         var tracker = PreviewLinks.IssueTracker(Options);
         if (tracker is null)

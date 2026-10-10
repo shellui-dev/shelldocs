@@ -20,6 +20,8 @@ internal static class SlotRenderer
         /* Markdig treats 4+ space indentation as a code block, so children
            authored at the outer tag's indent would render as <pre>. */
         var doc = renderer.Render(Dedent(raw));
+        // As in MDX, a body on the tags' own line is inline: <Badge>v1</Badge> gets no <p>.
+        if (!raw.Contains('\n')) doc = doc with { Html = Unwrap(doc.Html) };
         var parts = SlotSplitter.Split(doc);
         var seq = 0;
         foreach (var part in parts)
@@ -34,6 +36,15 @@ internal static class SlotRenderer
             }
         }
     };
+
+    // The inside of a single <p>…</p>; anything else is returned as is.
+    internal static string Unwrap(string html)
+    {
+        var t = html.Trim();
+        if (!t.StartsWith("<p>", StringComparison.Ordinal) || !t.EndsWith("</p>", StringComparison.Ordinal)) return html;
+        var inner = t[3..^4];
+        return inner.Contains("<p>", StringComparison.Ordinal) || inner.Contains("</p>", StringComparison.Ordinal) ? html : inner;
+    }
 
     // Child content inside a razor:preview is Razor, not markdown.
     public static RenderFragment FromRazor(MarkdownRenderer renderer, string raw, ILogger? logger = null)
@@ -216,7 +227,8 @@ internal static class SlotRenderer
                 // missing or templated (RenderFragment<T>) one would throw.
                 if (props.TryGetValue("ChildContent", out var cc) && cc.PropertyType == typeof(RenderFragment))
                     dict["ChildContent"] = Fragment(remaining);
-                else
+                // Components that read their raw body (code tabs) take it as ChildContentSource below.
+                else if (!props.ContainsKey("ChildContentSource"))
                     Skip(logger, componentType, "ChildContent", "component has no RenderFragment ChildContent parameter");
             }
 

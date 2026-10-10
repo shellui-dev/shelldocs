@@ -11,7 +11,10 @@
               ErrorTitle="DemoPreview error"
               Id="@(Id ?? $"demo-{PreviewLinks.Slug(Component)}")"
               Name="@Component"
-              Layout="@Layout" />
+              Layout="@Layout"
+              CodeTabs="@_codeTabs"
+              SyncKey="@SyncKey"
+              Caption="@Caption" />
 
 @code {
     [Parameter, EditorRequired] public string? Component { get; set; }
@@ -20,16 +23,24 @@
     [Parameter] public string? Id { get; set; }
     // "center" (default), "stretch" or "scroll"; see PreviewFrame.
     [Parameter] public string? Layout { get; set; }
+    // Code tabs that replace the Razor source; in markdown, <CodeTab> children instead.
+    [Parameter] public IReadOnlyList<PreviewCodeTab>? CodeTabs { get; set; }
+    [Parameter] public string? SyncKey { get; set; }
+    [Parameter] public string? Caption { get; set; }
+    // Raw child markup from SlotRenderer; its <CodeTab> blocks become code tabs.
+    [Parameter] public string? ChildContentSource { get; set; }
 
     private RenderFragment? _content;
     private string? _source;
     private string? _error;
+    private IReadOnlyList<PreviewCodeTab>? _codeTabs;
 
     protected override void OnParametersSet()
     {
         _content = null;
         _source = null;
         _error = null;
+        _codeTabs = CodeTabs is { Count: > 0 } ? CodeTabs : CodeTabParser.Extract(ChildContentSource).Tabs;
 
         if (string.IsNullOrWhiteSpace(Component))
         {

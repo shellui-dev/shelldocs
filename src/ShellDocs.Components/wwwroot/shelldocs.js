@@ -83,6 +83,7 @@ window.shelldocsTheme = (function () {
         subscribers.slice().forEach(function (ref) {
             ref.invokeMethodAsync('ThemeChanged', dark).catch(function () {});
         });
+        if (window.shelldocsIframes) window.shelldocsIframes.postTheme(dark);
     }
 
     if (window.MutationObserver) {
@@ -115,12 +116,74 @@ window.shelldocsTheme = (function () {
 })();
 window.shelldocsApplyTheme = window.shelldocsTheme.apply;
 
+/* <IframePreview>: shelldocs.js sets each [data-iframe-preview] iframe's src, with
+   ?theme=light|dark, when it scrolls into view (data-lazy="visible"), on the Run
+   button ("click") or at once ("none"), and posts theme changes to loaded frames. */
+window.shelldocsIframes = (function () {
+    var observer = null;
+
+    function theme() { return document.documentElement.classList.contains('dark') ? 'dark' : 'light'; }
+
+    function load(host) {
+        if (!host || host.getAttribute('data-loaded') === 'true') return;
+        var frame = host.querySelector('iframe');
+        var src = host.getAttribute('data-src');
+        if (!frame || !src) return;
+        var url = new URL(src, document.baseURI);
+        url.searchParams.set('theme', theme());
+        frame.src = url.href;
+        host.setAttribute('data-loaded', 'true');
+    }
+
+    function watch(host) {
+        if (!window.IntersectionObserver) { load(host); return; }
+        observer = observer || new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+                if (!entry.isIntersecting) return;
+                observer.unobserve(entry.target);
+                load(entry.target);
+            });
+        }, { rootMargin: '200px 0px' });
+        observer.observe(host);
+    }
+
+    function init(scope) {
+        if (!scope || !scope.querySelectorAll) return;
+        var hosts = Array.prototype.slice.call(scope.querySelectorAll('[data-iframe-preview]'));
+        if (scope.matches && scope.matches('[data-iframe-preview]')) hosts.unshift(scope);
+        hosts.forEach(function (host) {
+            if (host.__shelldocsIframe) return;
+            host.__shelldocsIframe = true;
+            var lazy = host.getAttribute('data-lazy');
+            if (lazy === 'none') load(host);
+            else if (lazy !== 'click') watch(host);
+        });
+    }
+
+    function postTheme(dark) {
+        var message = { type: 'shelldocs-theme', theme: dark ? 'dark' : 'light' };
+        document.querySelectorAll('[data-iframe-preview][data-loaded="true"] iframe').forEach(function (frame) {
+            try { frame.contentWindow.postMessage(message, new URL(frame.src).origin); } catch (e) {}
+        });
+    }
+
+    document.addEventListener('click', function (e) {
+        var run = e.target.closest && e.target.closest('[data-iframe-run]');
+        if (run) load(run.closest('[data-iframe-preview]'));
+    });
+
+    return { init: init, load: load, postTheme: postTheme };
+})();
+
 /* Shiki highlighting. The source <pre> belongs to Blazor (or to a markup block
    Blazor tracks), so it is never replaced or edited: it gets [data-shiki="source"]
    (hidden by CSS) and Shiki's output goes into a JS-owned sibling
    [data-shiki-output]. Replacing the source used to leave Blazor updating a
    detached node — stale code after navigation — and could throw on replaceChild.
    Each pass re-renders an output whose source text changed and drops orphans. */
+
+// Fence languages Shiki knows under another name; XAML is highlighted as XML.
+var LANG_ALIASES = { xaml: 'xml', axaml: 'xml', cs: 'csharp', 'c#': 'csharp' };
 
 function langOf(codeEl) {
     var cls = (codeEl.className || '').split(/\s+/);
@@ -139,7 +202,8 @@ function highlightOne(preEl) {
     if (!preEl || !window.__shiki || !preEl.parentNode || preEl.hasAttribute('data-shiki-output')) return;
     var code = preEl.querySelector('code');
     if (!code) return;
-    var lang = langOf(code);
+    var declared = langOf(code);
+    var lang = LANG_ALIASES[declared] || declared;
     if (!lang) return;
     /* Languages Shiki hasn't loaded stay as plain text. */
     if (!window.__shiki.getLoadedLanguages().includes(lang)) return;
@@ -451,7 +515,12 @@ window.shelldocsChrome = (function () {
         var copy = e.target.closest('[data-preview-copy]');
         if (copy) {
             var frame = copy.closest('.preview-frame');
-            var code = frame && frame.querySelector('[data-preview-panel="code"] code');
+            var panel = frame && frame.querySelector('[data-preview-panel="code"]');
+            // With code tabs, the visible one (none while the "not available" note shows).
+            var source = panel && panel.querySelector('[data-tabs-missing]')
+                ? panel.querySelector('[data-tab-panel]:not([hidden])')
+                : panel;
+            var code = source && source.querySelector('code');
             if (!code) return;
             // textContent: the code panel may be display:none, where innerText loses layout.
             var text = code.textContent;
@@ -494,20 +563,35 @@ window.shelldocsChrome = (function () {
         });
     }
 
+    /* A group without the value is left alone, except preview code tabs
+       ([data-tabs-missing]): they show "Not available on {value} yet" instead. */
     function selectTabsValue(root, value, focus) {
         var buttons = ownTabParts(root, '[data-tab-target]');
-        if (!buttons.some(function (b) { return b.getAttribute('data-tab-target') === value; })) return false;
+        var has = buttons.some(function (b) { return b.getAttribute('data-tab-target') === value; });
+        if (!has && !root.hasAttribute('data-tabs-missing')) return false;
         root.setAttribute('data-tabs-value', value);
-        buttons.forEach(function (b) {
+        buttons.forEach(function (b, i) {
             var selected = b.getAttribute('data-tab-target') === value;
             b.setAttribute('aria-selected', selected ? 'true' : 'false');
-            b.setAttribute('tabindex', selected ? '0' : '-1');
+            b.setAttribute('tabindex', selected || (!has && i === 0) ? '0' : '-1');
             if (selected && focus) b.focus();
         });
         ownTabParts(root, '[data-tab-panel]').forEach(function (panel) {
             panel.hidden = panel.getAttribute('data-tab-panel') !== value;
         });
+        ownTabParts(root, '[data-tab-missing]').forEach(function (note) {
+            note.hidden = has;
+            var label = note.querySelector('[data-tab-missing-label]');
+            if (label && !has) label.textContent = value;
+        });
         return true;
+    }
+
+    // The page switch (<SyncSwitch>) for a key, if the page has one.
+    function switchFor(sync) {
+        return Array.prototype.find.call(document.querySelectorAll('[data-tabs-switch]'), function (sw) {
+            return sw.getAttribute('data-tabs-sync') === sync;
+        }) || null;
     }
 
     function chooseTab(root, value, focus) {
@@ -530,7 +614,12 @@ window.shelldocsChrome = (function () {
         roots.forEach(function (root) {
             var sync = root.getAttribute('data-tabs-sync');
             var saved = null;
-            if (sync) { try { saved = localStorage.getItem(TAB_STORE + sync); } catch (e) {} }
+            if (sync) {
+                try { saved = localStorage.getItem(TAB_STORE + sync); } catch (e) {}
+                // Nothing chosen yet: follow the page switch's default, so blocks agree with it.
+                var sw = saved ? null : switchFor(sync);
+                if (sw && sw !== root) saved = sw.getAttribute('data-tabs-value');
+            }
             else if (root.id) saved = tabMemory[location.pathname + '#' + root.id];
             if (saved && root.getAttribute('data-tabs-value') !== saved) selectTabsValue(root, saved, false);
         });
@@ -578,6 +667,7 @@ window.shelldocsChrome = (function () {
                     if (added[n].nodeType !== 1) continue;
                     restorePreviewTabs(added[n]);
                     restoreTabs(added[n]);
+                    window.shelldocsIframes.init(added[n]);
                     restoreMobileNav(added[n]);
                 }
             }
@@ -662,6 +752,7 @@ window.shelldocsChrome = (function () {
     function initPage() {
         initToc();
         restoreTabs(document);
+        window.shelldocsIframes.init(document);
     }
 
     if (document.readyState !== 'loading') {
