@@ -1,8 +1,8 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/shellui-dev/shelldocs/main/assets/shellui-dark.svg">
-    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/shellui-dev/shelldocs/main/assets/shellui-light.svg">
-    <img alt="ShellUI logo" src="https://raw.githubusercontent.com/shellui-dev/shelldocs/main/assets/shellui-light.svg" width="120">
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/shellui-dev/shelldocs/main/assets/shelldocs-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/shellui-dev/shelldocs/main/assets/shelldocs-light.svg">
+    <img alt="ShellDocs logo" src="https://raw.githubusercontent.com/shellui-dev/shelldocs/main/assets/shelldocs-light.svg" width="120">
   </picture>
 </p>
 
