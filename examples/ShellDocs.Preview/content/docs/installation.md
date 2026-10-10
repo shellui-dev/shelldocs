@@ -52,9 +52,9 @@ shelldocs build
 `shelldocs build` prerenders every page to static HTML in `publish/` (change it with `--output`). Deploy it to GitHub Pages, Cloudflare Pages, Netlify or S3. Useful flags:
 
 - `--base-href /my-repo/` rewrites `<base href>` for sites served from a subpath.
-- `--spa-fallback` copies `index.html` to `404.html`.
+- `--spa-fallback` copies `index.html` to `404.html`. Without it, `404.html` is the site's own not-found page, which GitHub Pages, Netlify and Cloudflare Pages serve for unknown URLs.
 - `--site-url https://docs.example.com` emits `sitemap.xml`, `robots.txt` and `og:` meta tags.
 
-In the static output, navigation, sidebar sections, the mobile menu, the version and package selectors, tabs, preview tabs and menus, the table of contents, the theme toggle and code copy all work through `shelldocs.js`. Search, the desktop sidebar-collapse button and stateful demo components still need a running Blazor Server app (interactive server rendering).
+In the static output, navigation, sidebar sections and collapse, the mobile menu, the version and package selectors, tabs, preview tabs and menus, the table of contents, the theme toggle and code copy all work through `shelldocs.js`. Search and stateful demo components still need a running Blazor Server app (interactive server rendering).
 
 URLs that aren't pages (folders, version roots, unversioned URLs that moved into a version) become redirect pages in the static output, the same redirects the running app answers.

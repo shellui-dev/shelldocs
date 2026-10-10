@@ -4,6 +4,16 @@ All notable changes to ShellDocs land here. Format follows [Keep a Changelog](ht
 
 ## [Unreleased]
 
+### Added
+
+- **`<DocsNotFound />`**: the docs page's not-found view, now used by the `init` template. It answers HTTP 404, so search engines skip unknown pages. The status is set as the headers go out, because .NET 10 sends an empty body for a page that is already 404 unless the app has a `NotFoundPage` or status-code re-execution. `Path`, `HomeHref` and `HomeLabel` override the message and the link back (which defaults to where `/docs` leads). Existing sites replace their `else` branch in `DocsPage.razor` with `<DocsNotFound />`.
+- **`shelldocs build` writes `404.html`** from the site's own not-found view, for static hosts that serve it for unknown URLs (GitHub Pages, Netlify, Cloudflare Pages). `--spa-fallback` still replaces it with `index.html`.
+
+### Changed
+
+- **Desktop sidebar collapse works without a Blazor runtime.** The collapse and expand buttons are `[data-sidebar-collapse-toggle]` buttons handled by `shelldocs.js`, which flips `[data-sidebar-collapsed]` on the page shell and remembers the choice in `localStorage` across pages. The page shell no longer gets a `docs-sidebar-collapsed` class; style `[data-sidebar-collapsed="true"]` instead. `SidebarCollapseState` is still registered but no longer used.
+- **`shelldocs build` fails on a page that renders as not found**, whether it answered 404 or rendered `<DocsNotFound>` with another status.
+
 ## [0.1.13-alpha] — 2026-10-10
 
 Code variants for cross-platform libraries: one preview with code tabs per platform (MAUI and Avalonia XAML, say), a page switch that picks the platform site-wide, captions, and live iframe previews. Also fixes one-line component bodies being wrapped in `<p>`.

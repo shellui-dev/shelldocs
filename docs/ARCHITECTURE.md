@@ -209,10 +209,13 @@ Chrome that must work without a Blazor runtime follows one contract:
 | Tabs, CodeGroup, preview code tabs, page switch | `[data-tabs]`, `[data-tab-target]`, `[data-tab-panel]` | switch on click / arrows; `[data-tabs-sync]` groups switch together and persist in `localStorage`; a `[data-tabs-missing]` group without the chosen value shows its `[data-tab-missing]` note; with nothing saved yet, groups follow a `[data-tabs-switch]` for their key |
 | Iframe previews | `[data-iframe-preview][data-src][data-lazy]` | sets the iframe's `src` (plus `?theme=`) when visible (IntersectionObserver), on `[data-iframe-run]` or at once; posts `{ type: "shelldocs-theme", theme }` to loaded frames on theme change |
 | Mobile nav | page shell `[data-mobile-open]` | hamburger toggles; backdrop, Escape, link or navigation closes; page scroll locked on `<html>` |
+| Sidebar collapse | page shell `[data-sidebar-collapsed]`, `[data-sidebar-collapse-toggle]` | toggles collapse; remembered in `localStorage` and restored as soon as `shelldocs.js` runs, so the sidebar doesn't flash open |
 | TOC | `[data-toc-list][data-toc-ids]` | IntersectionObserver scroll-spy, re-attached on `enhancedload` |
 | Theme | `<html class="dark">`, `[data-theme-toggle]` | inline head script applies the saved / system theme; the toggle flips the class and CSS picks its icon; a `MutationObserver` saves any change (including another library's toggle) and pushes it to `ThemeState`; re-applied after enhanced navigation |
 
-Still Blazor-only: search, the desktop sidebar-collapse button.
+Still Blazor-only: search.
+
+**Not found.** `<DocsNotFound />` is the docs page's not-found view. It answers 404 by setting the status in `Response.OnStarting`: .NET 10 sends an empty body for a page whose status is already 404 unless the app has a `NotFoundPage` or status-code re-execution, so the status has to change only as the headers go out. It carries `data-shelldocs-not-found`, which `shelldocs build` checks for.
 
 `enhancedload` is a Blazor event (`Blazor.addEventListener`), not a DOM event; `shelldocsOnEnhancedLoad(fn)` attaches once `blazor.web.js` has run.
 
@@ -240,10 +243,11 @@ One neutral, shadcn-shaped palette of CSS variables in `ShellDocs.Tokens/tokens.
 
 1. `dotnet publish -c Release` into `obj/shelldocs-publish`, then copies in any `content/` file publish left out (a csproj that copies `meta.json` but not `.md`).
 2. Builds the navigation graph and collects every URL (visible and hidden) plus `/`.
-3. `PrerenderRunner` starts the published app on a free port, requests each URL and writes `<output>/<path>/index.html`.
+3. `PrerenderRunner` starts the published app on a free port, requests each URL and writes `<output>/<path>/index.html`. A URL that answers 404, or renders `<DocsNotFound>`, fails the build.
 4. Reads the app's redirect map and writes a redirect page for each source URL without a prerendered page (meta refresh plus `location.replace`, relative to `<base href>`).
-5. Merges the published `wwwroot/` into the output without overwriting prerendered HTML.
-6. Optionally rewrites `<base href>` in every HTML file, copies `index.html` to `404.html`, and with `--site-url` writes `sitemap.xml`, `robots.txt` and `og:*` meta.
+5. Requests `/docs/__shelldocs-not-found__` and, if it renders `<DocsNotFound>` with a 404, writes it as `404.html`.
+6. Merges the published `wwwroot/` into the output without overwriting prerendered HTML.
+7. Optionally rewrites `<base href>` in every HTML file, copies `index.html` to `404.html` (replacing the not-found page), and with `--site-url` writes `sitemap.xml`, `robots.txt` and `og:*` meta.
 
 ---
 
