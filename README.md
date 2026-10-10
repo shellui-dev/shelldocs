@@ -49,7 +49,7 @@ Already have a Blazor project? Run `shelldocs init --attach` inside it: it adds 
 
 - **Markdown-first authoring.** YAML frontmatter, Shiki-highlighted code fences, live `razor:preview` examples, inline component tags mid-prose. Set `o.RenderPageTitle = true` to render the frontmatter `title` and `description` as the page header instead of writing `# Title`.
 - **File-based navigation.** Drop a `.md` in `content/docs/` and it's a page. Sidebar, breadcrumb, prev/next and TOC come from the folder tree; `meta.json` controls order, dividers, subsections and hidden pages.
-- **`Cmd+K` search** across titles, headings and page text, with body snippets. The index is built in memory at startup, so there's no external service; search needs a running Blazor app (it isn't available in the static export).
+- **`Cmd+K` search** across titles, headings and page text, with body snippets. The index is built at startup and searched in the browser, so there's no external service and it works in the static export too.
 - **Blazor-native.** Your components render as real Razor components, not iframes.
 - **Composable.** Bring your own component library (ShellUI, MudBlazor, Radzen, hand-rolled) and register it in one line:
   ```csharp
@@ -57,7 +57,7 @@ Already have a Blazor project? Run `shelldocs init --attach` inside it: it adds 
   ```
   Your components win name collisions with ShellDocs' built-ins, which stay available as `<DocsCard>`, `<DocsCallout>`, `<DocsTabs>`, and so on.
 - **Content primitives.** `Callout`, `Card` / `CardGrid` / `LinkCard`, `Steps`, `FileTree`, `Tabs`, `CodeGroup`, `TypeTable` / `AutoTypeTable`, `ComponentPreview`, `DemoPreview`.
-- **Static export.** `shelldocs build` prerenders every page to static HTML for GitHub Pages, Cloudflare Pages, Netlify or S3. Optional flags rewrite `<base href>` (`--base-href`), add a SPA `404.html` (`--spa-fallback`), and write sitemap / robots / `og:` meta (`--site-url`). Navigation, sidebar sections and collapse, the mobile menu, selectors, tabs, preview toolbars, the TOC, code copy and the theme toggle work there through `shelldocs.js`. Only search and stateful demos need a running Blazor app. Unknown pages answer 404 (`<DocsNotFound />` in the docs page) and `build` writes the same view as `404.html`.
+- **Static export.** `shelldocs build` prerenders every page to static HTML for GitHub Pages, Cloudflare Pages, Netlify or S3. Optional flags rewrite `<base href>` (`--base-href`), add a SPA `404.html` (`--spa-fallback`), and write sitemap / robots / `og:` meta (`--site-url`). Navigation, sidebar sections and collapse, the mobile menu, selectors, tabs, preview toolbars, the TOC, code copy, the theme toggle and search work there through `shelldocs.js`. Only stateful demos need a running Blazor app. Unknown pages answer 404 (`<DocsNotFound />` in the docs page) and `build` writes the same view as `404.html`.
 
 ## Versioned docs
 

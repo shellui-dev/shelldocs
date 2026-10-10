@@ -146,7 +146,7 @@ Goal: everything from DESIGN.md's primitives table shipped. Real docs sites beco
 ### ✅ `feat/search-primitives` — shipped (differently)
 Ships to `ShellDocs.Core` + `ShellDocs.Components`.
 
-*As built:* `SearchIndex.FromGraph` builds the index in memory at startup (no `search-index.json`), and `SearchDialog` is its own Blazor modal with token scoring and body snippets, not ShellUI's `<CommandPalette>`. It needs a running Blazor app. The original plan:
+*As built:* `SearchIndex.FromGraph` builds the index in memory at startup (no `search-index.json`), and `SearchDialog` is its own modal with token scoring and body snippets, not ShellUI's `<CommandPalette>`. It first needed a running Blazor app; `feat/static-search` moved the ranking into `shelldocs.js`, with the index served at `/_shelldocs/search.json` and copied into `shelldocs build` exports. The original plan:
 
 - `SearchIndexBuilder` in `ShellDocs.Core` — walks nav graph, emits `search-index.json`
 - Wired into `shelldocs build` — index emitted alongside published site

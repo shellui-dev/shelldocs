@@ -4,6 +4,15 @@ All notable changes to ShellDocs land here. Format follows [Keep a Changelog](ht
 
 ## [Unreleased]
 
+Search now works in static exports, the last piece of chrome that needed a running Blazor app.
+
+### Changed
+
+- **Search runs in the browser.** The app serves its search index at `/_shelldocs/search.json` (no `Program.cs` change), `shelldocs build` copies it into the export, and `shelldocs.js` fetches it on first use and ranks it with the same scoring as before: title, section, description and body, with body snippets, scoped to the current version. Search is the same on GitHub Pages or any static host as on a running app, including under `--base-href`. Results are links, so they open in a new tab like any other.
+- **Search buttons are `[data-search-open]` buttons** handled by `shelldocs.js`; add the attribute to any element to open search from it. `shelldocsSearch.open()` still works from script, and there's a matching `shelldocsSearch.close()`.
+- `SearchState` is no longer used and is kept only so existing code compiles. `shelldocsSearch.init` is gone.
+- `shelldocs build` warns when the site's `ShellDocs.Components` is too old to serve an index, since search would not work in that export.
+
 ## [0.1.14-alpha] — 2026-10-10
 
 Static sites get the last piece of interactive chrome apart from search, the desktop sidebar collapse, and unknown pages finally answer 404, with a matching `404.html` in static exports.

@@ -189,7 +189,9 @@ All answers are computed at render time and emitted as plain `<a href>`, so prer
 
 `SearchIndex.FromGraph` runs once at startup and keeps everything in memory: one entry per visible page (title, description, section, plain-text body) and one per h2/h3 heading (headings are read from the source if the page hasn't rendered yet).
 
-`SearchDialog` (Cmd/Ctrl+K, or the header / sidebar buttons) filters the entries to the current version and scores them in .NET: whole-query and per-token matches against title (strongest), section, description and body; every token must match somewhere. Body-only matches get a ~150-character snippet. It's an interactive Blazor component, so search needs a running Blazor app; a static `shelldocs build` site has no search.
+Searching happens in the browser, so it's the same on a static host. `DocsSearchIndexMiddleware` (added by an `IStartupFilter`, like the redirects) serves the index at `/_shelldocs/search.json`: `{ versions: [{ id, root, latest }], entries: [{ u, t, d, s, k, b, v }] }`, where `k` is `p` (page) or `h` (heading) and `v` is the id of the version that owns the entry. `shelldocs build` copies that file into the export.
+
+`SearchDialog` renders a hidden template. On Cmd/Ctrl+K or a `[data-search-open]` button, `shelldocs.js` clones it onto `<body>` (outside the DOM Blazor owns, so a circuit starting doesn't close it), fetches the index once, keeps the current version's entries plus those outside every version, and scores them: whole-query and per-token matches against title (strongest), section, description and body; every token must match somewhere. Body-only matches get a ~150-character snippet. Results are links, cloned from the template's `[data-search-row]` rows. `shelldocsSearch.open()` / `.close()` do the same from script.
 
 ---
 
@@ -211,9 +213,8 @@ Chrome that must work without a Blazor runtime follows one contract:
 | Mobile nav | page shell `[data-mobile-open]` | hamburger toggles; backdrop, Escape, link or navigation closes; page scroll locked on `<html>` |
 | Sidebar collapse | page shell `[data-sidebar-collapsed]`, `[data-sidebar-collapse-toggle]` | toggles collapse; remembered in `localStorage` and restored as soon as `shelldocs.js` runs, so the sidebar doesn't flash open |
 | TOC | `[data-toc-list][data-toc-ids]` | IntersectionObserver scroll-spy, re-attached on `enhancedload` |
+| Search | `[data-search-dialog]` template, `[data-search-open]` | Cmd/Ctrl+K or a button opens a clone of the template; ranks `/_shelldocs/search.json`; arrows, Enter, Escape |
 | Theme | `<html class="dark">`, `[data-theme-toggle]` | inline head script applies the saved / system theme; the toggle flips the class and CSS picks its icon; a `MutationObserver` saves any change (including another library's toggle) and pushes it to `ThemeState`; re-applied after enhanced navigation |
-
-Still Blazor-only: search.
 
 **Not found.** `<DocsNotFound />` is the docs page's not-found view. It answers 404 by setting the status in `Response.OnStarting`: .NET 10 sends an empty body for a page whose status is already 404 unless the app has a `NotFoundPage` or status-code re-execution, so the status has to change only as the headers go out. It carries `data-shelldocs-not-found`, which `shelldocs build` checks for.
 
@@ -246,8 +247,9 @@ One neutral, shadcn-shaped palette of CSS variables in `ShellDocs.Tokens/tokens.
 3. `PrerenderRunner` starts the published app on a free port, requests each URL and writes `<output>/<path>/index.html`. A URL that answers 404, or renders `<DocsNotFound>`, fails the build.
 4. Reads the app's redirect map and writes a redirect page for each source URL without a prerendered page (meta refresh plus `location.replace`, relative to `<base href>`).
 5. Requests `/docs/__shelldocs-not-found__` and, if it renders `<DocsNotFound>` with a 404, writes it as `404.html`.
-6. Merges the published `wwwroot/` into the output without overwriting prerendered HTML.
-7. Optionally rewrites `<base href>` in every HTML file, copies `index.html` to `404.html` (replacing the not-found page), and with `--site-url` writes `sitemap.xml`, `robots.txt` and `og:*` meta.
+6. Copies the app's search index to `_shelldocs/search.json`.
+7. Merges the published `wwwroot/` into the output without overwriting prerendered HTML.
+8. Optionally rewrites `<base href>` in every HTML file, copies `index.html` to `404.html` (replacing the not-found page), and with `--site-url` writes `sitemap.xml`, `robots.txt` and `og:*` meta.
 
 ---
 
