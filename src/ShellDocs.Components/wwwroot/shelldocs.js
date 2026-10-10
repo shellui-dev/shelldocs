@@ -83,6 +83,7 @@ window.shelldocsTheme = (function () {
         subscribers.slice().forEach(function (ref) {
             ref.invokeMethodAsync('ThemeChanged', dark).catch(function () {});
         });
+        if (window.shelldocsIframes) window.shelldocsIframes.postTheme(dark);
     }
 
     if (window.MutationObserver) {
@@ -114,6 +115,65 @@ window.shelldocsTheme = (function () {
     };
 })();
 window.shelldocsApplyTheme = window.shelldocsTheme.apply;
+
+/* <IframePreview>: shelldocs.js sets each [data-iframe-preview] iframe's src, with
+   ?theme=light|dark, when it scrolls into view (data-lazy="visible"), on the Run
+   button ("click") or at once ("none"), and posts theme changes to loaded frames. */
+window.shelldocsIframes = (function () {
+    var observer = null;
+
+    function theme() { return document.documentElement.classList.contains('dark') ? 'dark' : 'light'; }
+
+    function load(host) {
+        if (!host || host.getAttribute('data-loaded') === 'true') return;
+        var frame = host.querySelector('iframe');
+        var src = host.getAttribute('data-src');
+        if (!frame || !src) return;
+        var url = new URL(src, document.baseURI);
+        url.searchParams.set('theme', theme());
+        frame.src = url.href;
+        host.setAttribute('data-loaded', 'true');
+    }
+
+    function watch(host) {
+        if (!window.IntersectionObserver) { load(host); return; }
+        observer = observer || new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+                if (!entry.isIntersecting) return;
+                observer.unobserve(entry.target);
+                load(entry.target);
+            });
+        }, { rootMargin: '200px 0px' });
+        observer.observe(host);
+    }
+
+    function init(scope) {
+        if (!scope || !scope.querySelectorAll) return;
+        var hosts = Array.prototype.slice.call(scope.querySelectorAll('[data-iframe-preview]'));
+        if (scope.matches && scope.matches('[data-iframe-preview]')) hosts.unshift(scope);
+        hosts.forEach(function (host) {
+            if (host.__shelldocsIframe) return;
+            host.__shelldocsIframe = true;
+            var lazy = host.getAttribute('data-lazy');
+            if (lazy === 'none') load(host);
+            else if (lazy !== 'click') watch(host);
+        });
+    }
+
+    function postTheme(dark) {
+        var message = { type: 'shelldocs-theme', theme: dark ? 'dark' : 'light' };
+        document.querySelectorAll('[data-iframe-preview][data-loaded="true"] iframe').forEach(function (frame) {
+            try { frame.contentWindow.postMessage(message, new URL(frame.src).origin); } catch (e) {}
+        });
+    }
+
+    document.addEventListener('click', function (e) {
+        var run = e.target.closest && e.target.closest('[data-iframe-run]');
+        if (run) load(run.closest('[data-iframe-preview]'));
+    });
+
+    return { init: init, load: load, postTheme: postTheme };
+})();
 
 /* Shiki highlighting. The source <pre> belongs to Blazor (or to a markup block
    Blazor tracks), so it is never replaced or edited: it gets [data-shiki="source"]
@@ -607,6 +667,7 @@ window.shelldocsChrome = (function () {
                     if (added[n].nodeType !== 1) continue;
                     restorePreviewTabs(added[n]);
                     restoreTabs(added[n]);
+                    window.shelldocsIframes.init(added[n]);
                     restoreMobileNav(added[n]);
                 }
             }
@@ -691,6 +752,7 @@ window.shelldocsChrome = (function () {
     function initPage() {
         initToc();
         restoreTabs(document);
+        window.shelldocsIframes.init(document);
     }
 
     if (document.readyState !== 'loading') {

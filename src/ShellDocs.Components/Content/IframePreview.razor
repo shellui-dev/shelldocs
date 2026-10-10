@@ -1,0 +1,63 @@
+@namespace ShellDocs.Components.Content
+
+@* A live example served by another page (e.g. Avalonia compiled to WebAssembly).
+   shelldocs.js sets the iframe's src, so nothing loads until it's wanted: when
+   scrolled into view (Lazy="visible"), on the Run button (Lazy="click") or at once
+   (Lazy="none"). It appends ?theme=light|dark and posts
+   { type: "shelldocs-theme", theme } to the frame when the site theme changes. *@
+<PreviewFrame Content="@(_error is null ? Frame : null)"
+              Error="@_error"
+              ErrorTitle="IframePreview error"
+              Title="@Title"
+              Id="@_id"
+              Name="@(Title ?? Src)"
+              Layout="stretch"
+              CodeTabs="@_codeTabs"
+              SyncKey="@SyncKey"
+              Caption="@Caption"
+              OpenHref="@Src" />
+
+@code {
+    [Parameter, EditorRequired] public string? Src { get; set; }
+    // Pixels ("320") or any CSS length ("24rem").
+    [Parameter] public string Height { get; set; } = "320";
+    // "visible" (default), "click" or "none".
+    [Parameter] public string Lazy { get; set; } = "visible";
+    [Parameter] public string? Title { get; set; }
+    // Anchor id; defaults to iframe-{hash of Src}.
+    [Parameter] public string? Id { get; set; }
+    [Parameter] public IReadOnlyList<PreviewCodeTab>? CodeTabs { get; set; }
+    [Parameter] public string? SyncKey { get; set; }
+    [Parameter] public string? Caption { get; set; }
+    // Raw child markup from SlotRenderer; its <CodeTab> blocks become code tabs.
+    [Parameter] public string? ChildContentSource { get; set; }
+
+    private string? _error;
+    private string? _id;
+    private string _lazy = "visible";
+    private string _height = "320px";
+    private IReadOnlyList<PreviewCodeTab>? _codeTabs;
+
+    protected override void OnParametersSet()
+    {
+        _error = string.IsNullOrWhiteSpace(Src) ? "IframePreview needs a Src=\"/path/to/page\" attribute." : null;
+        _id = Id ?? $"iframe-{PreviewLinks.ShortHash(Src)}";
+        _lazy = Lazy?.Trim().ToLowerInvariant() switch
+        {
+            "click" => "click",
+            "none" or "false" => "none",
+            _ => "visible",
+        };
+        var height = Height?.Trim();
+        _height = string.IsNullOrEmpty(height) ? "320px" : height.All(char.IsAsciiDigit) ? height + "px" : height;
+        _codeTabs = CodeTabs is { Count: > 0 } ? CodeTabs : CodeTabParser.Extract(ChildContentSource).Tabs;
+    }
+
+    private RenderFragment Frame => @<div class="iframe-preview" data-iframe-preview data-src="@Src" data-lazy="@_lazy" style="height:@_height">
+        <iframe class="iframe-preview-frame" title="@(Title ?? "Live preview")"></iframe>
+        @if (_lazy == "click")
+        {
+            <button type="button" class="iframe-preview-run" data-iframe-run>Run live preview</button>
+        }
+    </div>;
+}

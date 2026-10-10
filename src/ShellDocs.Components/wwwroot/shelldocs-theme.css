@@ -169,6 +169,9 @@ body { margin: 0; min-height: 100vh; }
     font-feature-settings: 'ss01', 'cv02';
 }
 
+/* <IframePreview> fills its preview panel edge to edge. */
+.preview-render:has(> [data-iframe-preview]) { padding: 0; min-height: 0; overflow: hidden; }
+
 /* A component in markdown that can't render (e.g. a generic one whose type
    argument doesn't resolve) shows this instead of breaking the page. */
 .shelldocs-render-error {

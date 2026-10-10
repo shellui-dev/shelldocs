@@ -194,6 +194,52 @@ public class PreviewCodeVariantsTests : IDisposable
         Assert.Throws<ArgumentException>(() => new ShellDocsOptions().AddSyncSwitch("platform", "MAUI"));
     }
 
+    [Fact]
+    public async Task IframePreview_LeavesLoadingToShellDocsJs()
+    {
+        var html = await Harness().RenderAsync<IframePreview>(new() { ["Src"] = "/preview/?c=button" });
+
+        Assert.Matches("class=\"iframe-preview\"[^>]*data-iframe-preview data-src=\"/preview/\\?c=button\" data-lazy=\"visible\" style=\"height:320px\"", html);
+        Assert.DoesNotMatch("<iframe[^>]*\\ssrc=", html);
+        Assert.Contains("data-layout=\"stretch\"", html);
+        Assert.DoesNotContain("data-preview-tab-target=\"code\"", html); // no code tabs, no Code tab
+        Assert.DoesNotContain("data-preview-copy", html);
+        Assert.Contains("href=\"/preview/?c=button\"", html); // Open in new tab
+        Assert.DoesNotContain("data-iframe-run", html);
+    }
+
+    [Fact]
+    public async Task IframePreview_ClickMode_Height_CodeTabs_AndMissingSrc()
+    {
+        var harness = Harness();
+        var html = await harness.RenderAsync<MarkdownContent>(Md(
+            "<IframePreview Src=\"/preview/?c=save\" Height=\"24rem\" Lazy=\"click\" SyncKey=\"platform\">\n" + PlatformTabs + "\n</IframePreview>\n"));
+
+        Assert.Contains("data-lazy=\"click\" style=\"height:24rem\"", html);
+        Assert.Matches("data-iframe-run[^>]*>Run live preview</button>", html);
+        Assert.Contains("data-preview-tab-target=\"code\"", html);
+        Assert.Contains("data-tabs-sync=\"platform\"", html);
+        Assert.Contains("data-tab-target=\"MAUI\"", html);
+        Assert.DoesNotContain(harness.Logs.Messages, m => m.Contains("skipped attribute"));
+
+        var missing = await harness.RenderAsync<IframePreview>(new());
+        Assert.Contains("IframePreview needs a Src", missing);
+    }
+
+    [Fact]
+    public void ShelldocsJs_ShowsTheMissingNote_AndLoadsIframesLazily()
+    {
+        var js = ReadAsset("shelldocs.js");
+
+        Assert.Contains("root.hasAttribute('data-tabs-missing')", js);
+        Assert.Contains("[data-tab-missing-label]", js);
+        Assert.Contains("data-tabs-switch", js);
+        Assert.Contains("url.searchParams.set('theme', theme())", js);
+        Assert.Contains("type: 'shelldocs-theme'", js);
+        Assert.Contains("xaml: 'xml'", js);
+        Assert.Matches(new Regex("IntersectionObserver"), js);
+    }
+
     private static string ReadAsset(string name)
     {
         var testDir = Path.GetDirectoryName(typeof(PreviewCodeVariantsTests).Assembly.Location)!;
