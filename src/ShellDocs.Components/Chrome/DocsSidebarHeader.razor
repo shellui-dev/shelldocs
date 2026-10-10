@@ -1,7 +1,6 @@
 @using ShellIcons.Icons
 @inject ShellDocsOptions Options
 @inject IJSRuntime JS
-@inject SidebarCollapseState Collapse
 
 <div class="docs-sidebar-header">
     <div class="docs-sidebar-brand-row">
@@ -9,7 +8,7 @@
             <BrandLogo />
             <span class="docs-sidebar-brand-name">@(!string.IsNullOrEmpty(Options.SiteName) ? Options.SiteName : "Docs")</span>
         </a>
-        <button type="button" class="docs-sidebar-collapse" @onclick="Collapse.Toggle" aria-label="Collapse sidebar" title="Collapse sidebar">
+        <button type="button" class="docs-sidebar-collapse" data-sidebar-collapse-toggle aria-label="Collapse sidebar" title="Collapse sidebar">
             <PanelLeft StrokeWidth="1.75" />
         </button>
     </div>

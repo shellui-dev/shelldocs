@@ -1,7 +1,6 @@
 namespace ShellDocs.Components.Chrome;
 
-// Desktop collapse for the Sidebar layout — persistent, unlike the
-// temporary mobile drawer in MobileNavState.
+// No longer used: the sidebar collapse is driven by shelldocs.js. Kept so existing code compiles.
 public class SidebarCollapseState
 {
     public bool IsCollapsed { get; private set; }

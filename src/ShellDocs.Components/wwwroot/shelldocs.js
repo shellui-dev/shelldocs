@@ -669,6 +669,7 @@ window.shelldocsChrome = (function () {
                     restoreTabs(added[n]);
                     window.shelldocsIframes.init(added[n]);
                     restoreMobileNav(added[n]);
+                    restoreCollapse(added[n]);
                 }
             }
         }).observe(document.documentElement, { childList: true, subtree: true });
@@ -677,6 +678,28 @@ window.shelldocsChrome = (function () {
     /* Mobile nav: hamburgers toggle [data-mobile-open] on the page shell. CSS slides
        in the docs sidebar or shows the home menu; the backdrop, Escape, picking a
        link, or an enhanced navigation closes it. */
+    /* Desktop sidebar collapse: [data-sidebar-collapse-toggle] buttons flip
+       [data-sidebar-collapsed] on the page shell, and the choice is remembered. */
+    var COLLAPSE_KEY = 'shelldocs-sidebar';
+
+    function onCollapseClick(e) {
+        var btn = e.target.closest && e.target.closest('[data-sidebar-collapse-toggle]');
+        var shell = btn && btn.closest('.docs-shell');
+        if (!shell) return;
+        var collapsed = shell.getAttribute('data-sidebar-collapsed') !== 'true';
+        shell.setAttribute('data-sidebar-collapsed', collapsed ? 'true' : 'false');
+        try { localStorage.setItem(COLLAPSE_KEY, collapsed ? 'collapsed' : 'expanded'); } catch (e) {}
+    }
+
+    function restoreCollapse(root) {
+        var saved = null;
+        try { saved = localStorage.getItem(COLLAPSE_KEY); } catch (e) {}
+        if (saved !== 'collapsed' || !root.querySelectorAll) return;
+        var shells = Array.prototype.slice.call(root.querySelectorAll('.docs-shell'));
+        if (root.matches && root.matches('.docs-shell')) shells.unshift(root);
+        shells.forEach(function (shell) { shell.setAttribute('data-sidebar-collapsed', 'true'); });
+    }
+
     function mobileShell(el) {
         return el.closest('.docs-shell, .home-shell') || document.documentElement;
     }
@@ -745,12 +768,16 @@ window.shelldocsChrome = (function () {
     document.addEventListener('click', onTabsClick);
     document.addEventListener('keydown', onTabsKeydown);
     document.addEventListener('click', onMobileNavClick);
+    document.addEventListener('click', onCollapseClick);
     document.addEventListener('keydown', onMobileNavKeydown);
     window.shelldocsOnEnhancedLoad(closeMobileNav);
     watchForReplacedFrames();
+    // The shell is already parsed here; restoring now avoids a flash of the open sidebar.
+    restoreCollapse(document);
 
     function initPage() {
         initToc();
+        restoreCollapse(document);
         restoreTabs(document);
         window.shelldocsIframes.init(document);
     }
