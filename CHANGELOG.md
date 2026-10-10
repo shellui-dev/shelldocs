@@ -4,6 +4,10 @@ All notable changes to ShellDocs land here. Format follows [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [0.1.13-alpha] — 2026-10-10
+
+Code variants for cross-platform libraries: one preview with code tabs per platform (MAUI and Avalonia XAML, say), a page switch that picks the platform site-wide, captions, and live iframe previews. Also fixes one-line component bodies being wrapped in `<p>`.
+
 ### Added
 
 - **Code variants on previews.** `<DemoPreview>`, `<ComponentPreview>` and `<IframePreview>` take `<CodeTab Label="…">` children with a code fence inside; the Code panel shows them as tabs instead of the Razor source, for libraries documented in several languages (MAUI and Avalonia XAML, say). The copy button copies the tab that's showing. `SyncKey` works as on `<CodeGroup>`: blocks with the same key switch together across pages and the choice is saved. A block without a tab for the current choice shows "Not available on {label} yet" and keeps its height. From `.razor`, pass `CodeTabs` (`PreviewCodeTab` records). Without code tabs nothing changes. `razor:preview` fences can't take code tabs: their body is Razor, so a fence can't nest in one.
@@ -396,7 +400,8 @@ Published to NuGet:
 - `<TypeTable>` is hand-authored today; XML-doc auto-generation ships in `ShellDocs.Xml` (Phase 4)
 - No `<DocsBreadcrumb>` opt-out — currently hides when the trail has ≤ 1 node, otherwise always renders
 
-[Unreleased]: https://github.com/shellui-dev/shelldocs/compare/v0.1.12-alpha...HEAD
+[Unreleased]: https://github.com/shellui-dev/shelldocs/compare/v0.1.13-alpha...HEAD
+[0.1.13-alpha]: https://github.com/shellui-dev/shelldocs/releases/tag/v0.1.13-alpha
 [0.1.12-alpha]: https://github.com/shellui-dev/shelldocs/releases/tag/v0.1.12-alpha
 [0.1.11-alpha]: https://github.com/shellui-dev/shelldocs/releases/tag/v0.1.11-alpha
 [0.1.10-alpha]: https://github.com/shellui-dev/shelldocs/releases/tag/v0.1.10-alpha
