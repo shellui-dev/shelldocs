@@ -1,3 +1,4 @@
+using System.Reflection;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Rendering;
 using Microsoft.AspNetCore.Http;
@@ -83,5 +84,16 @@ public class NotFoundTests : IDisposable
     {
         Assert.Contains("<DocsNotFound />", ScaffoldTemplates.DocsPageRazor);
         Assert.DoesNotContain("doc-not-found", ScaffoldTemplates.DocsPageRazor);
+    }
+
+    [Fact]
+    public void Build_TreatsTheNotFoundView_AsAFailure()
+    {
+        var cli = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.GetName().Name == "shelldocs") ?? Assembly.Load("shelldocs");
+        var isNotFound = cli.GetType("ShellDocs.CLI.Commands.PrerenderRunner", throwOnError: true)!
+            .GetMethod("IsNotFoundPage", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)!;
+
+        Assert.True((bool)isNotFound.Invoke(null, ["<div class=\"docs-not-found\" data-shelldocs-not-found>"])!);
+        Assert.False((bool)isNotFound.Invoke(null, ["<main>Getting started</main>"])!);
     }
 }
