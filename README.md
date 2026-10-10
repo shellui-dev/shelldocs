@@ -1,5 +1,9 @@
 <p align="center">
-  <img alt="ShellDocs logo" src="https://raw.githubusercontent.com/shellui-dev/shelldocs/main/assets/readme-logo.svg" width="64" height="64">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/shellui-dev/shelldocs/main/assets/shellui-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/shellui-dev/shelldocs/main/assets/shellui-light.svg">
+    <img alt="ShellUI logo" src="https://raw.githubusercontent.com/shellui-dev/shelldocs/main/assets/shellui-light.svg" width="120">
+  </picture>
 </p>
 
 <h1 align="center">ShellDocs</h1>
