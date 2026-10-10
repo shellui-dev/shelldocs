@@ -90,9 +90,24 @@ jobs:
               --skip-duplicate
           done
 
+      # The release body is the version's CHANGELOG section; GitHub's PR list follows it.
+      - name: Release notes from CHANGELOG
+        if: github.event_name == 'push'
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          awk -v v="$version" '
+            index($0, "## [" v "]") == 1 { found = 1; next }
+            found && /^## \[/ { exit }
+            found { print }
+          ' CHANGELOG.md > release-notes.md
+          if [ ! -s release-notes.md ]; then
+            echo "::warning::CHANGELOG.md has no section for $version; the release lists PRs only."
+          fi
+
       - name: Create GitHub Release
         if: github.event_name == 'push'
         uses: softprops/action-gh-release@v2
         with:
+          body_path: release-notes.md
           generate_release_notes: true
           files: nupkgs/*.nupkg

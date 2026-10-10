@@ -91,7 +91,7 @@ The tag push triggers `.github/workflows/release.yml`:
 3. Packs every `IsPackable=true` project
 4. Checks nuget.org and fails if the `Directory.Build.props` version is already published for any of the six packages (bump the version and re-tag)
 5. Logs in via Trusted Publishing and pushes each `.nupkg` (`--skip-duplicate`)
-6. Creates a GitHub Release from the tag with auto-generated notes
+6. Creates a GitHub Release from the tag: the body is the version's `## [x.y.z]` section of `CHANGELOG.md`, followed by GitHub's list of merged PRs. Cut that section before tagging, or the release lists PRs only.
 
 Watch the run under Actions. A version that's already on nuget.org stops the run at step 4, before anything is pushed; a login or push failure (Trusted Publishing policy, `NUGET_USER`, network) shows as a red X on steps 5–6.
 
