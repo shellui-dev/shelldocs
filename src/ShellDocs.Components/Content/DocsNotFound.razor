@@ -1,0 +1,52 @@
+@namespace ShellDocs.Components.Content
+@attribute [ShellDocsIgnore]
+@using Microsoft.AspNetCore.Http
+@using ShellIcons.Icons
+@inject NavigationManager Nav
+@inject DocsRedirects Redirects
+@inject NavigationGraph Graph
+
+@* The docs page's "not found" view. It sets HTTP 404 while the response hasn't
+   started (prerender, static SSR), so search engines skip it and `shelldocs build`
+   counts it as a failure; data-shelldocs-not-found marks it for the build too. *@
+<div class="docs-not-found" data-shelldocs-not-found>
+    <h1>Page not found</h1>
+    <p>The page <code>@_path</code> doesn't exist.</p>
+    <p>
+        <a href="@_home"><ArrowLeft Class="docs-not-found-icon" />@HomeLabel</a>
+    </p>
+</div>
+
+@code {
+    [CascadingParameter] public HttpContext? HttpContext { get; set; }
+    // Defaults to the requested URL's path.
+    [Parameter] public string? Path { get; set; }
+    // Defaults to where /docs leads (the first docs page, in the latest version).
+    [Parameter] public string? HomeHref { get; set; }
+    [Parameter] public string HomeLabel { get; set; } = "Back to the docs";
+
+    private string _path = "";
+    private string _home = "/";
+
+    /* Blazor sends an empty body for a page whose status is already 404 unless the app
+       has a NotFoundPage or status-code re-execution, so the status is set as the
+       headers go out, after this view has rendered. */
+    protected override void OnInitialized()
+    {
+        if (HttpContext is { Response.HasStarted: false } http)
+            http.Response.OnStarting(() =>
+            {
+                http.Response.StatusCode = StatusCodes.Status404NotFound;
+                return Task.CompletedTask;
+            });
+    }
+
+    protected override void OnParametersSet()
+    {
+        _path = Path ?? DocsVersionResolver.PathOf(Nav);
+        _home = HomeHref
+            ?? Redirects.Resolve("/docs")?.Url
+            ?? Graph.FirstPageUnder("/docs")?.Url
+            ?? "/";
+    }
+}

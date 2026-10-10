@@ -1,0 +1,22 @@
+.docs-not-found { padding: 3rem 0; }
+.docs-not-found h1 { margin: 0 0 0.75rem; font-size: 1.5rem; font-weight: 600; letter-spacing: -0.015em; }
+.docs-not-found p { margin: 0.5rem 0; color: var(--muted-foreground); }
+.docs-not-found code {
+    padding: 0.125rem 0.375rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--muted);
+    color: var(--foreground);
+    font-family: var(--font-mono);
+    font-size: 0.875em;
+}
+.docs-not-found a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: var(--foreground);
+    font-weight: 500;
+    text-decoration: none;
+}
+.docs-not-found a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.docs-not-found ::deep .docs-not-found-icon { width: 0.875rem; height: 0.875rem; }

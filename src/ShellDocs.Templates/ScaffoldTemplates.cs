@@ -56,11 +56,8 @@ public static class ScaffoldTemplates
         }
         else
         {
-            <div class="doc-not-found">
-                <h1>Page not found</h1>
-                <p>The page <code>@Path</code> doesn't exist yet.</p>
-                <p><a href="/docs/introduction"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:0.35rem"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>Back to introduction</a></p>
-            </div>
+            @* Sets HTTP 404, so search engines skip it and `shelldocs build` reports it. *@
+            <DocsNotFound />
         }
 
         @code {
