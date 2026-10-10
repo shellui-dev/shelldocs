@@ -1,10 +1,22 @@
-![ShellDocs](https://raw.githubusercontent.com/shellui-dev/shelldocs/main/assets/readme-logo.svg)
+<p align="center">
+  <img alt="ShellDocs logo" src="https://raw.githubusercontent.com/shellui-dev/shelldocs/main/assets/readme-logo.svg" width="64" height="64">
+</p>
 
-# ShellDocs
+<h1 align="center">ShellDocs</h1>
 
-**The docs framework for .NET.** Markdown-driven documentation sites with live Blazor component previews, versioned docs, `Cmd+K` search, and a static export. Styled with shadcn-shaped design tokens and composable with any Blazor component library. The fumadocs / shadcn pattern, ported to .NET.
+<p align="center">
+  <b>The docs framework for .NET.</b> Markdown-driven documentation sites with live Blazor component previews, versioned docs, <code>Cmd+K</code> search, and a static export.<br/>
+  Styled with shadcn-shaped design tokens and composable with any Blazor component library. The fumadocs / shadcn pattern, ported to .NET.
+</p>
 
-[![NuGet](https://img.shields.io/nuget/vpre/ShellDocs.CLI?label=ShellDocs.CLI)](https://www.nuget.org/packages/ShellDocs.CLI) — alpha: APIs may change between minor versions. See the [CHANGELOG](CHANGELOG.md) and [ROADMAP](docs/ROADMAP.md).
+<p align="center">
+  <a href="https://github.com/shellui-dev/shelldocs"><img src="https://img.shields.io/github/stars/shellui-dev/shelldocs?style=flat-square" alt="GitHub stars"></a>
+  <a href="https://www.nuget.org/packages/ShellDocs.Components"><img src="https://img.shields.io/nuget/vpre/ShellDocs.Components?style=flat-square&logo=nuget&color=004880" alt="ShellDocs.Components on NuGet"></a>
+  <a href="https://www.nuget.org/packages/ShellDocs.CLI"><img src="https://img.shields.io/nuget/vpre/ShellDocs.CLI?style=flat-square&logo=nuget&label=CLI&color=004880" alt="ShellDocs.CLI on NuGet"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="MIT license"></a>
+</p>
+
+Alpha: APIs may change between minor versions. See the [CHANGELOG](CHANGELOG.md) and [ROADMAP](docs/ROADMAP.md).
 
 ## Quick start
 
