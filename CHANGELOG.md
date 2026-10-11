@@ -4,6 +4,8 @@ All notable changes to ShellDocs land here. Format follows [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [0.1.15-alpha] — 2026-10-11
+
 Search now works in static exports, the last piece of chrome that needed a running Blazor app.
 
 ### Changed
