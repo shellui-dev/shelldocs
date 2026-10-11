@@ -1,6 +1,5 @@
 @using ShellIcons.Icons
 @inject ShellDocsOptions Options
-@inject IJSRuntime JS
 
 <header class="docs-header">
     <div class="docs-header-inner">
@@ -67,7 +66,7 @@
             }
             @if (ShowSearch)
             {
-                <button type="button" class="docs-header-search" @onclick="OpenSearch" aria-label="Search">
+                <button type="button" class="docs-header-search" data-search-open aria-label="Search">
                     <Search />
                     <span class="docs-header-search-label">Search</span>
                     <span class="docs-header-kbd">
@@ -115,5 +114,4 @@
     [Parameter] public bool ShowVersionSelector { get; set; } = true;
     // Layouts without a sidebar drawer render the primary nav as a mobile menu.
     [Parameter] public bool MobileMenu { get; set; }
-    private Task OpenSearch() => JS.InvokeVoidAsync("shelldocsSearch.open").AsTask();
 }

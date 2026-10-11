@@ -124,6 +124,11 @@ internal static class PrerenderRunner
             var redirects = WriteRedirects(http, outputDir);
             if (redirects > 0) AnsiConsole.MarkupLine($"[dim]redirects:[/] wrote [cyan]{redirects}[/] redirect page(s)");
             if (WriteNotFoundPage(http, outputDir)) AnsiConsole.MarkupLine("[dim]not found:[/] wrote [cyan]404.html[/]");
+            var indexBytes = WriteSearchIndex(http, outputDir);
+            if (indexBytes > 0)
+                AnsiConsole.MarkupLine($"[dim]search:[/] wrote [cyan]{SearchIndexPath.TrimStart('/')}[/] ({Math.Max(1, indexBytes / 1024)} KB)");
+            else if (indexBytes == 0)
+                AnsiConsole.MarkupLine("  [yellow]warn:[/] the site serves no search index (its ShellDocs.Components predates static search), so search won't work in this export");
             return new Result(failed == 0, rendered, failed);
         }
         finally
@@ -154,6 +159,29 @@ internal static class PrerenderRunner
         {
             AnsiConsole.MarkupLine($"  [yellow]warn:[/] couldn't render the not-found page: {ex.Message}");
             return false;
+        }
+    }
+
+    internal const string SearchIndexPath = "/_shelldocs/search.json";
+
+    // shelldocs.js fetches the index from this path, so the export keeps it there.
+    // Returns the bytes written, 0 when the app serves no index, -1 on error.
+    internal static long WriteSearchIndex(HttpClient http, string outputDir)
+    {
+        try
+        {
+            var response = http.GetAsync(SearchIndexPath).GetAwaiter().GetResult();
+            if (!response.IsSuccessStatusCode) return 0;
+            var bytes = response.Content.ReadAsByteArrayAsync().GetAwaiter().GetResult();
+            var outPath = Path.Combine(outputDir, "_shelldocs", "search.json");
+            Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
+            File.WriteAllBytes(outPath, bytes);
+            return bytes.Length;
+        }
+        catch (Exception ex)
+        {
+            AnsiConsole.MarkupLine($"  [yellow]warn:[/] couldn't read the search index: {ex.Message}");
+            return -1;
         }
     }
 

@@ -1,6 +1,5 @@
 @inherits LayoutComponentBase
 @inject ShellDocsOptions Options
-@inject IJSRuntime JS
 @using Microsoft.AspNetCore.Components.Sections
 
 @* [data-sidebar-collapsed] is flipped by shelldocs.js ([data-sidebar-collapse-toggle]),
@@ -22,7 +21,7 @@
             <button type="button" class="docs-collapsed-tool" data-sidebar-collapse-toggle aria-label="Expand sidebar" title="Expand sidebar">
                 <ShellIcons.Icons.PanelLeft StrokeWidth="1.75" />
             </button>
-            <button type="button" class="docs-collapsed-tool" @onclick="OpenSearch" aria-label="Search" title="Search (⌘K)">
+            <button type="button" class="docs-collapsed-tool" data-search-open aria-label="Search" title="Search (⌘K)">
                 <ShellIcons.Icons.Search />
             </button>
         </div>
@@ -59,5 +58,4 @@
         _ => "topnav"
     };
 
-    private Task OpenSearch() => JS.InvokeVoidAsync("shelldocsSearch.open").AsTask();
 }

@@ -11,6 +11,7 @@
     padding-top: 8vh;
     animation: search-fade-in 140ms ease;
 }
+.search-backdrop[hidden] { display: none; }
 @keyframes search-fade-in {
     from { opacity: 0; }
     to   { opacity: 1; }
@@ -87,6 +88,8 @@
     border-radius: calc(var(--radius) - 3px);
     color: var(--foreground);
     text-align: left;
+    text-decoration: none;
+    box-sizing: border-box;
     cursor: pointer;
     font-family: inherit;
     font-size: 0.875rem;

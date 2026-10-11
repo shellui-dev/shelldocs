@@ -146,7 +146,7 @@ Goal: everything from DESIGN.md's primitives table shipped. Real docs sites beco
 ### ✅ `feat/search-primitives` — shipped (differently)
 Ships to `ShellDocs.Core` + `ShellDocs.Components`.
 
-*As built:* `SearchIndex.FromGraph` builds the index in memory at startup (no `search-index.json`), and `SearchDialog` is its own Blazor modal with token scoring and body snippets, not ShellUI's `<CommandPalette>`. It needs a running Blazor app. The original plan:
+*As built:* `SearchIndex.FromGraph` builds the index in memory at startup (no `search-index.json`), and `SearchDialog` is its own modal with token scoring and body snippets, not ShellUI's `<CommandPalette>`. It first needed a running Blazor app; `feat/static-search` moved the ranking into `shelldocs.js`, with the index served at `/_shelldocs/search.json` and copied into `shelldocs build` exports. The original plan:
 
 - `SearchIndexBuilder` in `ShellDocs.Core` — walks nav graph, emits `search-index.json`
 - Wired into `shelldocs build` — index emitted alongside published site
@@ -209,7 +209,7 @@ Ships to `ShellDocs.Components` + `ShellDocs.Templates` + `ShellDocs.CLI` + `She
 **Authoring fix (`ShellDocs.Markdown`)**
 - `SlotExtractor.ReplaceComponentTags` no longer `.Trim()`s the raw child content of inline component tags. The Trim was stripping the first line's indent and defeating `SlotRenderer.Dedent` — Markdig then interpreted the remaining 4-space-indented lines as an indented code block. Symptom was the same "literal `<pre>` around placeholder divs" bug that had already been fixed for `razor:preview` fences; the inline-tag code path was still hitting it.
 
-### ✅ Hardening releases (`0.1.3`–`0.1.14-alpha`) — shipped
+### ✅ Hardening releases (`0.1.3`–`0.1.15-alpha`) — shipped
 Driven by building the ShellUI docs on ShellDocs. Highlights (details in the CHANGELOG):
 
 - `feat/build-static-prerender` (0.1.5) — `shelldocs build` prerenders every URL into a static site.
@@ -221,6 +221,7 @@ Driven by building the ShellUI docs on ShellDocs. Highlights (details in the CHA
 - `fix/fence-scanner-inline-attrs` (0.1.12) — CommonMark fences (any length, tildes), inline and named-slot tags read by the Razor tag scanner so `>` in a quoted value is safe, `<TypeTable>` rows that share a name.
 - `feat/preview-code-variants` (0.1.13) — code tabs on previews with sync and a missing-tab note, page switch (`AddSyncSwitch`), captions, `<IframePreview>`, XAML highlighting; one-line component bodies stay inline.
 - `fix/not-found-and-sidebar-collapse` (0.1.14) — `<DocsNotFound>` answers 404, `build` fails on not-found pages and writes `404.html`, desktop sidebar collapse in `shelldocs.js`.
+- `feat/static-search` (0.1.15) — search runs in `shelldocs.js` against `/_shelldocs/search.json`, which `build` copies into the export, so static sites have search.
 - `fix/preview-fidelity`, `feat/generics-redirects-page-title` (0.1.10) — `not-prose` previews, Razor child content, stretch layout, generic components in markdown, redirects (middleware + static pages), `RenderPageTitle`, theme sync and a static-host `ThemeToggle`.
 
 ### `feat/animation-polish`

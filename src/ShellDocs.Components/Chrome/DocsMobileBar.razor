@@ -1,5 +1,4 @@
 @using ShellIcons.Icons
-@inject IJSRuntime JS
 
 <div class="docs-mobile-bar" role="toolbar" aria-label="Mobile toolbar">
     <button type="button" class="docs-mobile-tool" data-mobile-nav-toggle aria-expanded="false" aria-label="Toggle navigation">
@@ -7,13 +6,9 @@
         <X Class="mobile-nav-icon-close" />
     </button>
 
-    <button type="button" class="docs-mobile-tool" @onclick="OpenSearch" aria-label="Search">
+    <button type="button" class="docs-mobile-tool" data-search-open aria-label="Search">
         <Search />
     </button>
 
     <ThemeToggle />
 </div>
-
-@code {
-    private Task OpenSearch() => JS.InvokeVoidAsync("shelldocsSearch.open").AsTask();
-}

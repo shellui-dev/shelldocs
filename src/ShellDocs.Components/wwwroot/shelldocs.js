@@ -22,33 +22,249 @@ window.shelldocsOnEnhancedLoad = (function () {
     };
 })();
 
-// Cmd/Ctrl+K opens <SearchDialog> via the DotNetObjectReference it registers on first render.
+/* Search. <SearchDialog> renders a hidden template; opening clones it onto <body>,
+   outside the DOM Blazor owns, and ranks /_shelldocs/search.json in the browser, so
+   it works the same on a static host. Cmd/Ctrl+K and [data-search-open] open it. */
 window.shelldocsSearch = (function () {
-    var dotnet = null;
-    function isModK(e) {
-        return (e.key === 'k' || e.key === 'K') && (e.metaKey || e.ctrlKey);
+    var index = null;
+    var loading = null;
+    var failed = false;
+    var live = null;
+    var results = [];
+    var highlighted = 0;
+    var returnFocus = null;
+
+    function load() {
+        if (!loading) {
+            failed = false;
+            loading = fetch(new URL('_shelldocs/search.json', document.baseURI))
+                .then(function (r) {
+                    if (!r.ok) throw new Error('search index: ' + r.status);
+                    return r.json();
+                })
+                .then(function (data) {
+                    (data.entries || []).forEach(function (e) {
+                        e.lt = (e.t || '').toLowerCase();
+                        e.ld = (e.d || '').toLowerCase();
+                        e.ls = (e.s || '').toLowerCase();
+                        e.lb = (e.b || '').toLowerCase();
+                    });
+                    index = { versions: data.versions || [], entries: data.entries || [] };
+                })
+                .catch(function () { failed = true; loading = null; });
+        }
+        return loading;
     }
-    function onKeydown(e) {
-        if (!isModK(e)) return;
-        e.preventDefault();
-        openInternal();
+
+    // Same rules as UrlPath.Normalize / IsUnder.
+    function normalize(path) {
+        var s = (path || '').split(/[?#]/)[0];
+        if (s.charAt(0) !== '/') s = '/' + s;
+        while (s.length > 1 && s.charAt(s.length - 1) === '/') s = s.slice(0, -1);
+        return s.toLowerCase();
     }
-    function openInternal() {
-        if (dotnet) { dotnet.invokeMethodAsync('OpenFromJs'); }
+
+    function isUnder(path, root) {
+        var r = normalize(root);
+        if (r === '/') return true;
+        return path.indexOf(r) === 0 && (path.length === r.length || path.charAt(r.length) === '/');
     }
-    return {
-        init: function (dotnetRef) {
-            dotnet = dotnetRef;
-            document.addEventListener('keydown', onKeydown);
-            return {
-                dispose: function () {
-                    document.removeEventListener('keydown', onKeydown);
-                    dotnet = null;
-                }
-            };
-        },
-        open: openInternal
-    };
+
+    function currentVersion() {
+        var base = new URL(document.baseURI).pathname;
+        var path = location.pathname;
+        path = normalize(path.indexOf(base) === 0 ? path.slice(base.length) : path);
+        var best = null, latest = null;
+        index.versions.forEach(function (v) {
+            if (v.latest && !latest) latest = v;
+            if (isUnder(path, v.root) && (!best || v.root.length > best.root.length)) best = v;
+        });
+        return best || latest || index.versions[0] || null;
+    }
+
+    // The current version's entries, plus those outside every version.
+    function scoped() {
+        var current = currentVersion();
+        return index.entries.filter(function (e) { return !e.v || (current && e.v === current.id); });
+    }
+
+    function evaluate(e, q, tokens) {
+        var score = 0, bodyHit = false;
+        if (e.lt.indexOf(q) >= 0) score += 100;
+        if (e.lt.indexOf(q) === 0) score += 50;
+        if (e.ls.indexOf(q) >= 0) score += 20;
+        if (e.ld.indexOf(q) >= 0) score += 10;
+        if (e.lb.indexOf(q) >= 0) { score += 6; bodyHit = true; }
+
+        for (var i = 0; i < tokens.length; i++) {
+            var t = tokens[i];
+            if (e.lt.indexOf(t) >= 0) score += 8;
+            else if (e.ls.indexOf(t) >= 0) score += 4;
+            else if (e.ld.indexOf(t) >= 0) score += 2;
+            else if (e.lb.indexOf(t) >= 0) { score += 1; bodyHit = true; }
+            else return null;
+        }
+
+        if (e.k === 'p') score += 2;
+        return { entry: e, score: score, snippet: bodyHit ? snippet(e, tokens) : null };
+    }
+
+    // ~150 characters around the first token match in the body.
+    function snippet(e, tokens) {
+        var hit = -1;
+        tokens.forEach(function (t) {
+            var at = e.lb.indexOf(t);
+            if (at >= 0 && (hit < 0 || at < hit)) hit = at;
+        });
+        if (hit < 0) return null;
+        var start = Math.max(0, hit - 75);
+        var end = Math.min(e.b.length, hit + 75);
+        var text = e.b.slice(start, end).trim();
+        if (start > 0) text = '… ' + text;
+        if (end < e.b.length) text += ' …';
+        return text;
+    }
+
+    function rank(query) {
+        var entries = scoped();
+        var q = query.trim().toLowerCase();
+        if (!q) return entries.slice(0, 20).map(function (e) { return { entry: e, score: 0, snippet: null }; });
+        var tokens = q.split(' ').filter(Boolean);
+        var scored = [];
+        entries.forEach(function (e) {
+            var s = evaluate(e, q, tokens);
+            if (s) scored.push(s);
+        });
+        scored.sort(function (a, b) { return b.score - a.score; });
+        return scored.slice(0, 30);
+    }
+
+    function part(selector) { return live.querySelector(selector); }
+
+    function row(kind) { return part('[data-search-rows] [data-search-row="' + kind + '"]').cloneNode(true); }
+
+    function fill(el, selector, text) {
+        var target = el.querySelector(selector);
+        if (text) target.textContent = text; else target.remove();
+    }
+
+    function message(host, text) {
+        var el = row('empty');
+        el.textContent = text;
+        host.appendChild(el);
+    }
+
+    function render() {
+        var host = part('[data-search-results]');
+        var query = part('[data-search-input]').value;
+        host.textContent = '';
+        if (!index) {
+            message(host, failed ? 'Search is unavailable.' : 'Loading…');
+            return;
+        }
+        if (results.length === 0) {
+            if (query.trim()) message(host, 'No results for “' + query + '”.');
+            return;
+        }
+        results.forEach(function (r, i) {
+            var el = row(r.entry.k === 'h' ? 'h' : 'p');
+            el.id = 'shelldocs-search-option-' + i;
+            el.href = new URL(r.entry.u.replace(/^\//, ''), document.baseURI).href;
+            fill(el, '.search-result-title', r.entry.t);
+            fill(el, '.search-result-section', r.entry.s);
+            fill(el, '.search-result-snippet', r.snippet);
+            host.appendChild(el);
+        });
+        highlight(highlighted, false);
+    }
+
+    function highlight(i, scroll) {
+        var rows = part('[data-search-results]').querySelectorAll('.search-result');
+        if (rows.length === 0) return;
+        highlighted = (i + rows.length) % rows.length;
+        Array.prototype.forEach.call(rows, function (el, n) {
+            el.classList.toggle('highlighted', n === highlighted);
+            el.setAttribute('aria-selected', n === highlighted ? 'true' : 'false');
+        });
+        part('[data-search-input]').setAttribute('aria-activedescendant', rows[highlighted].id);
+        if (scroll) rows[highlighted].scrollIntoView({ block: 'nearest' });
+    }
+
+    function recalc() {
+        if (!live) return;
+        results = index ? rank(part('[data-search-input]').value) : [];
+        highlighted = 0;
+        render();
+    }
+
+    function onDialogKeydown(e) {
+        if (e.key === 'Escape') { e.preventDefault(); close(); }
+        else if (e.key === 'ArrowDown') { e.preventDefault(); highlight(highlighted + 1, true); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); highlight(highlighted - 1, true); }
+        else if (e.key === 'Tab') { e.preventDefault(); part('[data-search-input]').focus(); }
+        else if (e.key === 'Enter') {
+            e.preventDefault();
+            var rows = part('[data-search-results]').querySelectorAll('.search-result');
+            if (rows[highlighted]) rows[highlighted].click();
+        }
+    }
+
+    function onDialogClick(e) {
+        if (e.target === live) { close(); return; }
+        // Closing in this tick would detach the link before the browser follows it.
+        if (e.target.closest('.search-result')) setTimeout(close, 0);
+    }
+
+    function onDialogMouseOver(e) {
+        var el = e.target.closest && e.target.closest('.search-result');
+        if (!el) return;
+        var rows = part('[data-search-results]').querySelectorAll('.search-result');
+        var at = Array.prototype.indexOf.call(rows, el);
+        if (at >= 0 && at !== highlighted) highlight(at, false);
+    }
+
+    function open() {
+        if (live && !live.isConnected) live = null;
+        if (live) { part('[data-search-input]').focus(); return; }
+        var template = document.querySelector('[data-search-dialog]');
+        if (!template) return;
+
+        returnFocus = document.activeElement;
+        live = template.cloneNode(true);
+        live.removeAttribute('data-search-dialog');
+        live.removeAttribute('hidden');
+        document.body.appendChild(live);
+        live.addEventListener('keydown', onDialogKeydown);
+        live.addEventListener('click', onDialogClick);
+        live.addEventListener('mouseover', onDialogMouseOver);
+        part('[data-search-input]').addEventListener('input', recalc);
+
+        var pending = index ? null : load();
+        recalc();
+        part('[data-search-input]').focus();
+        if (pending) pending.then(recalc);
+    }
+
+    function close() {
+        if (!live) return;
+        live.remove();
+        live = null;
+        if (returnFocus && returnFocus.isConnected && returnFocus.focus) returnFocus.focus();
+        returnFocus = null;
+    }
+
+    document.addEventListener('keydown', function (e) {
+        if ((e.key === 'k' || e.key === 'K') && (e.metaKey || e.ctrlKey) && document.querySelector('[data-search-dialog]')) {
+            e.preventDefault();
+            open();
+        }
+    });
+    document.addEventListener('click', function (e) {
+        if (e.target.closest && e.target.closest('[data-search-open]')) open();
+    });
+    window.shelldocsOnEnhancedLoad(close);
+
+    return { open: open, close: close };
 })();
 
 /* Theme. <html class="dark"> is the source of truth: whoever flips it (a
