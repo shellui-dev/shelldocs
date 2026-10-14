@@ -80,6 +80,27 @@ public class NotFoundTests : IDisposable
     }
 
     [Fact]
+    public async Task NotFoundPageFile_HidesTheProbePath_ForShelldocsJsToFill()
+    {
+        var html = await Harness().RenderAsync<DocsNotFound>(new() { ["Path"] = "/docs/__shelldocs-not-found__" });
+        var blank = (string)CliRunner("BlankProbePath").Invoke(null, [html])!;
+
+        Assert.DoesNotContain("__shelldocs-not-found__", blank);
+        Assert.Matches("<p[^>]*data-not-found-path[^>]* hidden>The page <code[^>]*></code>", blank);
+
+        var js = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..",
+            "src", "ShellDocs.Components", "wwwroot", "shelldocs.js"));
+        Assert.Contains("[data-not-found-path][hidden]", js);
+    }
+
+    private static MethodInfo CliRunner(string method)
+    {
+        var cli = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.GetName().Name == "shelldocs") ?? Assembly.Load("shelldocs");
+        return cli.GetType("ShellDocs.CLI.Commands.PrerenderRunner", throwOnError: true)!
+            .GetMethod(method, BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)!;
+    }
+
+    [Fact]
     public void InitTemplate_UsesDocsNotFound()
     {
         Assert.Contains("<DocsNotFound />", ScaffoldTemplates.DocsPageRazor);

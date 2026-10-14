@@ -1014,8 +1014,23 @@ window.shelldocsChrome = (function () {
     // The shell is already parsed here; restoring now avoids a flash of the open sidebar.
     restoreCollapse(document);
 
+    /* 404.html is one file for every unknown URL, so its path line ships blank and
+       hidden; fill in the visitor's path, relative to the site's base. */
+    function fillNotFoundPath() {
+        document.querySelectorAll('[data-not-found-path][hidden]').forEach(function (line) {
+            var code = line.querySelector('code');
+            if (!code || code.textContent) return;
+            var base = new URL(document.baseURI).pathname.replace(/\/$/, '');
+            var path = location.pathname;
+            if (base && path.indexOf(base + '/') === 0) path = path.slice(base.length);
+            code.textContent = decodeURIComponent(path);
+            line.hidden = false;
+        });
+    }
+
     function initPage() {
         initToc();
+        fillNotFoundPath();
         restoreCollapse(document);
         restoreTabs(document);
         window.shelldocsIframes.init(document);

@@ -246,7 +246,7 @@ One neutral, shadcn-shaped palette of CSS variables in `ShellDocs.Tokens/tokens.
 2. Builds the navigation graph and collects every URL (visible and hidden) plus `/`.
 3. `PrerenderRunner` starts the published app on a free port, requests each URL and writes `<output>/<path>/index.html`. A URL that answers 404, or renders `<DocsNotFound>`, fails the build.
 4. Reads the app's redirect map and writes a redirect page for each source URL without a prerendered page (meta refresh plus `location.replace`, relative to `<base href>`).
-5. Requests `/docs/__shelldocs-not-found__` and, if it renders `<DocsNotFound>` with a 404, writes it as `404.html`.
+5. Requests `/docs/__shelldocs-not-found__` and, if it renders `<DocsNotFound>` with a 404, writes it as `404.html`. The probe's path is blanked and its line hidden; `shelldocs.js` fills in the visitor's path.
 6. Copies the app's search index to `_shelldocs/search.json`.
 7. Merges the published `wwwroot/` into the output without overwriting prerendered HTML.
 8. Optionally rewrites `<base href>` in every HTML file, copies `index.html` to `404.html` (replacing the not-found page), and with `--site-url` writes `sitemap.xml`, `robots.txt` and `og:*` meta.

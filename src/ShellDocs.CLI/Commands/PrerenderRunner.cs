@@ -152,7 +152,7 @@ internal static class PrerenderRunner
             var response = http.GetAsync(NotFoundProbe).GetAwaiter().GetResult();
             var html = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
             if (response.StatusCode != HttpStatusCode.NotFound || !IsNotFoundPage(html)) return false;
-            File.WriteAllText(Path.Combine(outputDir, "404.html"), html);
+            File.WriteAllText(Path.Combine(outputDir, "404.html"), BlankProbePath(html));
             return true;
         }
         catch (Exception ex)
@@ -161,6 +161,15 @@ internal static class PrerenderRunner
             return false;
         }
     }
+
+    private static readonly Regex ProbePathLine = new(
+        @"(<p\b[^>]*\bdata-not-found-path\b[^>]*)>([\s\S]*?<code\b[^>]*>)" + Regex.Escape(NotFoundProbe) + "</code>",
+        RegexOptions.Compiled);
+
+    // 404.html serves every unknown URL, so the probe's path is blanked and the line
+    // hidden; shelldocs.js fills in the visitor's path.
+    internal static string BlankProbePath(string html) =>
+        ProbePathLine.Replace(html, "$1 hidden>$2</code>", 1);
 
     internal const string SearchIndexPath = "/_shelldocs/search.json";
 
