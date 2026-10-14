@@ -4,6 +4,14 @@ All notable changes to ShellDocs land here. Format follows [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [0.1.16-alpha] — 2026-10-14
+
+Fixes `<IframePreview>` showing the previous page's preview after navigating within a site.
+
+### Fixed
+
+- **`<IframePreview>` after in-site navigation.** When the next page has an iframe preview in the same place, Blazor reuses the element and only changes its `data-src`. `shelldocs.js` kept treating it as loaded, so the frame went on showing the previous page's preview and the Run button stayed hidden. It now watches `data-src` and `data-lazy`, unloads a host whose values change, and sets it up again: the Run button comes back for `Lazy="click"`, and `visible` / `none` previews load the new page. Sites that worked around it with their own `MutationObserver` can drop it.
+
 ## [0.1.15-alpha] — 2026-10-11
 
 Search now works in static exports, the last piece of chrome that needed a running Blazor app.

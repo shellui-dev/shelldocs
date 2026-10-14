@@ -240,6 +240,16 @@ public class PreviewCodeVariantsTests : IDisposable
         Assert.Matches(new Regex("IntersectionObserver"), js);
     }
 
+    [Fact]
+    public void ShelldocsJs_ResetsAnIframeHostReusedForAnotherPage()
+    {
+        var js = ReadAsset("shelldocs.js");
+
+        Assert.Contains("attributeFilter: ['data-src', 'data-lazy']", js);
+        Assert.Contains("host.removeAttribute('data-loaded')", js);
+        Assert.Contains("frame.src = 'about:blank'", js);
+    }
+
     private static string ReadAsset(string name)
     {
         var testDir = Path.GetDirectoryName(typeof(PreviewCodeVariantsTests).Assembly.Location)!;

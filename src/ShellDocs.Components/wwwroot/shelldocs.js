@@ -369,11 +369,34 @@ window.shelldocsIframes = (function () {
         if (scope.matches && scope.matches('[data-iframe-preview]')) hosts.unshift(scope);
         hosts.forEach(function (host) {
             if (host.__shelldocsIframe) return;
-            host.__shelldocsIframe = true;
+            host.__shelldocsIframe = { src: host.getAttribute('data-src'), lazy: host.getAttribute('data-lazy') };
             var lazy = host.getAttribute('data-lazy');
             if (lazy === 'none') load(host);
             else if (lazy !== 'click') watch(host);
         });
+    }
+
+    /* Navigating within the site can reuse a host for the next page's preview and
+       change only its data-src (or data-lazy), which would leave the previous page's
+       frame loaded and its Run button hidden. Unload it and set the host up again. */
+    function reset(host) {
+        var state = host.__shelldocsIframe;
+        if (!state) return;
+        if (state.src === host.getAttribute('data-src') && state.lazy === host.getAttribute('data-lazy')) return;
+        if (observer) observer.unobserve(host);
+        host.removeAttribute('data-loaded');
+        var frame = host.querySelector('iframe');
+        if (frame && frame.hasAttribute('src')) frame.src = 'about:blank';
+        host.__shelldocsIframe = null;
+        init(host);
+    }
+
+    if (window.MutationObserver) {
+        new MutationObserver(function (records) {
+            records.forEach(function (r) {
+                if (r.target.matches && r.target.matches('[data-iframe-preview]')) reset(r.target);
+            });
+        }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-src', 'data-lazy'], subtree: true });
     }
 
     function postTheme(dark) {
