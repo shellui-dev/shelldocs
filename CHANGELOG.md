@@ -6,7 +6,20 @@ All notable changes to ShellDocs land here. Format follows [Keep a Changelog](ht
 
 ## [0.1.17-alpha] — 2026-10-14
 
-Five fixes found while writing the ShellDocs docs site.
+llms.txt for AI agents, and five fixes found while writing the ShellDocs docs site.
+
+### Added
+
+- **llms.txt for AI agents.** `o.EnableLlmsTxt(l => …)` serves `/llms.txt` (every page with its description, grouped by sidebar section), `/llms-full.txt` (every page as Markdown) and each page as Markdown at its URL + `.md`, the same under every version root. Options: `Summary`, `RulesFile` (Markdown shown at the top, such as rules for agents), `InstallCommandPattern` (a regex; the first match in a page's code blocks is listed after it) and `AgentFiles`. Files are `text/plain`; links are absolute from `SiteUrl` or the request.
+- **Agent instruction files.** `AGENTS.md`, `CLAUDE.md`, `copilot-instructions.md` and a Cursor rule (`{site}.mdc`) under `/agents/` and each version root, served as downloads. Each is a `## {SiteName}` section, so it can be appended to an instructions file a project already has.
+- **Page actions menu.** A ⋯ menu by the page title: Copy page (the page's Markdown), View as Markdown, Open in Claude and Open in ChatGPT (prefilled with "Read {page}.md and help me with it."). It works in static exports. Turn it off with `PageActions = false`.
+- **Markdown for every ShellDocs tag.** Demos become their source in a fence, callouts blockquotes (code fences inside kept), tabs and code groups a bold label per tab, cards a list, steps numbered, file trees a text block, type tables a table, other registered components their text; links to docs pages become absolute `.md` links. Tags inside code fences are left alone.
+- **`shelldocs build` exports them.** `llms.txt`, `llms-full.txt`, every page's `.md` and the agent files are written into the output; links use `--site-url`, then `SiteUrl`, else they're root-relative under `--base-href`.
+- **`shelldocs init` turns it on** in the generated `Program.cs`.
+
+### Changed
+
+- **Links to `.txt` and `.md` files load the file.** Blazor's router and enhanced navigation showed the docs' "Page not found" for them; `shelldocs.js` now lets the browser follow them.
 
 ### Fixed
 
