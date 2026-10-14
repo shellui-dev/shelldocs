@@ -153,10 +153,16 @@ internal static class BuildCommand
         }
     }
 
-    // `baseHref` must include leading + trailing slashes ("/repo-name/").
+    /* `baseHref` must include leading + trailing slashes ("/repo-name/"). Root-relative
+       links ignore <base href>, so the sidebar, breadcrumb, header, content links and
+       favicons ("/docs/intro") get the base put in front too ("/repo-name/docs/intro"). */
     internal static int RewriteBaseHrefInAllHtml(string outputDir, string baseHref)
     {
         var count = 0;
+        var prefix = baseHref.TrimStart('/');
+        var rootRelative = new Regex(
+            @"(\s(?:href|src|data-src)\s*=\s*([""']))/(?!/)" + (prefix.Length > 0 ? "(?!" + Regex.Escape(prefix) + ")" : ""),
+            RegexOptions.IgnoreCase);
         foreach (var html in Directory.EnumerateFiles(outputDir, "*.html", SearchOption.AllDirectories))
         {
             var original = File.ReadAllText(html);
@@ -165,6 +171,7 @@ internal static class BuildCommand
                 @"<base\s+href\s*=\s*(""[^""]*""|'[^']*'|[^\s>]+)\s*/?>",
                 $"<base href=\"{baseHref}\" />",
                 RegexOptions.IgnoreCase);
+            if (prefix.Length > 0) patched = rootRelative.Replace(patched, "$1" + baseHref);
             if (patched != original)
             {
                 File.WriteAllText(html, patched);

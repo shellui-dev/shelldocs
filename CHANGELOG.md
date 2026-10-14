@@ -4,6 +4,10 @@ All notable changes to ShellDocs land here. Format follows [Keep a Changelog](ht
 
 ## [Unreleased]
 
+### Fixed
+
+- **Links broke on sites served from a sub-path** ([#40](https://github.com/shellui-dev/shelldocs/issues/40)). Sidebar, breadcrumb, header, prev/next, content and favicon links are root-relative (`/docs/introduction`), which ignores `<base href>`, so an export built with `--base-href /my-repo/` linked outside the site. `shelldocs build --base-href` now also puts the base in front of root-relative `href`, `src` and `data-src` values in every exported page.
+
 ## [0.1.17-alpha] — 2026-10-14
 
 llms.txt for AI agents, and five fixes found while writing the ShellDocs docs site.

@@ -72,6 +72,52 @@ public class BuildCommandTests : IDisposable
         Assert.Contains(expected, File.ReadAllText(path));
     }
 
+    // #40: root-relative links ignore <base href>, so they get the base too.
+    [Fact]
+    public void RewriteBaseHref_PrefixesRootRelativeLinks()
+    {
+        var path = Path.Combine(_tempDir, "index.html");
+        File.WriteAllText(path, """
+            <html><head><base href="/" /><link rel="icon" href="/favicon.png" /></head><body>
+            <a class="sidebar-item" href="/docs/introduction">Intro</a>
+            <a class="docs-header-brand" href='/'>Home</a>
+            <img src="/img/logo.svg" />
+            <div data-iframe-preview data-src="/preview/index.html"></div>
+            <a href="/repo/docs/already">Already</a>
+            <a href="//cdn.shellui.dev/x.js">CDN</a>
+            <a href="https://shellui.dev/docs">External</a>
+            <a href="docs/relative">Relative</a>
+            <a href="#install">Anchor</a>
+            <pre><code>&lt;a href=&quot;/docs/code&quot;&gt;</code></pre>
+            </body></html>
+            """);
+
+        RewriteBaseHrefInAllHtml(_tempDir, "/repo/");
+        var html = File.ReadAllText(path);
+
+        Assert.Contains("<base href=\"/repo/\" />", html);
+        Assert.Contains("href=\"/repo/favicon.png\"", html);
+        Assert.Contains("href=\"/repo/docs/introduction\"", html);
+        Assert.Contains("href='/repo/'", html);
+        Assert.Contains("src=\"/repo/img/logo.svg\"", html);
+        Assert.Contains("data-src=\"/repo/preview/index.html\"", html);
+        Assert.Contains("href=\"/repo/docs/already\"", html);
+        Assert.Contains("href=\"//cdn.shellui.dev/x.js\"", html);
+        Assert.Contains("href=\"https://shellui.dev/docs\"", html);
+        Assert.Contains("href=\"docs/relative\"", html);
+        Assert.Contains("href=\"#install\"", html);
+        Assert.Contains("&lt;a href=&quot;/docs/code&quot;&gt;", html);
+    }
+
+    [Fact]
+    public void RewriteBaseHref_AtTheRoot_LeavesLinksAlone()
+    {
+        var path = Path.Combine(_tempDir, "index.html");
+        File.WriteAllText(path, "<html><head><base href=\"/old/\" /></head><body><a href=\"/docs/x\">x</a></body></html>");
+        RewriteBaseHrefInAllHtml(_tempDir, "/");
+        Assert.Contains("<a href=\"/docs/x\">", File.ReadAllText(path));
+    }
+
     [Fact]
     public void RewriteBaseHref_LeavesOtherMarkupUntouched()
     {
