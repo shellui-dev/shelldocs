@@ -336,6 +336,44 @@ public class LlmsTxtTests : IDisposable
         Assert.Contains("/\\.(txt|md|mdc)$/i", js);
     }
 
+    [Fact]
+    public void Build_WritesTheLlmsFilesIntoTheExport()
+    {
+        var cli = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.GetName().Name == "shelldocs") ?? Assembly.Load("shelldocs");
+        var write = cli.GetType("ShellDocs.CLI.Commands.PrerenderRunner", throwOnError: true)!
+            .GetMethod("WriteLlmsFiles", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)!;
+        var output = Path.Combine(_root, "out");
+        Directory.CreateDirectory(output);
+
+        using var served = new HttpClient(new FilesHandler(new()
+        {
+            [LlmsTxtFiles.ManifestPath] = "[\"/llms.txt\",\"/docs/v2/agents/AGENTS.md\",\"/docs/introduction.md\",\"/../outside.txt\"]",
+            ["/llms.txt"] = "# ShellUI",
+            ["/docs/v2/agents/AGENTS.md"] = "## ShellUI",
+            ["/docs/introduction.md"] = "# Introduction",
+        })) { BaseAddress = new Uri("http://localhost") };
+        Assert.Equal(3, (int)write.Invoke(null, [served, output])!);
+        Assert.Equal("# ShellUI", File.ReadAllText(Path.Combine(output, "llms.txt")));
+        Assert.Equal("## ShellUI", File.ReadAllText(Path.Combine(output, "docs", "v2", "agents", "AGENTS.md")));
+        Assert.Equal("# Introduction", File.ReadAllText(Path.Combine(output, "docs", "introduction.md")));
+        Assert.False(File.Exists(Path.Combine(_root, "outside.txt")));
+
+        // A site without EnableLlmsTxt.
+        using var none = new HttpClient(new FilesHandler(new())) { BaseAddress = new Uri("http://localhost") };
+        Assert.Equal(0, (int)write.Invoke(null, [none, Path.Combine(_root, "none")])!);
+    }
+
+    private sealed class FilesHandler(Dictionary<string, string> files) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            => Task.FromResult(files.TryGetValue(request.RequestUri!.AbsolutePath, out var body)
+                ? new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(body) }
+                : new HttpResponseMessage(HttpStatusCode.NotFound));
+
+        protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
+            => SendAsync(request, cancellationToken).GetAwaiter().GetResult();
+    }
+
     private static DefaultHttpContext Context(string path)
     {
         var ctx = new DefaultHttpContext();

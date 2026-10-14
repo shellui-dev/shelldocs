@@ -14,7 +14,9 @@ internal static class PrerenderRunner
     private static readonly Regex KestrelListening = new(
         @"Now listening on:\s*(?<url>https?://\S+)", RegexOptions.Compiled);
 
-    public static Result Run(string publishDir, string csproj, IReadOnlyList<string> urls, string outputDir, TimeSpan? readyTimeout = null)
+    // `siteUrl` and `baseHref` are the export's; the app puts them in its llms.txt links.
+    public static Result Run(string publishDir, string csproj, IReadOnlyList<string> urls, string outputDir,
+        TimeSpan? readyTimeout = null, string? siteUrl = null, string? baseHref = null)
     {
         var assemblyName = InferAssemblyName(csproj) + ".dll";
         var assemblyPath = Path.Combine(publishDir, assemblyName);
@@ -84,6 +86,8 @@ internal static class PrerenderRunner
             AnsiConsole.MarkupLine($"[dim]prerender:[/] app listening on [cyan]{boundUrl}[/]");
 
             using var http = new HttpClient { BaseAddress = new Uri(boundUrl), Timeout = TimeSpan.FromSeconds(30) };
+            http.DefaultRequestHeaders.Add(LlmsSiteUrlHeader, siteUrl ?? "");
+            http.DefaultRequestHeaders.Add(LlmsBasePathHeader, (baseHref ?? "").TrimEnd('/'));
             var rendered = 0;
             var failed = 0;
 
@@ -129,6 +133,8 @@ internal static class PrerenderRunner
                 AnsiConsole.MarkupLine($"[dim]search:[/] wrote [cyan]{SearchIndexPath.TrimStart('/')}[/] ({Math.Max(1, indexBytes / 1024)} KB)");
             else if (indexBytes == 0)
                 AnsiConsole.MarkupLine("  [yellow]warn:[/] the site serves no search index (its ShellDocs.Components predates static search), so search won't work in this export");
+            var llms = WriteLlmsFiles(http, outputDir);
+            if (llms > 0) AnsiConsole.MarkupLine($"[dim]llms.txt:[/] wrote [cyan]{llms}[/] file(s)");
             return new Result(failed == 0, rendered, failed);
         }
         finally
@@ -192,6 +198,52 @@ internal static class PrerenderRunner
             AnsiConsole.MarkupLine($"  [yellow]warn:[/] couldn't read the search index: {ex.Message}");
             return -1;
         }
+    }
+
+    internal const string LlmsManifestPath = "/_shelldocs/llms.json";
+    internal const string LlmsSiteUrlHeader = "X-ShellDocs-Site-Url";
+    internal const string LlmsBasePathHeader = "X-ShellDocs-Base-Path";
+
+    // llms.txt, llms-full.txt, each page's .md and the agent files, from the app's list
+    // (EnableLlmsTxt). Sites without it answer 404 and nothing is written.
+    internal static int WriteLlmsFiles(HttpClient http, string outputDir)
+    {
+        List<string>? paths;
+        try
+        {
+            var response = http.GetAsync(LlmsManifestPath).GetAwaiter().GetResult();
+            if (!response.IsSuccessStatusCode) return 0;
+            paths = JsonSerializer.Deserialize<List<string>>(response.Content.ReadAsStringAsync().GetAwaiter().GetResult());
+        }
+        catch (Exception ex)
+        {
+            AnsiConsole.MarkupLine($"  [yellow]warn:[/] couldn't read the llms.txt file list: {ex.Message}");
+            return 0;
+        }
+
+        var written = 0;
+        foreach (var path in paths ?? new())
+        {
+            if (!path.StartsWith('/') || path.Split('/').Any(s => s is "." or "..")) continue;
+            try
+            {
+                var response = http.GetAsync(path).GetAwaiter().GetResult();
+                if (!response.IsSuccessStatusCode)
+                {
+                    AnsiConsole.MarkupLine($"  [yellow]warn:[/] [cyan]{path}[/] returned [yellow]{(int)response.StatusCode}[/]");
+                    continue;
+                }
+                var outPath = Path.Combine(outputDir, path.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
+                Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
+                File.WriteAllBytes(outPath, response.Content.ReadAsByteArrayAsync().GetAwaiter().GetResult());
+                written++;
+            }
+            catch (Exception ex)
+            {
+                AnsiConsole.MarkupLine($"  [yellow]warn:[/] [cyan]{path}[/] failed: {ex.Message}");
+            }
+        }
+        return written;
     }
 
     private record RedirectEntry(string From, string To);
