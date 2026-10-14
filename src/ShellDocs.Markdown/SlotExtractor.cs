@@ -19,7 +19,7 @@ internal class SlotExtractor
 
     /* CommonMark code span: a backtick run, content, and a closing run of the same
        length. May wrap lines but not cross a blank line. */
-    private static readonly Regex InlineCode = new(
+    internal static readonly Regex InlineCode = new(
         @"(?<!`)(?<ticks>`+)(?!`)(?:[^`\r\n]|\r?\n(?![ \t]*\r?\n)|`+(?!`))*?(?<!`)\k<ticks>(?!`)",
         RegexOptions.Compiled);
 
@@ -168,7 +168,11 @@ internal class SlotExtractor
                 parser.FirstUnknownChildRaw, Error: msg);
         }
 
-        warnings.Add("razor:preview fence must contain a component tag.");
+        // Plain HTML (no components) still renders live.
+        if (nodes.Any(n => n is PreviewElementNode))
+            return new PreviewSlot(NewSlotId(), null, new Dictionary<string, string>(), code, "razor", Nodes: nodes, Layout: layout);
+
+        warnings.Add("razor:preview fence must contain a component or HTML tag.");
         return null;
     }
 

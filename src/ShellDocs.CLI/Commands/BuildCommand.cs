@@ -66,7 +66,7 @@ internal static class BuildCommand
         if (Directory.Exists(outputAbs)) Directory.Delete(outputAbs, recursive: true);
         Directory.CreateDirectory(outputAbs);
 
-        var result = PrerenderRunner.Run(publishStage, csproj, urls, outputAbs);
+        var result = PrerenderRunner.Run(publishStage, csproj, urls, outputAbs, siteUrl: normalizedSiteUrl, baseHref: baseHref);
         if (!result.Success)
         {
             AnsiConsole.MarkupLine("[red]error:[/] prerender did not complete cleanly. Output may be incomplete.");

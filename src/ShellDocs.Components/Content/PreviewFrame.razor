@@ -123,8 +123,8 @@
                             </div>
                         }
                         <div class="preview-code-variant preview-code-missing" data-tab-missing hidden>
-                            @* String expressions keep the spaces Razor would trim around the span. *@
-                            @("Not available on ")<span data-tab-missing-label></span>@(" yet")
+                            @* One inline box: as separate flex items the spaces around the label collapse. *@
+                            <span>@("Not available on ")<span data-tab-missing-label></span>@(" yet")</span>
                         </div>
                     </div>
                 </div>
@@ -174,7 +174,8 @@
 
     private string? ErrorMessage =>
         Error
-        ?? (Content is null && Preview?.ComponentType is null ? Preview?.Error ?? "Unknown error." : null);
+        ?? (Content is null && Preview?.ComponentType is null && Preview?.Nodes is not { Count: > 0 }
+            ? Preview?.Error ?? "Unknown error." : null);
 
     private string? PartId(string part) => Id is null ? null : $"{Id}-{part}";
 

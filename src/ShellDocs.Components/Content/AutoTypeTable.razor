@@ -70,7 +70,7 @@ else
         _rows = _target is null ? new() : BuildRows(_target);
     }
 
-    private static List<TypeRowInfo> BuildRows(Type target)
+    internal static List<TypeRowInfo> BuildRows(Type target)
     {
         var rows = new List<TypeRowInfo>();
 

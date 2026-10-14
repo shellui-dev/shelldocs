@@ -49,6 +49,8 @@ public class ShellDocsOptions
     public List<DocsRedirectRule> Redirects { get; } = new();
     // Searched recursively for X.razor to show as <DemoPreview Component="X" />'s source.
     public string? DemoSourceRoot { get; set; }
+    // Null until EnableLlmsTxt is called.
+    public LlmsTxtOptions? LlmsTxt { get; private set; }
     public List<Type> RegisteredComponents { get; } = new();
     // ShellDocs' own content primitives, filled by AddShellDocs. Registered before
     // RegisteredComponents so a consumer component with the same name wins.
@@ -164,6 +166,16 @@ public class ShellDocsOptions
         if (options is not { Length: >= 2 })
             throw new ArgumentException("A sync switch needs at least two options.", nameof(options));
         SyncSwitches.Add(new DocsSyncSwitch(syncKey, options));
+        return this;
+    }
+
+    /* llms.txt (https://llmstxt.org) for AI agents: /llms.txt, /llms-full.txt, every
+       page as Markdown at its URL + ".md", the same files under each version root,
+       agent instruction files and a page actions menu. `shelldocs build` exports them. */
+    public ShellDocsOptions EnableLlmsTxt(Action<LlmsTxtOptions>? configure = null)
+    {
+        LlmsTxt ??= new LlmsTxtOptions();
+        configure?.Invoke(LlmsTxt);
         return this;
     }
 

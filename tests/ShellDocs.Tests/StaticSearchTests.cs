@@ -158,6 +158,13 @@ public class StaticSearchTests : IDisposable
     }
 
     [Fact]
+    public async Task HomeLayout_HasTheSearchDialog()
+    {
+        var html = await Harness().RenderAsync<HomeLayout>();
+        Assert.Contains("data-search-dialog", html);
+    }
+
+    [Fact]
     public void ShelldocsJs_SearchesTheIndexInTheBrowser()
     {
         var js = File.ReadAllText(FindAsset("shelldocs.js"));

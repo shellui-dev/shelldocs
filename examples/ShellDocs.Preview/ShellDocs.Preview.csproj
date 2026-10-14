@@ -17,6 +17,8 @@
     <!-- <DemoPreview> reads these at runtime. The Razor SDK drops .razor files from
              publish even with Content metadata, so ship them as None items. -->
     <None Include="Demos/**/*.razor" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <!-- EnableLlmsTxt's RulesFile, read at runtime. -->
+    <None Update="llms-rules.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

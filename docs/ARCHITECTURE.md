@@ -112,7 +112,7 @@ Placeholders plus a slot list keep everything at render time: no generated Razor
 
 ### `razor:preview` fences
 
-`PreviewParser` turns the fence into ordered nodes: component nodes (registered capitalised tags; their children kept raw and parsed the same way, as Razor, when the component renders), element nodes (HTML, including unregistered capitalised tags) and text. `@code { }` / `@functions { }` blocks, `@* *@` comments and directive lines (`@using`, `@inject`, …) are skipped for rendering but stay in the Code tab. If no registered component is found the slot carries an `Error`, rendered as a red panel instead of a silent code block. `razor:preview stretch` in the info string sets `PreviewSlot.Layout`.
+`PreviewParser` turns the fence into ordered nodes: component nodes (registered capitalised tags; their children kept raw and parsed the same way, as Razor, when the component renders), element nodes (HTML, including unregistered capitalised tags) and text. `@code { }` / `@functions { }` blocks, `@* *@` comments and directive lines (`@using`, `@inject`, …) are skipped for rendering but stay in the Code tab. With no registered component, a fence holding an unregistered capitalised tag carries an `Error`, rendered as a red panel instead of a silent code block; one holding only HTML renders it as is (`ComponentType` is null). A fence with no tags at all stays a code block, with a warning. `razor:preview stretch` in the info string sets `PreviewSlot.Layout`.
 
 ---
 
@@ -191,7 +191,21 @@ All answers are computed at render time and emitted as plain `<a href>`, so prer
 
 Searching happens in the browser, so it's the same on a static host. `DocsSearchIndexMiddleware` (added by an `IStartupFilter`, like the redirects) serves the index at `/_shelldocs/search.json`: `{ versions: [{ id, root, latest }], entries: [{ u, t, d, s, k, b, v }] }`, where `k` is `p` (page) or `h` (heading) and `v` is the id of the version that owns the entry. `shelldocs build` copies that file into the export.
 
-`SearchDialog` renders a hidden template. On Cmd/Ctrl+K or a `[data-search-open]` button, `shelldocs.js` clones it onto `<body>` (outside the DOM Blazor owns, so a circuit starting doesn't close it), fetches the index once, keeps the current version's entries plus those outside every version, and scores them: whole-query and per-token matches against title (strongest), section, description and body; every token must match somewhere. Body-only matches get a ~150-character snippet. Results are links, cloned from the template's `[data-search-row]` rows. `shelldocsSearch.open()` / `.close()` do the same from script.
+`SearchDialog` renders a hidden template; `DocsLayout` and `HomeLayout` both include one. On Cmd/Ctrl+K or a `[data-search-open]` button, `shelldocs.js` clones it onto `<body>` (outside the DOM Blazor owns, so a circuit starting doesn't close it), fetches the index once, keeps the current version's entries plus those outside every version, and scores them: whole-query and per-token matches against title (strongest), section, description and body; every token must match somewhere. Body-only matches get a ~150-character snippet. Results are links, cloned from the template's `[data-search-row]` rows. `shelldocsSearch.open()` / `.close()` do the same from script.
+
+---
+
+## llms.txt
+
+`o.EnableLlmsTxt(l => …)` registers `LlmsTxtFiles` and `LlmsTxtMiddleware` (an `IStartupFilter` added before the redirects, so a page's `.md` is never redirected and no path reaches the docs page route). The middleware answers `/llms.txt`, `/llms-full.txt`, each version root's `llms.txt` / `llms-full.txt`, `{page URL}.md` and, with `AgentFiles`, `agents/AGENTS.md`, `CLAUDE.md`, `copilot-instructions.md` and `{site}.mdc` at `/` and under each version root. Everything is `text/plain` (some browsers download `text/markdown`); the agent files are attachments. `/_shelldocs/llms.json` lists every path for `shelldocs build`.
+
+- **Scope.** The bare files cover pages outside every version plus the latest version (every page on an unversioned site); a version root's cover that version. Index groups are the page's sidebar sections below the scope's common folder; when unversioned and latest pages are listed together, the latest version's groups carry its label.
+- **Header.** `# {SiteName}`, a `>` line (`Summary`, defaulting to `SiteTagline`, plus which version this is and links to the others' `llms.txt`), then the `RulesFile` as written. The index adds each page's description and the first `InstallCommandPattern` match in its code blocks.
+- **Agent files.** A `## {SiteName}` section (leading newline, so `>>` appends cleanly): which version the project uses, where `llms.txt` is, and the rules with their headings one level down. The Cursor rule adds `description` / `alwaysApply` frontmatter.
+- **Markdown** (`LlmsMarkdown`). Fences and code spans are masked first and come back unchanged (`razor:preview` becomes `razor`). Registered tags are read with `RazorTagScanner` and matched to their type: `Callout` → a blockquote with a bold title (fences inside are quoted too), `Tabs`/`Tab` and `CodeGroup`/`CodeTab` → a bold label per tab, `CardGrid`/`Card`/`LinkCard` → a list, `Steps`/`Step` → numbered bold titles, `FileTree` → a `text` fence, `TypeTable`/`TypeRow`/`AutoTypeTable` → a table, `DemoPreview` → the demo's source, `ComponentPreview` → its markup without the frame attributes, `IframePreview` → a link, `SyncSwitch` → nothing; previews with `<CodeTab>` children show those instead. Any other registered component becomes its text. Root-relative link targets and `href`/`src` attributes become absolute, with `.md` for docs pages. `LlmsMarkdown.HandledTypes` lists every built-in, and a test fails when a new built-in is missing from it.
+- **Base URL.** `SiteUrl`, else the request's origin and path base. `shelldocs build` sends `X-ShellDocs-Site-Url` (its `--site-url`) and `X-ShellDocs-Base-Path` (its `--base-href`); the middleware honours them only from loopback, falling back to `SiteUrl`, then root-relative links under the base path.
+
+`DocsPageActions` (rendered first in `MarkdownContent`, floated right of the title, only on graph pages with `PageActions`) is a ⋯ menu: **Copy page** (`[data-page-copy]`), **View as Markdown** (the page's base-relative `.md`), **Open in Claude** / **Open in ChatGPT** (`[data-page-ai]`, the chat URL prefix).
 
 ---
 
@@ -206,7 +220,9 @@ Chrome that must work without a Blazor runtime follows one contract:
 | Feature | Markup | Behaviour |
 |---|---|---|
 | Sidebar sections | `.sidebar-section[data-open]` | toggle on click |
-| Package / version selectors, preview ⋯ menu | `.pkg` / `.ver` / `.preview-menu` `[data-open]` | open on trigger; close on outside click, Escape or option |
+| Package / version selectors, preview and page ⋯ menus | `.pkg` / `.ver` / `.preview-menu` / `.page-actions` `[data-open]` | open on trigger; close on outside click, Escape or option |
+| Page actions | `.page-actions[data-page-md]`, `[data-page-copy]`, `[data-page-ai]` | Copy page fetches the `.md` (resolved against `<base href>`) into the clipboard through a `ClipboardItem` holding the pending text (Safari's gesture rule), then closes; the chat links get `Read {absolute .md URL} and help me with it.` at load and again on click |
+| File links | any same-origin `<a>` to a `.txt` / `.md` / `.mdc` path | a window capture listener stops the click before Blazor's router and enhanced navigation (which would show "Page not found"), so the browser loads the file |
 | Preview tabs | `.preview-frame[data-preview-tab]` | Preview / Code; arrow keys; copy reads the source |
 | Tabs, CodeGroup, preview code tabs, page switch | `[data-tabs]`, `[data-tab-target]`, `[data-tab-panel]` | switch on click / arrows; `[data-tabs-sync]` groups switch together and persist in `localStorage`; a `[data-tabs-missing]` group without the chosen value shows its `[data-tab-missing]` note; with nothing saved yet, groups follow a `[data-tabs-switch]` for their key |
 | Iframe previews | `[data-iframe-preview][data-src][data-lazy]` | sets the iframe's `src` (plus `?theme=`) when visible (IntersectionObserver), on `[data-iframe-run]` or at once; posts `{ type: "shelldocs-theme", theme }` to loaded frames on theme change; a host Blazor reuses for another page (`data-src` or `data-lazy` changed) is unloaded and set up again |
@@ -246,10 +262,11 @@ One neutral, shadcn-shaped palette of CSS variables in `ShellDocs.Tokens/tokens.
 2. Builds the navigation graph and collects every URL (visible and hidden) plus `/`.
 3. `PrerenderRunner` starts the published app on a free port, requests each URL and writes `<output>/<path>/index.html`. A URL that answers 404, or renders `<DocsNotFound>`, fails the build.
 4. Reads the app's redirect map and writes a redirect page for each source URL without a prerendered page (meta refresh plus `location.replace`, relative to `<base href>`).
-5. Requests `/docs/__shelldocs-not-found__` and, if it renders `<DocsNotFound>` with a 404, writes it as `404.html`.
+5. Requests `/docs/__shelldocs-not-found__` and, if it renders `<DocsNotFound>` with a 404, writes it as `404.html`. The probe's path is blanked and its line hidden; `shelldocs.js` fills in the visitor's path.
 6. Copies the app's search index to `_shelldocs/search.json`.
-7. Merges the published `wwwroot/` into the output without overwriting prerendered HTML.
-8. Optionally rewrites `<base href>` in every HTML file, copies `index.html` to `404.html` (replacing the not-found page), and with `--site-url` writes `sitemap.xml`, `robots.txt` and `og:*` meta.
+7. With `EnableLlmsTxt`, reads `/_shelldocs/llms.json` and writes each listed file (`llms.txt`, `llms-full.txt`, every page's `.md`, the agent files) at its path. Links use `--site-url`, then the app's `SiteUrl`, else they're root-relative under `--base-href`.
+8. Merges the published `wwwroot/` into the output without overwriting prerendered HTML.
+9. Optionally rewrites `<base href>` in every HTML file, copies `index.html` to `404.html` (replacing the not-found page), and with `--site-url` writes `sitemap.xml`, `robots.txt` and `og:*` meta.
 
 ---
 

@@ -157,13 +157,25 @@ public class PreviewParsingTests
     }
 
     [Fact]
-    public void FenceWithoutComponentTags_RendersAsPlainCode()
+    public void FenceWithOnlyHtml_IsALivePreview()
     {
         var renderer = Renderer();
-        var doc = renderer.Render("```razor:preview\n<div>plain</div>\n```");
+        var doc = renderer.Render("```razor:preview\n<div class=\"box\">plain</div>\n```");
+        var slot = Assert.IsType<PreviewSlot>(Assert.Single(doc.Slots));
+        Assert.Null(slot.ComponentType);
+        Assert.Null(slot.Error);
+        Assert.Contains(slot.Nodes!, n => n is PreviewElementNode { TagName: "div" });
+        Assert.DoesNotContain("language-razor:preview", doc.Html);
+    }
+
+    [Fact]
+    public void FenceWithoutTags_RendersAsPlainCode()
+    {
+        var renderer = Renderer();
+        var doc = renderer.Render("```razor:preview\njust text\n```");
         Assert.Empty(doc.Slots);
         Assert.Contains("language-razor:preview", doc.Html);
-        Assert.Contains(renderer.LastWarnings, w => w.Contains("must contain a component tag"));
+        Assert.Contains(renderer.LastWarnings, w => w.Contains("must contain a component or HTML tag"));
     }
 
     [Fact]

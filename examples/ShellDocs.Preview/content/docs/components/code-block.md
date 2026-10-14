@@ -11,7 +11,7 @@ There's no component to call: every fenced code block in your markdown becomes a
 builder.Services.AddShellDocs(o =>
 {
     o.SiteName = "My Docs";
-    o.GitHubRepo = "acme/my-docs";
+    o.GitHubRepo = "shellui-dev/shelldocs";
 });
 ```
 

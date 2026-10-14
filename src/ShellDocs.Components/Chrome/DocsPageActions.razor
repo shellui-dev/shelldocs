@@ -1,0 +1,59 @@
+@using ShellIcons.Icons
+@inject ShellDocsOptions Options
+@inject NavigationManager Nav
+@inject NavigationGraph Graph
+
+@* The ⋯ menu by the page title when EnableLlmsTxt is on. shelldocs.js opens it,
+   copies the page's Markdown ([data-page-copy]) and fills the chat links' prompt
+   with the page's absolute .md URL ([data-page-ai]), so it works in static exports. *@
+@if (_markdownHref is not null)
+{
+    <div class="page-actions not-prose" data-open="false" data-page-md="@_markdownHref">
+        <button type="button" class="page-actions-trigger" aria-haspopup="menu" aria-expanded="false" aria-label="Page actions" title="Page actions">
+            <Ellipsis />
+        </button>
+        <div class="page-actions-list" role="menu">
+            <button type="button" class="page-actions-item" role="menuitem" data-page-copy>
+                <Copy Class="icon-copy" />
+                <Check Class="icon-check" />
+                <span>Copy page</span>
+            </button>
+            <a class="page-actions-item" role="menuitem" href="@_markdownHref" target="_blank" rel="noopener">
+                <FileText />
+                <span>View as Markdown</span>
+            </a>
+            <div class="page-actions-separator" role="separator"></div>
+            <a class="page-actions-item" role="menuitem" href="@ChatHref(ClaudeUrl)" data-page-ai="@ClaudeUrl" target="_blank" rel="noopener">
+                <MessageCircle />
+                <span>Open in Claude</span>
+            </a>
+            <a class="page-actions-item" role="menuitem" href="@ChatHref(ChatGptUrl)" data-page-ai="@ChatGptUrl" target="_blank" rel="noopener">
+                <MessageCircle />
+                <span>Open in ChatGPT</span>
+            </a>
+        </div>
+    </div>
+}
+
+@code {
+    private const string ClaudeUrl = "https://claude.ai/new?q=";
+    private const string ChatGptUrl = "https://chatgpt.com/?q=";
+
+    // Base-relative ("docs/intro.md"), so it follows <base href> in a sub-path export.
+    private string? _markdownHref;
+
+    protected override void OnParametersSet()
+    {
+        var path = DocsVersionResolver.PathOf(Nav);
+        _markdownHref = Options.LlmsTxt is { PageActions: true } && Graph.ResolveByUrl(path) is { Kind: NodeKind.Page, Path: not null }
+            ? path.TrimStart('/') + ".md"
+            : null;
+    }
+
+    // Absolute with SiteUrl; otherwise shelldocs.js puts the visitor's origin in on click.
+    private string ChatHref(string chat)
+    {
+        var url = string.IsNullOrWhiteSpace(Options.SiteUrl) ? "/" + _markdownHref : Options.SiteUrl.TrimEnd('/') + "/" + _markdownHref;
+        return chat + Uri.EscapeDataString($"Read {url} and help me with it.");
+    }
+}

@@ -4,6 +4,31 @@ All notable changes to ShellDocs land here. Format follows [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [0.1.17-alpha] — 2026-10-14
+
+llms.txt for AI agents, and five fixes found while writing the ShellDocs docs site.
+
+### Added
+
+- **llms.txt for AI agents.** `o.EnableLlmsTxt(l => …)` serves `/llms.txt` (every page with its description, grouped by sidebar section), `/llms-full.txt` (every page as Markdown) and each page as Markdown at its URL + `.md`, the same under every version root. Options: `Summary`, `RulesFile` (Markdown shown at the top, such as rules for agents), `InstallCommandPattern` (a regex; the first match in a page's code blocks is listed after it) and `AgentFiles`. Files are `text/plain`; links are absolute from `SiteUrl` or the request.
+- **Agent instruction files.** `AGENTS.md`, `CLAUDE.md`, `copilot-instructions.md` and a Cursor rule (`{site}.mdc`) under `/agents/` and each version root, served as downloads. Each is a `## {SiteName}` section, so it can be appended to an instructions file a project already has.
+- **Page actions menu.** A ⋯ menu by the page title: Copy page (the page's Markdown), View as Markdown, Open in Claude and Open in ChatGPT (prefilled with "Read {page}.md and help me with it."). It works in static exports. Turn it off with `PageActions = false`.
+- **Markdown for every ShellDocs tag.** Demos become their source in a fence, callouts blockquotes (code fences inside kept), tabs and code groups a bold label per tab, cards a list, steps numbered, file trees a text block, type tables a table, other registered components their text; links to docs pages become absolute `.md` links. Tags inside code fences are left alone.
+- **`shelldocs build` exports them.** `llms.txt`, `llms-full.txt`, every page's `.md` and the agent files are written into the output; links use `--site-url`, then `SiteUrl`, else they're root-relative under `--base-href`.
+- **`shelldocs init` turns it on** in the generated `Program.cs`.
+
+### Changed
+
+- **Links to `.txt` and `.md` files load the file.** Blazor's router and enhanced navigation showed the docs' "Page not found" for them; `shelldocs.js` now lets the browser follow them.
+
+### Fixed
+
+- **The missing-tab note lost its spaces.** It read "Not available onRazoryet": the note is a flex container, so the text around the label became separate flex items and the spaces were dropped. The sentence is now one inline box.
+- **A `razor:preview` fence holding only HTML rendered as a code block.** It now renders live in the frame, like a fence with components. A fence with no tags at all is still a code block, with a warning.
+- **`404.html` named the build's probe URL.** Every unknown URL showed "The page /docs/\_\_shelldocs-not-found\_\_ doesn't exist". `shelldocs build` now blanks and hides that line, and `shelldocs.js` fills in the visitor's path (relative to the site's base).
+- **`LogoSvg` logos weren't sized.** The scoped rule meant to fit the SVG to `LogoHeight` never matched, so an SVG without its own size could collapse to nothing. Sites that added their own `.brand-logo-svg > svg` rule can drop it.
+- **Search on home pages.** `HomeLayout` had no `<SearchDialog />`, so Cmd/Ctrl+K and `[data-search-open]` did nothing there unless the site added one. It's included now; a site that added its own can remove it.
+
 ## [0.1.16-alpha] — 2026-10-14
 
 Fixes `<IframePreview>` showing the previous page's preview after navigating within a site.

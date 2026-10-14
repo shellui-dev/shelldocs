@@ -15,7 +15,8 @@
     flex-shrink: 0;
     color: var(--foreground);
 }
-::deep .brand-logo-svg > svg {
+/* The SVG is MarkupString content, so it has no scope attribute. */
+.brand-logo-svg ::deep > svg {
     height: 100%;
     width: auto;
     display: block;

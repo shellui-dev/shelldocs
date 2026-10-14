@@ -53,8 +53,8 @@ shelldocs build
 
 - `--base-href /my-repo/` rewrites `<base href>` for sites served from a subpath.
 - `--spa-fallback` copies `index.html` to `404.html`. Without it, `404.html` is the site's own not-found page, which GitHub Pages, Netlify and Cloudflare Pages serve for unknown URLs.
-- `--site-url https://docs.example.com` emits `sitemap.xml`, `robots.txt` and `og:` meta tags.
+- `--site-url https://shelldocs.shellui.dev` emits `sitemap.xml`, `robots.txt` and `og:` meta tags.
 
-In the static output, navigation, sidebar sections and collapse, the mobile menu, the version and package selectors, tabs, preview tabs and menus, the table of contents, the theme toggle and code copy all work through `shelldocs.js`. Search and stateful demo components still need a running Blazor Server app (interactive server rendering).
+In the static output, navigation, sidebar sections and collapse, the mobile menu, the version and package selectors, tabs, preview tabs and menus, the table of contents, the theme toggle, search and code copy all work through `shelldocs.js`. Stateful demo components still need a running Blazor Server app (interactive server rendering). With `EnableLlmsTxt`, the export also has `llms.txt`, `llms-full.txt` and every page as `.md`.
 
 URLs that aren't pages (folders, version roots, unversioned URLs that moved into a version) become redirect pages in the static output, the same redirects the running app answers.

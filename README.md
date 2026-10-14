@@ -50,6 +50,7 @@ Already have a Blazor project? Run `shelldocs init --attach` inside it: it adds 
 - **Markdown-first authoring.** YAML frontmatter, Shiki-highlighted code fences, live `razor:preview` examples, inline component tags mid-prose. Set `o.RenderPageTitle = true` to render the frontmatter `title` and `description` as the page header instead of writing `# Title`.
 - **File-based navigation.** Drop a `.md` in `content/docs/` and it's a page. Sidebar, breadcrumb, prev/next and TOC come from the folder tree; `meta.json` controls order, dividers, subsections and hidden pages.
 - **`Cmd+K` search** across titles, headings and page text, with body snippets. The index is built at startup and searched in the browser, so there's no external service and it works in the static export too.
+- **llms.txt for AI agents.** `o.EnableLlmsTxt()` serves `/llms.txt`, `/llms-full.txt` and every page as Markdown at its URL + `.md`, plus `AGENTS.md`, `CLAUDE.md`, Copilot and Cursor instruction files, and adds a **Copy page / View as Markdown / Open in Claude / Open in ChatGPT** menu by the title. See [AI agents](#ai-agents-llmstxt).
 - **Blazor-native.** Your components render as real Razor components, not iframes.
 - **Composable.** Bring your own component library (ShellUI, MudBlazor, Radzen, hand-rolled) and register it in one line:
   ```csharp
@@ -90,6 +91,30 @@ o.AddRedirect("/docs/v0.3.0", "/docs/v0.3");   // also /docs/v0.3.0/x → /docs/
 ```
 
 `AddShellDocs` registers middleware that answers these before routing, so a dotted version root works even though `/docs/{*Path:nonfile}` routes can't match it. `shelldocs build` writes the same redirects as static pages. Turn it off with `o.EnableRedirects = false`.
+
+## AI agents (llms.txt)
+
+As on the ShellUI docs ([shellui.dev/llms.txt](https://shellui.dev/llms.txt)):
+
+```csharp
+o.EnableLlmsTxt(l =>
+{
+    l.Summary = "ShellUI is a shadcn/ui-style component library for Blazor.";  // defaults to SiteTagline
+    l.RulesFile = "Llms/agent-rules.md";           // shown at the top, e.g. "Rules for AI agents"
+    l.InstallCommandPattern = @"shellui add [\w-]+";  // listed after each page that has one
+    // l.AgentFiles = false;  l.PageActions = false;
+});
+```
+
+| URL | Contents |
+|---|---|
+| `/llms.txt` | Site name, summary and rules, then every page with its description, by sidebar section |
+| `/llms-full.txt` | The same header, then every page as Markdown |
+| `{page}.md` | One page as Markdown |
+| `{version root}/llms.txt`, `/llms-full.txt` | One version (the bare files cover the latest plus unversioned pages) |
+| `/agents/AGENTS.md`, `CLAUDE.md`, `copilot-instructions.md`, `{site}.mdc` | Instruction files to download into a project, each a `## {SiteName}` section that can be appended to an existing file (also under each version root) |
+
+The Markdown is the page source with ShellDocs tags turned into Markdown: demos become their source, callouts blockquotes, tabs a label per tab, cards a list, and links to docs pages absolute `.md` links. The files are `text/plain` (some browsers download `text/markdown`); links use `SiteUrl`, or the request's address. `shelldocs build` writes all of them into the export, and links to `.txt` / `.md` files load the file instead of the docs' not-found page. Copy the rules file to the output and publish folders (`<None Update="Llms/agent-rules.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />`).
 
 ## Component previews
 
