@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using ShellDocs.Components.Chrome;
 using ShellDocs.Components.Content;
+using ShellDocs.Components.Llms;
 using ShellDocs.Core;
 using ShellDocs.Markdown;
 
@@ -45,6 +46,13 @@ public static class ServiceCollectionExtensions
         });
         services.AddSingleton<SearchIndex>(sp => SearchIndex.FromGraph(sp.GetRequiredService<NavigationGraph>()));
         services.AddSingleton<DocsVersionResolver>();
+        // Before the redirects, so a page's .md is never redirected.
+        if (options.LlmsTxt is not null)
+        {
+            services.AddSingleton(sp => new LlmsTxtFiles(options, sp.GetRequiredService<NavigationGraph>(),
+                sp.GetRequiredService<TypeRegistry>(), sp.GetRequiredService<DocsVersionResolver>(), sp.GetService<IWebHostEnvironment>()));
+            services.AddTransient<IStartupFilter, LlmsTxtStartupFilter>();
+        }
         services.AddSingleton<DocsRedirects>();
         if (options.EnableRedirects)
             services.AddTransient<IStartupFilter, DocsRedirectStartupFilter>();

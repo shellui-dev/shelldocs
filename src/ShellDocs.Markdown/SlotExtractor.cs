@@ -19,7 +19,7 @@ internal class SlotExtractor
 
     /* CommonMark code span: a backtick run, content, and a closing run of the same
        length. May wrap lines but not cross a blank line. */
-    private static readonly Regex InlineCode = new(
+    internal static readonly Regex InlineCode = new(
         @"(?<!`)(?<ticks>`+)(?!`)(?:[^`\r\n]|\r?\n(?![ \t]*\r?\n)|`+(?!`))*?(?<!`)\k<ticks>(?!`)",
         RegexOptions.Compiled);
 
