@@ -669,13 +669,13 @@ window.shelldocsChrome = (function () {
     }
 
     // Dropdowns — .pkg (PackageSelector), .ver (VersionSelector), .preview-menu
-    // (preview ⋯ menu): the trigger toggles [data-open]; outside click, Escape,
-    // or picking an option closes it.
-    var DROPDOWN = '.pkg, .ver, .preview-menu';
-    var OPEN_DROPDOWN = '.pkg[data-open="true"], .ver[data-open="true"], .preview-menu[data-open="true"]';
-    var TRIGGER = '.pkg-trigger, .ver-trigger, .preview-menu-trigger';
-    var MENU = '.pkg-menu, .ver-menu, .preview-menu-list';
-    var OPTION = '.pkg-option, .ver-option, .preview-menu-item';
+    // (preview ⋯ menu), .page-actions (page ⋯ menu): the trigger toggles [data-open];
+    // outside click, Escape, or picking an option closes it.
+    var DROPDOWN = '.pkg, .ver, .preview-menu, .page-actions';
+    var OPEN_DROPDOWN = '.pkg[data-open="true"], .ver[data-open="true"], .preview-menu[data-open="true"], .page-actions[data-open="true"]';
+    var TRIGGER = '.pkg-trigger, .ver-trigger, .preview-menu-trigger, .page-actions-trigger';
+    var MENU = '.pkg-menu, .ver-menu, .preview-menu-list, .page-actions-list';
+    var OPTION = '.pkg-option, .ver-option, .preview-menu-item, .page-actions-item';
     var CHEVRON = '.pkg-chevron, .ver-chevron';
 
     function onDropdownClick(e) {
@@ -690,6 +690,8 @@ window.shelldocsChrome = (function () {
         }
 
         var option = e.target.closest(OPTION);
+        // Copy page closes the menu itself, after showing that it copied.
+        if (option && option.hasAttribute('data-page-copy')) return;
         if (option) {
             var owner = option.closest(DROPDOWN);
             if (owner) setDropdown(owner, false);
@@ -1014,6 +1016,62 @@ window.shelldocsChrome = (function () {
     // The shell is already parsed here; restoring now avoids a flash of the open sidebar.
     restoreCollapse(document);
 
+    /* Page ⋯ menu (EnableLlmsTxt): [data-page-md] holds the page's base-relative .md
+       URL. Copy page fetches it; the chat links get a prompt with its absolute URL. */
+    function pageMarkdownUrl(el) {
+        var root = el.closest('[data-page-md]');
+        return root ? new URL(root.getAttribute('data-page-md'), document.baseURI).href : null;
+    }
+
+    function fillPageActions(scope) {
+        scope.querySelectorAll('[data-page-ai]').forEach(function (link) {
+            var url = pageMarkdownUrl(link);
+            if (url) link.href = link.getAttribute('data-page-ai') + encodeURIComponent('Read ' + url + ' and help me with it.');
+        });
+    }
+
+    function onPageActionsClick(e) {
+        // Again on click: the circuit may have replaced the links filled in at load.
+        var chat = e.target.closest('[data-page-ai]');
+        if (chat) fillPageActions(chat.parentElement);
+        var copy = e.target.closest('[data-page-copy]');
+        if (!copy) return;
+        var url = pageMarkdownUrl(copy);
+        if (!url) return;
+        var text = fetch(url).then(function (r) {
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.text();
+        });
+        var clipboard = navigator.clipboard;
+        // A ClipboardItem holding the pending text keeps Safari's user-gesture check happy.
+        var write = clipboard && clipboard.write && window.ClipboardItem
+            ? clipboard.write([new ClipboardItem({ 'text/plain': text.then(function (t) { return new Blob([t], { type: 'text/plain' }); }) })])
+                .catch(function () { return text.then(function (t) { return clipboard.writeText(t); }); })
+            : clipboard && clipboard.writeText
+                ? text.then(function (t) { return clipboard.writeText(t); })
+                : Promise.reject(new Error('clipboard unavailable'));
+        write.then(function () {
+            copy.classList.add('copied');
+            setTimeout(function () {
+                copy.classList.remove('copied');
+                var menu = copy.closest(DROPDOWN);
+                if (menu) setDropdown(menu, false);
+            }, 900);
+        }).catch(function () { /* silent */ });
+    }
+
+    /* Links to .txt / .md files (llms.txt, a page's Markdown) load as files. Blazor's
+       router and enhanced navigation would show the docs' "Page not found" instead, so
+       the click stops here, before their document listeners, and the browser follows it. */
+    window.addEventListener('click', function (e) {
+        if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        var link = e.target.closest && e.target.closest('a[href]');
+        if (!link || link.hasAttribute('download') || (link.target && link.target !== '_self')) return;
+        var url = new URL(link.href, document.baseURI);
+        if (url.origin === location.origin && /\.(txt|md|mdc)$/i.test(url.pathname)) e.stopPropagation();
+    }, true);
+    document.addEventListener('click', onPageActionsClick);
+
     /* 404.html is one file for every unknown URL, so its path line ships blank and
        hidden; fill in the visitor's path, relative to the site's base. */
     function fillNotFoundPath() {
@@ -1031,6 +1089,7 @@ window.shelldocsChrome = (function () {
     function initPage() {
         initToc();
         fillNotFoundPath();
+        fillPageActions(document);
         restoreCollapse(document);
         restoreTabs(document);
         window.shelldocsIframes.init(document);

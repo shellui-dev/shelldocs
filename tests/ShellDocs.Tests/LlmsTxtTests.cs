@@ -308,6 +308,34 @@ public class LlmsTxtTests : IDisposable
         Assert.Null(Harness(enabled: false).Services.GetService<LlmsTxtFiles>());
     }
 
+    [Fact]
+    public async Task PageActions_AreStaticHostFriendly()
+    {
+        var html = await Harness().RenderAsync<DocsPageActions>();
+        Assert.Contains("data-page-md=\"docs/introduction.md\"", html);
+        Assert.Matches("<button[^>]*data-page-copy", html);
+        Assert.Matches("<a[^>]*href=\"docs/introduction.md\"[^>]*target=\"_blank\"[^>]*>[\\s\\S]*?View as Markdown", html);
+        Assert.Contains("data-page-ai=\"https://claude.ai/new?q=\"", html);
+        Assert.Contains("data-page-ai=\"https://chatgpt.com/?q=\"", html);
+        Assert.Contains("href=\"https://claude.ai/new?q=Read%20%2Fdocs%2Fintroduction.md%20and%20help%20me%20with%20it.\"", html);
+        Assert.DoesNotContain("blazor:on", html);
+
+        Assert.Contains("data-page-md", await Harness().RenderAsync<MarkdownContent>(new() { ["Markdown"] = "# Hi" }));
+        Assert.DoesNotContain("page-actions", await Harness(enabled: false).RenderAsync<DocsPageActions>());
+        Assert.DoesNotContain("page-actions", await Harness(l => l.PageActions = false).RenderAsync<DocsPageActions>());
+        Assert.DoesNotContain("page-actions", await Harness(uri: "http://localhost/showcase").RenderAsync<DocsPageActions>());
+    }
+
+    [Fact]
+    public void ShelldocsJs_DrivesThePageMenu_AndLoadsFileLinks()
+    {
+        var js = File.ReadAllText(FindAsset("shelldocs.js"));
+        Assert.Contains("'.pkg, .ver, .preview-menu, .page-actions'", js);
+        Assert.Contains("[data-page-copy]", js);
+        Assert.Contains("[data-page-ai]", js);
+        Assert.Contains("/\\.(txt|md|mdc)$/i", js);
+    }
+
     private static DefaultHttpContext Context(string path)
     {
         var ctx = new DefaultHttpContext();
@@ -320,4 +348,19 @@ public class LlmsTxtTests : IDisposable
     }
 
     private static string Body(HttpContext ctx) => System.Text.Encoding.UTF8.GetString(((MemoryStream)ctx.Response.Body).ToArray());
+
+    private static string FindAsset(string name)
+    {
+        var testDir = Path.GetDirectoryName(typeof(LlmsTxtTests).Assembly.Location)!;
+        foreach (var candidate in new[]
+        {
+            Path.Combine(testDir, "wwwroot", "_content", "ShellDocs.Components", name),
+            Path.Combine(testDir, "..", "..", "..", "..", "..", "src", "ShellDocs.Components", "wwwroot", name)
+        })
+        {
+            var full = Path.GetFullPath(candidate);
+            if (File.Exists(full)) return full;
+        }
+        throw new FileNotFoundException(name);
+    }
 }
