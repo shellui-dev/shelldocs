@@ -4,6 +4,18 @@ All notable changes to ShellDocs land here. Format follows [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [0.1.17-alpha] — 2026-10-14
+
+Five fixes found while writing the ShellDocs docs site.
+
+### Fixed
+
+- **The missing-tab note lost its spaces.** It read "Not available onRazoryet": the note is a flex container, so the text around the label became separate flex items and the spaces were dropped. The sentence is now one inline box.
+- **A `razor:preview` fence holding only HTML rendered as a code block.** It now renders live in the frame, like a fence with components. A fence with no tags at all is still a code block, with a warning.
+- **`404.html` named the build's probe URL.** Every unknown URL showed "The page /docs/\_\_shelldocs-not-found\_\_ doesn't exist". `shelldocs build` now blanks and hides that line, and `shelldocs.js` fills in the visitor's path (relative to the site's base).
+- **`LogoSvg` logos weren't sized.** The scoped rule meant to fit the SVG to `LogoHeight` never matched, so an SVG without its own size could collapse to nothing. Sites that added their own `.brand-logo-svg > svg` rule can drop it.
+- **Search on home pages.** `HomeLayout` had no `<SearchDialog />`, so Cmd/Ctrl+K and `[data-search-open]` did nothing there unless the site added one. It's included now; a site that added its own can remove it.
+
 ## [0.1.16-alpha] — 2026-10-14
 
 Fixes `<IframePreview>` showing the previous page's preview after navigating within a site.
