@@ -174,7 +174,8 @@
 
     private string? ErrorMessage =>
         Error
-        ?? (Content is null && Preview?.ComponentType is null ? Preview?.Error ?? "Unknown error." : null);
+        ?? (Content is null && Preview?.ComponentType is null && Preview?.Nodes is not { Count: > 0 }
+            ? Preview?.Error ?? "Unknown error." : null);
 
     private string? PartId(string part) => Id is null ? null : $"{Id}-{part}";
 

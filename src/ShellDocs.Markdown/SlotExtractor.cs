@@ -168,7 +168,11 @@ internal class SlotExtractor
                 parser.FirstUnknownChildRaw, Error: msg);
         }
 
-        warnings.Add("razor:preview fence must contain a component tag.");
+        // Plain HTML (no components) still renders live.
+        if (nodes.Any(n => n is PreviewElementNode))
+            return new PreviewSlot(NewSlotId(), null, new Dictionary<string, string>(), code, "razor", Nodes: nodes, Layout: layout);
+
+        warnings.Add("razor:preview fence must contain a component or HTML tag.");
         return null;
     }
 

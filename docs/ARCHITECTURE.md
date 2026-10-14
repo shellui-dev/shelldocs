@@ -112,7 +112,7 @@ Placeholders plus a slot list keep everything at render time: no generated Razor
 
 ### `razor:preview` fences
 
-`PreviewParser` turns the fence into ordered nodes: component nodes (registered capitalised tags; their children kept raw and parsed the same way, as Razor, when the component renders), element nodes (HTML, including unregistered capitalised tags) and text. `@code { }` / `@functions { }` blocks, `@* *@` comments and directive lines (`@using`, `@inject`, …) are skipped for rendering but stay in the Code tab. If no registered component is found the slot carries an `Error`, rendered as a red panel instead of a silent code block. `razor:preview stretch` in the info string sets `PreviewSlot.Layout`.
+`PreviewParser` turns the fence into ordered nodes: component nodes (registered capitalised tags; their children kept raw and parsed the same way, as Razor, when the component renders), element nodes (HTML, including unregistered capitalised tags) and text. `@code { }` / `@functions { }` blocks, `@* *@` comments and directive lines (`@using`, `@inject`, …) are skipped for rendering but stay in the Code tab. With no registered component, a fence holding an unregistered capitalised tag carries an `Error`, rendered as a red panel instead of a silent code block; one holding only HTML renders it as is (`ComponentType` is null). A fence with no tags at all stays a code block, with a warning. `razor:preview stretch` in the info string sets `PreviewSlot.Layout`.
 
 ---
 
