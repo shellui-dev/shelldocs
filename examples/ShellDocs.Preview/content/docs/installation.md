@@ -51,7 +51,7 @@ shelldocs build
 
 `shelldocs build` prerenders every page to static HTML in `publish/` (change it with `--output`). Deploy it to GitHub Pages, Cloudflare Pages, Netlify or S3. Useful flags:
 
-- `--base-href /my-repo/` rewrites `<base href>` for sites served from a subpath.
+- `--base-href /my-repo/` rewrites `<base href>` for sites served from a subpath, and puts `/my-repo` in front of root-relative links (`/docs/introduction` becomes `/my-repo/docs/introduction`).
 - `--spa-fallback` copies `index.html` to `404.html`. Without it, `404.html` is the site's own not-found page, which GitHub Pages, Netlify and Cloudflare Pages serve for unknown URLs.
 - `--site-url https://shelldocs.shellui.dev` emits `sitemap.xml`, `robots.txt` and `og:` meta tags.
 

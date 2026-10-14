@@ -266,7 +266,7 @@ One neutral, shadcn-shaped palette of CSS variables in `ShellDocs.Tokens/tokens.
 6. Copies the app's search index to `_shelldocs/search.json`.
 7. With `EnableLlmsTxt`, reads `/_shelldocs/llms.json` and writes each listed file (`llms.txt`, `llms-full.txt`, every page's `.md`, the agent files) at its path. Links use `--site-url`, then the app's `SiteUrl`, else they're root-relative under `--base-href`.
 8. Merges the published `wwwroot/` into the output without overwriting prerendered HTML.
-9. Optionally rewrites `<base href>` in every HTML file, copies `index.html` to `404.html` (replacing the not-found page), and with `--site-url` writes `sitemap.xml`, `robots.txt` and `og:*` meta.
+9. Optionally rewrites `<base href>` in every HTML file and puts the base in front of root-relative `href`, `src` and `data-src` values (they ignore `<base href>`; protocol-relative and already-prefixed ones are left alone), copies `index.html` to `404.html` (replacing the not-found page), and with `--site-url` writes `sitemap.xml`, `robots.txt` and `og:*` meta.
 
 ---
 
