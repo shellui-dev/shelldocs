@@ -175,6 +175,14 @@ public static class ScaffoldTemplates
 
             o.AddNavLink("Docs", "/docs/introduction");
 
+            // /llms.txt, every page as Markdown at its URL + ".md", agent instruction
+            // files and a Copy page / Open in Claude menu by the title, for AI agents.
+            o.EnableLlmsTxt(l =>
+            {
+                // l.RulesFile = "llms-rules.md";               // shown at the top of llms.txt
+                // l.InstallCommandPattern = @"dotnet add package \S+";
+            });
+
             // Register your own components so authors can drop them into
             // markdown as `<MyComponent />` or inside a razor:preview fence:
             //   o.RegisterComponent<MyComponent>();

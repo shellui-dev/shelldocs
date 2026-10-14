@@ -363,6 +363,12 @@ public class LlmsTxtTests : IDisposable
         Assert.Equal(0, (int)write.Invoke(null, [none, Path.Combine(_root, "none")])!);
     }
 
+    [Fact]
+    public void InitTemplate_TurnsItOn()
+    {
+        Assert.Contains("o.EnableLlmsTxt(", ShellDocs.Templates.ScaffoldTemplates.ProgramAddShellDocs("ShellUI", "shellui-dev/shellui"));
+    }
+
     private sealed class FilesHandler(Dictionary<string, string> files) : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)

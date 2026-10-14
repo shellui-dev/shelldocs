@@ -55,6 +55,13 @@ builder.Services.AddShellDocs(o =>
     o.RegisterComponentsFromAssembly<App>("ShellDocs.Preview.Ui");
     o.RegisterComponentsFromAssembly<App>("ShellDocs.Preview.Demos");
     o.DemoSourceRoot = Path.Combine(builder.Environment.ContentRootPath, "Demos");
+
+    // /llms.txt, /llms-full.txt, every page as Markdown, agent files and the page ⋯ menu.
+    o.EnableLlmsTxt(l =>
+    {
+        l.RulesFile = "llms-rules.md";
+        l.InstallCommandPattern = @"dotnet tool install [^\n]+";
+    });
 });
 
 var app = builder.Build();

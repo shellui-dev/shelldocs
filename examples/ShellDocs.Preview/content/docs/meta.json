@@ -8,7 +8,7 @@
     "---",
     {
       "title": "Concepts",
-      "pages": ["theming", "markdown-syntax"]
+      "pages": ["theming", "markdown-syntax", "llms-txt"]
     },
     "---",
     "components"

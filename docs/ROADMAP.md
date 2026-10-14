@@ -223,7 +223,7 @@ Driven by building the ShellUI docs on ShellDocs. Highlights (details in the CHA
 - `fix/not-found-and-sidebar-collapse` (0.1.14) — `<DocsNotFound>` answers 404, `build` fails on not-found pages and writes `404.html`, desktop sidebar collapse in `shelldocs.js`.
 - `feat/static-search` (0.1.15) — search runs in `shelldocs.js` against `/_shelldocs/search.json`, which `build` copies into the export, so static sites have search.
 - `fix/iframe-preview-navigation` (0.1.16) — an `<IframePreview>` reused for the next page after in-site navigation is unloaded and set up again.
-- `fix/docs-site-findings` (0.1.17) — HTML-only `razor:preview` fences render live, `404.html` shows the visitor's path, `LogoSvg` sizing, search on `HomeLayout`, spacing in the missing-tab note.
+- `fix/docs-site-findings` (0.1.17) — llms.txt for AI agents (`EnableLlmsTxt`: `/llms.txt`, `/llms-full.txt`, per-page `.md`, agent instruction files, page actions menu, static export); HTML-only `razor:preview` fences render live, `404.html` shows the visitor's path, `LogoSvg` sizing, search on `HomeLayout`, spacing in the missing-tab note.
 - `fix/preview-fidelity`, `feat/generics-redirects-page-title` (0.1.10) — `not-prose` previews, Razor child content, stretch layout, generic components in markdown, redirects (middleware + static pages), `RenderPageTitle`, theme sync and a static-host `ThemeToggle`.
 
 ### `feat/animation-polish`
