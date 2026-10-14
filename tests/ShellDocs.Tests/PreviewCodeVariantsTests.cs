@@ -119,7 +119,7 @@ public class PreviewCodeVariantsTests : IDisposable
         Assert.Contains("&lt;Button Content=&quot;Save&quot; /&gt;", html);
         Assert.Contains("class=\"language-xml\"", html);
         // [^>]* allows for the scoped-CSS attribute.
-        Assert.Matches("data-tab-missing hidden[^>]*>\\s*Not available on <span data-tab-missing-label[^>]*></span> yet", html);
+        Assert.Matches("data-tab-missing hidden[^>]*>\\s*<span[^>]*>Not available on <span data-tab-missing-label[^>]*></span> yet</span>", html);
         Assert.Contains("class=\"preview-caption\" title=\"Rendered with ShellUI for Blazor\"", html);
         Assert.DoesNotContain(harness.Logs.Messages, m => m.Contains("skipped attribute 'ChildContent'"));
     }
