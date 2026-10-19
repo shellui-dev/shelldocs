@@ -253,7 +253,7 @@ One neutral, shadcn-shaped palette of CSS variables in `ShellDocs.Tokens/tokens.
 - `shelldocs add <component|guide|page> <name> [--force]` — scaffolds a page into `content/docs/`.
 - `shelldocs dev [--port 5000]` — `dotnet watch run`, with `content/**/*.md` added to the watch set.
 - `shelldocs build [--output publish] [--base-href] [--spa-fallback] [--site-url]` — see below.
-- `shelldocs preview` — reserved, not implemented.
+- `shelldocs preview [--output publish] [--port 5050] [--base-href]` — serves an export with Kestrel as static hosts do: a file, else the folder's `index.html`, else `{path}.html`, else `404.html` with a 404. The base path defaults to the export's `<base href>`; responses are `no-cache` so a rebuild shows on reload.
 
 ### Static site generation
 

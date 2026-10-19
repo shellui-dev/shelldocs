@@ -58,3 +58,5 @@ shelldocs build
 In the static output, navigation, sidebar sections and collapse, the mobile menu, the version and package selectors, tabs, preview tabs and menus, the table of contents, the theme toggle, search and code copy all work through `shelldocs.js`. Stateful demo components still need a running Blazor Server app (interactive server rendering). With `EnableLlmsTxt`, the export also has `llms.txt`, `llms-full.txt` and every page as `.md`.
 
 URLs that aren't pages (folders, version roots, unversioned URLs that moved into a version) become redirect pages in the static output, the same redirects the running app answers.
+
+Check the export before deploying with `shelldocs preview`. It serves `publish/` (or `--output`) at `http://localhost:5050` the way static hosts do: folders serve their `index.html`, unknown URLs get `404.html`, and an export built with `--base-href` is served under that path.

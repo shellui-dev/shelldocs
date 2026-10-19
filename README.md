@@ -39,8 +39,9 @@ shelldocs add guide getting-started
 # Run with hot reload on http://localhost:5000
 shelldocs dev
 
-# Prerender a static site into publish/
+# Prerender a static site into publish/, then serve it as a static host would
 shelldocs build
+shelldocs preview
 ```
 
 Already have a Blazor project? Run `shelldocs init --attach` inside it: it adds the packages and content, and writes `SHELLDOCS_SETUP.md` with the `Program.cs` / `App.razor` snippets instead of editing your code.
@@ -58,7 +59,7 @@ Already have a Blazor project? Run `shelldocs init --attach` inside it: it adds 
   ```
   Your components win name collisions with ShellDocs' built-ins, which stay available as `<DocsCard>`, `<DocsCallout>`, `<DocsTabs>`, and so on.
 - **Content primitives.** `Callout`, `Card` / `CardGrid` / `LinkCard`, `Steps`, `FileTree`, `Tabs`, `CodeGroup`, `TypeTable` / `AutoTypeTable`, `ComponentPreview`, `DemoPreview`.
-- **Static export.** `shelldocs build` prerenders every page to static HTML for GitHub Pages, Cloudflare Pages, Netlify or S3. Optional flags rewrite `<base href>` and root-relative links for a sub-path (`--base-href`), add a SPA `404.html` (`--spa-fallback`), and write sitemap / robots / `og:` meta (`--site-url`). Navigation, sidebar sections and collapse, the mobile menu, selectors, tabs, preview toolbars, the TOC, code copy, the theme toggle and search work there through `shelldocs.js`. Only stateful demos need a running Blazor app. Unknown pages answer 404 (`<DocsNotFound />` in the docs page) and `build` writes the same view as `404.html`.
+- **Static export.** `shelldocs build` prerenders every page to static HTML for GitHub Pages, Cloudflare Pages, Netlify or S3. Optional flags rewrite `<base href>` and root-relative links for a sub-path (`--base-href`), add a SPA `404.html` (`--spa-fallback`), and write sitemap / robots / `og:` meta (`--site-url`). Navigation, sidebar sections and collapse, the mobile menu, selectors, tabs, preview toolbars, the TOC, code copy, the theme toggle and search work there through `shelldocs.js`. Only stateful demos need a running Blazor app. Unknown pages answer 404 (`<DocsNotFound />` in the docs page) and `build` writes the same view as `404.html`. `shelldocs preview` serves the export locally, under the `--base-href` path if it has one, to check it before deploying.
 
 ## Versioned docs
 

@@ -149,12 +149,35 @@ internal class Program
 
     private static Command CreatePreviewCommand()
     {
-        var name = new Argument<string>("name") { Description = "Component name to preview." };
-        var cmd = new Command("preview", "Render a single component in isolation for design review.") { name };
-        cmd.SetAction(pr =>
+        var dir = new Option<string>("--dir")
         {
-            AnsiConsole.MarkupLine($"[yellow]shelldocs preview {pr.GetValue(name)}[/] — not yet implemented.");
-        });
+            Description = "Project directory (default: current dir).",
+            DefaultValueFactory = _ => Directory.GetCurrentDirectory()
+        };
+        var output = new Option<string>("--output")
+        {
+            Description = "The static site to serve, as passed to shelldocs build.",
+            DefaultValueFactory = _ => "publish"
+        };
+        var port = new Option<int>("--port")
+        {
+            Description = "Port to bind on.",
+            DefaultValueFactory = _ => 5050
+        };
+        var baseHref = new Option<string?>("--base-href")
+        {
+            Description = "Serve under this path (default: the <base href> the build wrote)."
+        };
+        var cmd = new Command("preview", "Serve the output of shelldocs build locally, as a static host would.")
+        {
+            dir, output, port, baseHref
+        };
+        cmd.SetAction(pr =>
+            PreviewCommand.Run(
+                pr.GetValue(dir) ?? Directory.GetCurrentDirectory(),
+                pr.GetValue(output) ?? "publish",
+                pr.GetValue(port),
+                pr.GetValue(baseHref)));
         return cmd;
     }
 }

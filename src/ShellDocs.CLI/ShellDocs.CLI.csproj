@@ -6,12 +6,14 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>shelldocs</ToolCommandName>
     <PackageId>ShellDocs.CLI</PackageId>
-    <Description>Global tool for ShellDocs — the docs framework for .NET. Commands: init, add, dev, build.</Description>
+    <Description>Global tool for ShellDocs — the docs framework for .NET. Commands: init, add, dev, build, preview.</Description>
     <RootNamespace>ShellDocs.CLI</RootNamespace>
     <AssemblyName>shelldocs</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Kestrel, for `shelldocs preview`. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <ProjectReference Include="..\ShellDocs.Core\ShellDocs.Core.csproj" />
     <ProjectReference Include="..\ShellDocs.Templates\ShellDocs.Templates.csproj" />
     <PackageReference Include="System.CommandLine" />
