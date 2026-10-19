@@ -144,6 +144,7 @@ Component child markup is rendered recursively. Inline tags in prose take markdo
 
 - Every `.md` file is a page; `index.md` takes the folder's URL. Frontmatter supplies `title` (else derived from the slug), `description`, `category`, `order`.
 - Every subfolder is a section titled from its name. Folder names keep their dots (`v0.2.1`).
+- A folder's section takes the `title` from its own `meta.json`, else one made from the folder name.
 - Without `meta.json`: subfolders first, then pages by `order` and title.
 - With `meta.json`: `pages` sets the order for what it lists: a slug, `"---"` for a divider, or `{ "title", "pages" }` for a subsection. Unlisted files and folders are appended alphabetically, and unknown slugs are ignored. `hidden` entries route but stay out of the sidebar and prev/next.
 

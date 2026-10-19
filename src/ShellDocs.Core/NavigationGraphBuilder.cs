@@ -48,7 +48,7 @@ public static class NavigationGraphBuilder
             {
                 var section = new NavigationNode
                 {
-                    Title = TitleFromFolderName(name),
+                    Title = FolderTitle(tuple.folderPath),
                     Kind = NodeKind.Section,
                     Path = tuple.folderPath
                 };
@@ -76,7 +76,7 @@ public static class NavigationGraphBuilder
                 // Wrapped so the graph's index walk reaches every page in the folder.
                 var section = new NavigationNode
                 {
-                    Title = TitleFromFolderName(slug),
+                    Title = FolderTitle(hiddenFolder.folderPath),
                     Kind = NodeKind.Section,
                     Path = hiddenFolder.folderPath
                 };
@@ -99,7 +99,7 @@ public static class NavigationGraphBuilder
             if (consumedFolders.Contains(name)) continue;
             var section = new NavigationNode
             {
-                Title = TitleFromFolderName(name),
+                Title = FolderTitle(tuple.folderPath),
                 Kind = NodeKind.Section,
                 Path = tuple.folderPath
             };
@@ -144,7 +144,7 @@ public static class NavigationGraphBuilder
                     consumedFolders.Add(pageRef.Slug);
                     var section = new NavigationNode
                     {
-                        Title = TitleFromFolderName(pageRef.Slug),
+                        Title = FolderTitle(folder.folderPath),
                         Kind = NodeKind.Section,
                         Path = folder.folderPath
                     };
@@ -214,7 +214,11 @@ public static class NavigationGraphBuilder
     private static string TitleFromSlug(string slug)
         => string.Join(' ', slug.Split('-').Select(w => w.Length == 0 ? w : char.ToUpper(w[0]) + w[1..]));
 
-    private static string TitleFromFolderName(string name) => TitleFromSlug(name);
+    // The folder's own meta.json title, else one made from its name.
+    private static string FolderTitle(string folderPath)
+        => ReadMeta(folderPath)?.Title is { Length: > 0 } title
+            ? title
+            : TitleFromSlug(System.IO.Path.GetFileName(folderPath));
 
     private static string EnsureLeadingSlash(string s) => s.StartsWith('/') ? s : "/" + s;
 
