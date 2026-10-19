@@ -2,7 +2,7 @@
 
 Living design doc. Updated as decisions land.
 
-> **Status:** this is the original product design. Several parts landed differently — search builds its index in memory and needs a running Blazor app, previews use a Preview | Code toolbar, there is a single token palette (no Fuma / Nextra presets yet), and ShellDocs doesn't depend on `ShellUI.Components`. For what's actually built see [ARCHITECTURE.md](ARCHITECTURE.md) and the [CHANGELOG](../CHANGELOG.md).
+> **Status:** this is the original product design. Several parts landed differently — search builds its index in memory and needs a running Blazor app, previews use a Preview | Code toolbar, colour presets (Harbor, Lagoon, …) replaced the Fuma / Nextra theme idea, and ShellDocs doesn't depend on `ShellUI.Components`. For what's actually built see [ARCHITECTURE.md](ARCHITECTURE.md) and the [CHANGELOG](../CHANGELOG.md).
 
 ---
 

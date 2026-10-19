@@ -4,7 +4,7 @@
 
 @* [data-sidebar-collapsed] is flipped by shelldocs.js ([data-sidebar-collapse-toggle]),
    so collapsing works without a Blazor runtime. *@
-<div class="docs-shell docs-shell-@Variant" data-mobile-open="false" data-sidebar-collapsed="false">
+<div class="docs-shell docs-shell-@Variant" data-mobile-open="false" data-sidebar-collapsed="false" data-shelldocs-theme="@Options.ThemePresetName">
     @if (Options.LayoutVariant == DocsLayoutVariant.TopNav)
     {
         <DocsHeader />

@@ -29,7 +29,11 @@ public class ShellDocsOptions
     public double LogoHeight { get; set; } = 1.375;
     // Rendered as MarkupString — must be trusted content the consumer authored, not user input.
     public string? LogoSvg { get; set; }
-    public ShellDocsTheme Theme { get; set; } = ShellDocsTheme.Shadcn;
+    // Colour preset from tokens.css. Overriding the variables in a later stylesheet still wins.
+    public ShellDocsTheme Theme { get; set; } = ShellDocsTheme.Graphite;
+
+    // The layouts' data-shelldocs-theme value; null for Graphite, the unmarked default.
+    internal string? ThemePresetName => Theme == ShellDocsTheme.Graphite ? null : Theme.ToString().ToLowerInvariant();
     // Renders frontmatter `title` (and `description` as a lead) as the page header
     // when the markdown body doesn't start with its own `# Heading`.
     public bool RenderPageTitle { get; set; }
@@ -281,11 +285,19 @@ public record DocsRedirectRule(string From, string To, bool Permanent = true);
 
 public record DocsSyncSwitch(string SyncKey, IReadOnlyList<string> Options);
 
+// Colour presets: Graphite is the neutral default, the others tint it with one hue.
 public enum ShellDocsTheme
 {
-    Shadcn,
-    Fuma,
-    Nextra
+    Graphite,
+    Harbor,
+    Lagoon,
+    Forest,
+    Savanna,
+    Ember,
+    Jacaranda,
+    [Obsolete("Use Graphite.")] Shadcn = Graphite,
+    [Obsolete("Never had its own palette. Use Graphite or a colour preset.")] Fuma = Graphite,
+    [Obsolete("Never had its own palette. Use Graphite or a colour preset.")] Nextra = Graphite,
 }
 
 // TopNav: DocsHeader across the top, sidebar below. Sidebar: no top nav — brand,

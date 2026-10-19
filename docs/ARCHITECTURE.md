@@ -243,13 +243,15 @@ Chrome that must work without a Blazor runtime follows one contract:
 
 ## Theming
 
-One neutral, shadcn-shaped palette of CSS variables in `ShellDocs.Tokens/tokens.css` (`:root` and `:root.dark`). Component styles are scoped CSS reading those variables, plus `shelldocs-theme.css` for global prose, code-block and Shiki styling. Restyle by overriding variables in a stylesheet loaded after `tokens.css`. `ShellDocsOptions.Theme` exists but doesn't switch palettes yet.
+A neutral, shadcn-shaped palette of CSS variables in `ShellDocs.Tokens/tokens.css` (`:root` and `:root.dark`), called Graphite. Component styles are scoped CSS reading those variables, plus `shelldocs-theme.css` for global prose, code-block and Shiki styling. Restyle by overriding variables in a stylesheet loaded after `tokens.css`.
+
+Colour presets (`ShellDocsOptions.Theme`: Harbor, Lagoon, Forest, Savanna, Ember, Jacaranda) are further blocks in `tokens.css`. `DocsLayout` and `HomeLayout` put `data-shelldocs-theme="harbor"` on their shell (nothing for Graphite), and `:root:has(:where([data-shelldocs-theme="harbor"]))` / `:root.dark:has(…)` set every colour token from it. The `:where()` keeps those rules at the specificity of `:root` / `:root.dark`, so a later stylesheet still overrides them, and the variables sit on `:root`, so the body, previews and the search dialog cloned onto `<body>` follow too. Each preset tints the neutrals with its hue and sets `--primary`, `--accent` / `--accent-foreground` (the active sidebar item) and `--ring`; text pairs are at least 4.5:1 in light and dark.
 
 ---
 
 ## CLI
 
-- `shelldocs init [path] [--attach] [--dir] [--yes] [--theme]` — create mode runs `dotnet new blazor` (default `docs/<CwdName>.Docs`), adds the packages at the CLI's own version, writes starter content and patches `Program.cs` / `App.razor`. Attach mode augments an existing project and writes `SHELLDOCS_SETUP.md` instead of editing code. Both are idempotent.
+- `shelldocs init [path] [--attach] [--dir] [--yes] [--theme graphite|harbor|…]` — create mode runs `dotnet new blazor` (default `docs/<CwdName>.Docs`), adds the packages at the CLI's own version, writes starter content and patches `Program.cs` / `App.razor`. Attach mode augments an existing project and writes `SHELLDOCS_SETUP.md` instead of editing code. Both are idempotent.
 - `shelldocs add <component|guide|page> <name> [--force]` — scaffolds a page into `content/docs/`.
 - `shelldocs dev [--port 5000]` — `dotnet watch run`, with `content/**/*.md` added to the watch set.
 - `shelldocs build [--output publish] [--base-href] [--spa-fallback] [--site-url]` — see below.

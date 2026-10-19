@@ -52,6 +52,7 @@ Already have a Blazor project? Run `shelldocs init --attach` inside it: it adds 
 - **File-based navigation.** Drop a `.md` in `content/docs/` and it's a page. Sidebar, breadcrumb, prev/next and TOC come from the folder tree; `meta.json` controls order, dividers, subsections and hidden pages.
 - **`Cmd+K` search** across titles, headings and page text, with body snippets. The index is built at startup and searched in the browser, so there's no external service and it works in the static export too.
 - **llms.txt for AI agents.** `o.EnableLlmsTxt()` serves `/llms.txt`, `/llms-full.txt` and every page as Markdown at its URL + `.md`, plus `AGENTS.md`, `CLAUDE.md`, Copilot and Cursor instruction files, and adds a **Copy page / View as Markdown / Open in Claude / Open in ChatGPT** menu by the title. See [AI agents](#ai-agents-llmstxt).
+- **Colour presets.** `o.Theme = ShellDocsTheme.Harbor`: Graphite (default), Harbor, Lagoon, Forest, Savanna, Ember or Jacaranda, in light and dark. Or override the tokens yourself.
 - **Blazor-native.** Your components render as real Razor components, not iframes.
 - **Composable.** Bring your own component library (ShellUI, MudBlazor, Radzen, hand-rolled) and register it in one line:
   ```csharp

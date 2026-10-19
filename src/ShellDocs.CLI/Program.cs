@@ -45,9 +45,10 @@ internal class Program
         var yes = new Option<bool>("--yes") { Description = "Non-interactive mode with default options." };
         var theme = new Option<string>("--theme")
         {
-            Description = "Theme preset: shadcn, fuma, nextra.",
-            DefaultValueFactory = _ => "shadcn"
+            Description = "Colour preset: " + string.Join(", ", ShellDocs.Templates.ScaffoldTemplates.ThemePresets) + ".",
+            DefaultValueFactory = _ => "graphite"
         };
+        theme.AcceptOnlyFromAmong(ShellDocs.Templates.ScaffoldTemplates.ThemePresets);
         var cmd = new Command("init", "Scaffold a new ShellDocs site (default) or attach to an existing Blazor project.")
         {
             path, dir, attach, yes, theme
@@ -62,7 +63,7 @@ internal class Program
                 pr.GetValue(dir) ?? Directory.GetCurrentDirectory(),
                 pr.GetValue(attach),
                 pr.GetValue(yes),
-                pr.GetValue(theme) ?? "shadcn");
+                pr.GetValue(theme) ?? "graphite");
         });
         return cmd;
     }

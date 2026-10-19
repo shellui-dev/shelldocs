@@ -84,7 +84,7 @@ internal static class InitCommand
         ScaffoldContent(outputAbs, changes);
         ScaffoldDocsPage(outputAbs, changes);
         StripFreshTemplate(outputAbs, changes);
-        PatchProgramCs(outputAbs, siteName, githubRepo, changes);
+        PatchProgramCs(outputAbs, siteName, githubRepo, theme, changes);
         PatchAppRazor(outputAbs, changes);
         RegisterWithSolution(csproj, cwdAbs, changes);
 
@@ -219,7 +219,7 @@ internal static class InitCommand
         ScaffoldDocsPage(root, changes);
         WriteIfMissing(
             Path.Combine(root, "SHELLDOCS_SETUP.md"),
-            ScaffoldTemplates.SetupInstructionsMd(siteName, githubRepo),
+            ScaffoldTemplates.SetupInstructionsMd(siteName, githubRepo, theme),
             changes);
 
         AnsiConsole.WriteLine();
@@ -352,7 +352,7 @@ internal static class InitCommand
     }
 
     // Anchor-based insertion is safe here: we know the fresh template's shape.
-    internal static void PatchProgramCs(string projectRoot, string siteName, string githubRepo, List<string> changes)
+    internal static void PatchProgramCs(string projectRoot, string siteName, string githubRepo, string theme, List<string> changes)
     {
         var path = Path.Combine(projectRoot, "Program.cs");
         if (!File.Exists(path)) return;
@@ -390,7 +390,7 @@ internal static class InitCommand
             {
                 var insertAt = m.Index + m.Length;
                 src = src.Insert(insertAt,
-                    Environment.NewLine + Environment.NewLine + ScaffoldTemplates.ProgramAddShellDocs(siteName, githubRepo));
+                    Environment.NewLine + Environment.NewLine + ScaffoldTemplates.ProgramAddShellDocs(siteName, githubRepo, theme));
             }
         }
 

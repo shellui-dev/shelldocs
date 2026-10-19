@@ -162,12 +162,24 @@ public static class ScaffoldTemplates
 
     public static string ProgramWebHost => "builder.WebHost.UseStaticWebAssets();";
 
-    public static string ProgramAddShellDocs(string siteName, string githubRepo) => $$"""
+    // ShellDocsTheme's colour presets, as `shelldocs init --theme` takes them.
+    public static readonly string[] ThemePresets = ["graphite", "harbor", "lagoon", "forest", "savanna", "ember", "jacaranda"];
+
+    // Graphite is the default, so it stays a commented-out example.
+    private static string ThemeLine(string theme) =>
+        theme.Equals("graphite", StringComparison.OrdinalIgnoreCase)
+            ? "// o.Theme = ShellDocsTheme.Harbor;"
+            : $"o.Theme = ShellDocsTheme.{char.ToUpperInvariant(theme[0])}{theme[1..].ToLowerInvariant()};";
+
+    public static string ProgramAddShellDocs(string siteName, string githubRepo, string theme = "graphite") => $$"""
         builder.Services.AddShellDocs(o =>
         {
             o.ContentRoot = System.IO.Path.Combine(builder.Environment.ContentRootPath, "content");
             o.SiteName = "{{siteName}}";
             o.GitHubRepo = "{{githubRepo}}";
+
+            // Colour preset: Graphite (default), Harbor, Lagoon, Forest, Savanna, Ember or Jacaranda.
+            {{ThemeLine(theme)}}
 
             // Layout: TopNav (default) = classic header + sidebar.
             // Sidebar = floating sidebar card, no top header (shadcn / fumadocs look).
@@ -220,7 +232,7 @@ public static class ScaffoldTemplates
         </script>
         """;
 
-    public static string SetupInstructionsMd(string siteName, string githubRepo) => $$"""
+    public static string SetupInstructionsMd(string siteName, string githubRepo, string theme = "graphite") => $$"""
         # ShellDocs setup
 
         Two files in your Blazor project need small additions. Copy these snippets in, then delete this file.
@@ -238,7 +250,7 @@ public static class ScaffoldTemplates
         ```csharp
         {{ProgramWebHost}}
 
-        {{ProgramAddShellDocs(siteName, githubRepo)}}
+        {{ProgramAddShellDocs(siteName, githubRepo, theme)}}
         ```
 
         ## 2. `Components/App.razor`
