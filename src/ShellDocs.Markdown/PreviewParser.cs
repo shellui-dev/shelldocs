@@ -142,9 +142,14 @@ internal sealed class PreviewParser
     internal static IReadOnlyDictionary<string, string> ToParameters(IEnumerable<KeyValuePair<string, string?>> attrs)
     {
         var dict = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (var (k, v) in attrs) dict[k] = v ?? "";
+        foreach (var (k, v) in attrs) dict[k] = DecodeValue(k, v ?? "");
         return dict;
     }
+
+    // Literal values decode entities (`&amp;` → `&`) as Razor does; directive
+    // attributes and `@` expressions stay as written.
+    internal static string DecodeValue(string name, string value)
+        => name.StartsWith('@') || value.TrimStart().StartsWith('@') ? value : WebUtility.HtmlDecode(value);
 
     private static bool TrySkipRazorConstruct(string text, ref int i)
     {
