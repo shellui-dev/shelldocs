@@ -17,10 +17,7 @@ public static class ServiceCollectionExtensions
         configure?.Invoke(options);
         services.AddSingleton(options);
 
-        services.AddScoped<MobileNavState>();
         services.AddScoped<ThemeState>();
-        services.AddScoped<SearchState>();
-        services.AddScoped<SidebarCollapseState>();
         services.AddScoped<CodeGroupSyncState>();
         services.AddScoped<DocsPageState>();
 

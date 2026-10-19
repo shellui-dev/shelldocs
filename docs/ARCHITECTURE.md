@@ -79,7 +79,7 @@ The `shelldocs` global tool and the file content it writes. See [CLI](#cli).
 `AddShellDocs` (in `ServiceCollectionExtensions.cs`):
 
 1. Builds `ShellDocsOptions` and runs the consumer's `configure` callback.
-2. Registers the scoped chrome state (`MobileNavState`, `ThemeState`, `SearchState`, `SidebarCollapseState`, `CodeGroupSyncState`, `DocsPageState`).
+2. Registers the scoped chrome state (`ThemeState`, `CodeGroupSyncState`, `DocsPageState`).
 3. Adds every component in `ShellDocs.Components.Content` as a built-in.
 4. Registers singletons: `TypeRegistry` (built lazily from the options, collisions logged), `MarkdownRenderer`, `NavigationGraph` (empty graph if `ContentRoot` doesn't exist), `SearchIndex`, `DocsVersionResolver`.
 
