@@ -172,7 +172,7 @@ The Markdown is the page source with ShellDocs tags turned into Markdown: demos 
 
 ## Contributing
 
-The alpha is API-fluid: we're taking freedom to break minor versions until `1.0`. Bug reports and dogfood-driven fixes are welcome via issues. A proper `CONTRIBUTING.md` lands with the `0.2.0-alpha` cut.
+The alpha is API-fluid: we're taking freedom to break minor versions until `1.0`. Bug reports and fixes are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md) for setup, the static-host rule and how commits are laid out.
 
 ## License
 
