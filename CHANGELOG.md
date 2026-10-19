@@ -4,9 +4,30 @@ All notable changes to ShellDocs land here. Format follows [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [0.1.18-alpha] — 2026-10-19
+
+Colour presets, `shelldocs preview` for checking a static export locally, package pages on NuGet that render properly, plus fixes for sub-path links, folder titles and entities in component attributes.
+
+### Added
+
+- **`shelldocs preview`** ([#43](https://github.com/shellui-dev/shelldocs/issues/43)). Serves the output of `shelldocs build` (`publish/`, or `--output`) on `http://localhost:5050` (`--port`) the way static hosts do: folders serve their `index.html`, unknown URLs get `404.html` with a 404, and an export built with `--base-href` is served under that path (read from the export, or pass `--base-href`). Responses aren't cached, so a rebuild shows on reload. The old `preview <name>` stub is gone. The CLI now needs the ASP.NET Core runtime, which any machine building a Blazor site already has.
+- **Colour presets** ([#44](https://github.com/shellui-dev/shelldocs/issues/44)). `o.Theme = ShellDocsTheme.Harbor` (or `shelldocs init --theme harbor`) swaps the neutral palette for a tinted one: `Harbor` (blue), `Lagoon` (teal), `Forest` (green), `Savanna` (amber on sand), `Ember` (red-orange) or `Jacaranda` (purple). Each covers light and dark mode, tints backgrounds, borders and muted text, and colours the active sidebar item, focus rings, links and other accents, with text at 4.5:1 or better. The default, `Graphite`, is the existing palette. Presets are CSS in `tokens.css` keyed on a `data-shelldocs-theme` attribute the layouts render, so they work in static exports and your own token overrides still win.
+- **`CONTRIBUTING.md`** ([#45](https://github.com/shellui-dev/shelldocs/issues/45)): setup, trying a change in the example site and a static export, the static-host rule, and how commits and changelog entries are laid out.
+
 ### Fixed
 
+- **NuGet package pages showed raw HTML.** All six packages shipped the GitHub README, whose centred header and badges are HTML that nuget.org prints as text. Each package now has its own Markdown README, and `scripts/pack-dry-run` fails on HTML in a package README. The PowerShell version of that script also runs on Windows PowerShell 5.1 again.
+- **A folder's `meta.json` `title` was ignored** ([#41](https://github.com/shellui-dev/shelldocs/issues/41)). The folder's section in the sidebar, breadcrumb and search took its title from the folder name (`maui` → "Maui"). It now uses the folder's own `meta.json` `title` when set, and falls back to the name otherwise. Sites whose folders set a `title` will see it, e.g. a top-level `docs/meta.json` titled "Documentation" now reads that way instead of "Docs".
+- **HTML entities in component attributes showed literally** ([#42](https://github.com/shellui-dev/shelldocs/issues/42)). `<Callout Title="Tom &amp; Jerry" />` in Markdown or a `razor:preview` fence now passes "Tom & Jerry", as Razor does. `@` expressions, directive attributes (`@onclick`, `@bind-…`) and code spans inside a value stay as written.
 - **Links broke on sites served from a sub-path** ([#40](https://github.com/shellui-dev/shelldocs/issues/40)). Sidebar, breadcrumb, header, prev/next, content and favicon links are root-relative (`/docs/introduction`), which ignores `<base href>`, so an export built with `--base-href /my-repo/` linked outside the site. `shelldocs build --base-href` now also puts the base in front of root-relative `href`, `src` and `data-src` values in every exported page.
+
+### Changed
+
+- **`ShellDocsTheme.Shadcn`, `Fuma` and `Nextra` are obsolete** aliases of `Graphite`. They never changed the palette; `Fuma` and `Nextra` promised a look that a palette can't give. `shelldocs init --theme` takes the new preset names.
+
+### Removed
+
+- **`SearchState`, `SidebarCollapseState` and `MobileNavState`** ([#46](https://github.com/shellui-dev/shelldocs/issues/46)). Search, the sidebar collapse and the mobile drawer run in `shelldocs.js`, so nothing used these services; `AddShellDocs` no longer registers them. Code that injects one needs its own copy.
 
 ## [0.1.17-alpha] — 2026-10-14
 
