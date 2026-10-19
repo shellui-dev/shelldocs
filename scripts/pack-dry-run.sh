@@ -35,6 +35,10 @@ for nupkg in "$out_dir"/*.nupkg; do
     if ! find "$tmp" -name README.md -print -quit | grep -q .; then
         echo "    MISSING README.md" >&2
         fail=$((fail + 1))
+    # nuget.org shows HTML tags as text.
+    elif grep -Eq '<(p|picture|img|h[1-6]|div|a|br)[ >/]' "$tmp/README.md"; then
+        echo "    README.md has HTML; nuget.org shows it as text" >&2
+        fail=$((fail + 1))
     fi
 
     nuspec="$(find "$tmp" -name '*.nuspec' | head -n 1)"
