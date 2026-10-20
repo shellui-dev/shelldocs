@@ -1,10 +1,11 @@
 # Packs every IsPackable=true project into ./nupkgs-dryrun/ and validates each
-# .nupkg — verifies README embed, checks size, prints package ID + version.
+# .nupkg - verifies README embed, checks size, prints package ID + version.
 # Run from repo root.
 #
 #   ./scripts/pack-dry-run.ps1
 
 $ErrorActionPreference = "Stop"
+Add-Type -AssemblyName System.IO.Compression.FileSystem
 $repoRoot = Split-Path -Parent $PSScriptRoot
 Set-Location $repoRoot
 
@@ -30,14 +31,20 @@ foreach ($nupkg in Get-ChildItem $outDir -Filter *.nupkg | Sort-Object Name) {
     $sizeKB = [math]::Round($nupkg.Length / 1KB, 1)
     Write-Host ("  {0}  ({1} KB)" -f $nupkg.Name, $sizeKB)
 
-    # A .nupkg is a zip — extract to a temp dir to inspect.
+    # A .nupkg is a zip - extract to a temp dir to inspect.
     $tmp = Join-Path ([IO.Path]::GetTempPath()) ("nupkg-check-" + [guid]::NewGuid().ToString("N").Substring(0, 8))
-    Expand-Archive -Path $nupkg.FullName -DestinationPath $tmp -Force
+    # Expand-Archive in Windows PowerShell 5.1 only takes .zip names.
+    [System.IO.Compression.ZipFile]::ExtractToDirectory($nupkg.FullName, $tmp)
 
     # Every packable project ships README.md via <PackageReadmeFile>.
     $readme = Get-ChildItem $tmp -Filter README.md -Recurse | Select-Object -First 1
     if (-not $readme) {
         Write-Host "    MISSING README.md" -ForegroundColor Red
+        $fail++
+    }
+    # nuget.org shows HTML tags as text.
+    elseif (Select-String -Path $readme.FullName -Pattern '<(p|picture|img|h[1-6]|div|a|br)[ >/]' -Quiet) {
+        Write-Host "    README.md has HTML; nuget.org shows it as text" -ForegroundColor Red
         $fail++
     }
 
@@ -58,7 +65,7 @@ if ($fail -gt 0) {
     Write-Host "$fail package(s) failed validation" -ForegroundColor Red
     exit 1
 }
-Write-Host "OK — all packages passed validation" -ForegroundColor Green
+Write-Host "OK - all packages passed validation" -ForegroundColor Green
 Write-Host ""
 Write-Host "Ship it with:"
 Write-Host "  git tag v<version>"

@@ -39,8 +39,9 @@ shelldocs add guide getting-started
 # Run with hot reload on http://localhost:5000
 shelldocs dev
 
-# Prerender a static site into publish/
+# Prerender a static site into publish/, then serve it as a static host would
 shelldocs build
+shelldocs preview
 ```
 
 Already have a Blazor project? Run `shelldocs init --attach` inside it: it adds the packages and content, and writes `SHELLDOCS_SETUP.md` with the `Program.cs` / `App.razor` snippets instead of editing your code.
@@ -51,6 +52,7 @@ Already have a Blazor project? Run `shelldocs init --attach` inside it: it adds 
 - **File-based navigation.** Drop a `.md` in `content/docs/` and it's a page. Sidebar, breadcrumb, prev/next and TOC come from the folder tree; `meta.json` controls order, dividers, subsections and hidden pages.
 - **`Cmd+K` search** across titles, headings and page text, with body snippets. The index is built at startup and searched in the browser, so there's no external service and it works in the static export too.
 - **llms.txt for AI agents.** `o.EnableLlmsTxt()` serves `/llms.txt`, `/llms-full.txt` and every page as Markdown at its URL + `.md`, plus `AGENTS.md`, `CLAUDE.md`, Copilot and Cursor instruction files, and adds a **Copy page / View as Markdown / Open in Claude / Open in ChatGPT** menu by the title. See [AI agents](#ai-agents-llmstxt).
+- **Colour presets.** `o.Theme = ShellDocsTheme.Harbor`: Graphite (default), Harbor, Lagoon, Forest, Savanna, Ember or Jacaranda, in light and dark. Or override the tokens yourself.
 - **Blazor-native.** Your components render as real Razor components, not iframes.
 - **Composable.** Bring your own component library (ShellUI, MudBlazor, Radzen, hand-rolled) and register it in one line:
   ```csharp
@@ -58,7 +60,7 @@ Already have a Blazor project? Run `shelldocs init --attach` inside it: it adds 
   ```
   Your components win name collisions with ShellDocs' built-ins, which stay available as `<DocsCard>`, `<DocsCallout>`, `<DocsTabs>`, and so on.
 - **Content primitives.** `Callout`, `Card` / `CardGrid` / `LinkCard`, `Steps`, `FileTree`, `Tabs`, `CodeGroup`, `TypeTable` / `AutoTypeTable`, `ComponentPreview`, `DemoPreview`.
-- **Static export.** `shelldocs build` prerenders every page to static HTML for GitHub Pages, Cloudflare Pages, Netlify or S3. Optional flags rewrite `<base href>` and root-relative links for a sub-path (`--base-href`), add a SPA `404.html` (`--spa-fallback`), and write sitemap / robots / `og:` meta (`--site-url`). Navigation, sidebar sections and collapse, the mobile menu, selectors, tabs, preview toolbars, the TOC, code copy, the theme toggle and search work there through `shelldocs.js`. Only stateful demos need a running Blazor app. Unknown pages answer 404 (`<DocsNotFound />` in the docs page) and `build` writes the same view as `404.html`.
+- **Static export.** `shelldocs build` prerenders every page to static HTML for GitHub Pages, Cloudflare Pages, Netlify or S3. Optional flags rewrite `<base href>` and root-relative links for a sub-path (`--base-href`), add a SPA `404.html` (`--spa-fallback`), and write sitemap / robots / `og:` meta (`--site-url`). Navigation, sidebar sections and collapse, the mobile menu, selectors, tabs, preview toolbars, the TOC, code copy, the theme toggle and search work there through `shelldocs.js`. Only stateful demos need a running Blazor app. Unknown pages answer 404 (`<DocsNotFound />` in the docs page) and `build` writes the same view as `404.html`. `shelldocs preview` serves the export locally, under the `--base-href` path if it has one, to check it before deploying.
 
 ## Versioned docs
 
@@ -170,7 +172,7 @@ The Markdown is the page source with ShellDocs tags turned into Markdown: demos 
 
 ## Contributing
 
-The alpha is API-fluid: we're taking freedom to break minor versions until `1.0`. Bug reports and dogfood-driven fixes are welcome via issues. A proper `CONTRIBUTING.md` lands with the `0.2.0-alpha` cut.
+The alpha is API-fluid: we're taking freedom to break minor versions until `1.0`. Bug reports and fixes are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md) for setup, the static-host rule and how commits are laid out.
 
 ## License
 

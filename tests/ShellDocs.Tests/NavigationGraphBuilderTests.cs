@@ -77,6 +77,22 @@ public class NavigationGraphBuilderTests : IDisposable
     }
 
     [Fact]
+    public void Build_FolderSection_UsesItsMetaJsonTitle()
+    {
+        WriteMd("maui/getting-started.md", "Getting started");
+        WriteMeta("maui", """{ "title": "MAUI (preview)", "pages": ["getting-started"] }""");
+        WriteMd("avalonia/getting-started.md", "Getting started");
+        WriteMd("wpf/intro.md", "Intro");
+        WriteMd("listed/intro.md", "Intro");
+        WriteMeta("listed", """{ "title": "Listed by parent" }""");
+        WriteMeta("", """{ "pages": ["listed"] }""");
+
+        var titles = NavigationGraphBuilder.Build(_root).Root.Children.Select(c => c.Title).ToList();
+
+        Assert.Equal(new[] { "Listed by parent", "Avalonia", "MAUI (preview)", "Wpf" }, titles);
+    }
+
+    [Fact]
     public void Build_UsesMetaJsonOrdering()
     {
         WriteMd("alpha.md", "Alpha");

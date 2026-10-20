@@ -178,11 +178,12 @@ internal class SlotExtractor
 
     /* Attributes keep their full names (`@bind-Value`, not `Value`) so SlotRenderer
        can skip directive attributes. Code spans are restored per value, after the
-       tag is parsed, so quotes inside a span can't split the value. */
+       tag is parsed, so quotes inside a span can't split the value, and after
+       entities are decoded, so a span keeps `&amp;` as written. */
     private IReadOnlyDictionary<string, string> UnmaskValues(IEnumerable<KeyValuePair<string, string?>> attrs)
     {
         var dict = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (var (name, value) in attrs) dict[name] = Unmask(value ?? "");
+        foreach (var (name, value) in attrs) dict[name] = Unmask(PreviewParser.DecodeValue(name, value ?? ""));
         return dict;
     }
 

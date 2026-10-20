@@ -127,6 +127,19 @@ Deferred to `feat/shellui-nuget-interop` (Phase 3). ShellUI's RCL will offer an 
 
 You can depend on `ShellDocs.Tokens` alone if you want *just the palette* for a custom-styled Blazor site — no ShellDocs sidebar, no ShellDocs header. The tokens are all you get.
 
+## Colour presets
+
+`tokens.css` also holds six presets: Harbor (blue), Lagoon (teal), Forest (green), Savanna (amber on sand), Ember (red-orange) and Jacaranda (purple). Each is a light and a dark block that sets every colour token above:
+
+```css
+:root:has(:where([data-shelldocs-theme="harbor"])) { --primary: oklch(0.520 0.170 255); /* … */ }
+:root.dark:has(:where([data-shelldocs-theme="harbor"])) { /* … */ }
+```
+
+`ShellDocsOptions.Theme` makes the layouts render the attribute; without it you get the default palette above (Graphite). Using `ShellDocs.Tokens` on its own, put `data-shelldocs-theme="harbor"` on any element of the page. The `:where()` keeps these rules at the specificity of `:root` and `:root.dark`, so overrides in a later stylesheet still win.
+
+Neutrals are tinted with the preset's hue at low chroma; `--primary` and `--ring` are the brand colour, `--accent` is the brand at 12% (16% in dark) and `--accent-foreground` is a darker (lighter in dark) brand for text on it. Every text pair is at least 4.5:1, including `--primary` as text on `--background`. The semantic colours (`--info`, `--warning`, `--error`, `--success`) don't change.
+
 ## Stability
 
 - **Names** — stable across major versions. Renames are breaking.

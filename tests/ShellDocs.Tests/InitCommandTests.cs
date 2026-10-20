@@ -49,7 +49,7 @@ public class InitCommandTests : IDisposable
                 """);
 
     private int InvokeAttach() =>
-        (int)_run.Invoke(null, new object?[] { null, _tempDir, true, true, "shadcn" })!;
+        (int)_run.Invoke(null, new object?[] { null, _tempDir, true, true, "graphite" })!;
 
     [Fact]
     public void Attach_MissingCsproj_ReturnsError()
@@ -166,7 +166,7 @@ public class InitCommandTests : IDisposable
     {
         WriteFreshBlazorProgramCs();
         var changes = new List<string>();
-        _patchProgram.Invoke(null, new object[] { _tempDir, "MySite", "myorg/myrepo", changes });
+        _patchProgram.Invoke(null, new object[] { _tempDir, "MySite", "myorg/myrepo", "graphite", changes });
 
         var src = File.ReadAllText(Path.Combine(_tempDir, "Program.cs"));
         Assert.Contains("using ShellDocs.Components;", src);
@@ -182,11 +182,11 @@ public class InitCommandTests : IDisposable
     {
         WriteFreshBlazorProgramCs();
         var changes = new List<string>();
-        _patchProgram.Invoke(null, new object[] { _tempDir, "MySite", "", changes });
+        _patchProgram.Invoke(null, new object[] { _tempDir, "MySite", "", "graphite", changes });
         var afterFirst = File.ReadAllText(Path.Combine(_tempDir, "Program.cs"));
 
         var secondChanges = new List<string>();
-        _patchProgram.Invoke(null, new object[] { _tempDir, "MySite", "", secondChanges });
+        _patchProgram.Invoke(null, new object[] { _tempDir, "MySite", "", "graphite", secondChanges });
         var afterSecond = File.ReadAllText(Path.Combine(_tempDir, "Program.cs"));
 
         Assert.Equal(afterFirst, afterSecond);

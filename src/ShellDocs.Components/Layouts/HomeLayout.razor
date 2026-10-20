@@ -1,6 +1,7 @@
 @inherits LayoutComponentBase
+@inject ShellDocsOptions Options
 
-<div class="home-shell" data-mobile-open="false">
+<div class="home-shell" data-mobile-open="false" data-shelldocs-theme="@Options.ThemePresetName">
     <DocsHeader ShowSearch="false" ShowVersionSelector="false" MobileMenu="true" />
     <main class="home-main">
         @Body

@@ -79,7 +79,7 @@ The `shelldocs` global tool and the file content it writes. See [CLI](#cli).
 `AddShellDocs` (in `ServiceCollectionExtensions.cs`):
 
 1. Builds `ShellDocsOptions` and runs the consumer's `configure` callback.
-2. Registers the scoped chrome state (`MobileNavState`, `ThemeState`, `SearchState`, `SidebarCollapseState`, `CodeGroupSyncState`, `DocsPageState`).
+2. Registers the scoped chrome state (`ThemeState`, `CodeGroupSyncState`, `DocsPageState`).
 3. Adds every component in `ShellDocs.Components.Content` as a built-in.
 4. Registers singletons: `TypeRegistry` (built lazily from the options, collisions logged), `MarkdownRenderer`, `NavigationGraph` (empty graph if `ContentRoot` doesn't exist), `SearchIndex`, `DocsVersionResolver`.
 
@@ -144,6 +144,7 @@ Component child markup is rendered recursively. Inline tags in prose take markdo
 
 - Every `.md` file is a page; `index.md` takes the folder's URL. Frontmatter supplies `title` (else derived from the slug), `description`, `category`, `order`.
 - Every subfolder is a section titled from its name. Folder names keep their dots (`v0.2.1`).
+- A folder's section takes the `title` from its own `meta.json`, else one made from the folder name.
 - Without `meta.json`: subfolders first, then pages by `order` and title.
 - With `meta.json`: `pages` sets the order for what it lists: a slug, `"---"` for a divider, or `{ "title", "pages" }` for a subsection. Unlisted files and folders are appended alphabetically, and unknown slugs are ignored. `hidden` entries route but stay out of the sidebar and prev/next.
 
@@ -242,17 +243,19 @@ Chrome that must work without a Blazor runtime follows one contract:
 
 ## Theming
 
-One neutral, shadcn-shaped palette of CSS variables in `ShellDocs.Tokens/tokens.css` (`:root` and `:root.dark`). Component styles are scoped CSS reading those variables, plus `shelldocs-theme.css` for global prose, code-block and Shiki styling. Restyle by overriding variables in a stylesheet loaded after `tokens.css`. `ShellDocsOptions.Theme` exists but doesn't switch palettes yet.
+A neutral, shadcn-shaped palette of CSS variables in `ShellDocs.Tokens/tokens.css` (`:root` and `:root.dark`), called Graphite. Component styles are scoped CSS reading those variables, plus `shelldocs-theme.css` for global prose, code-block and Shiki styling. Restyle by overriding variables in a stylesheet loaded after `tokens.css`.
+
+Colour presets (`ShellDocsOptions.Theme`: Harbor, Lagoon, Forest, Savanna, Ember, Jacaranda) are further blocks in `tokens.css`. `DocsLayout` and `HomeLayout` put `data-shelldocs-theme="harbor"` on their shell (nothing for Graphite), and `:root:has(:where([data-shelldocs-theme="harbor"]))` / `:root.dark:has(…)` set every colour token from it. The `:where()` keeps those rules at the specificity of `:root` / `:root.dark`, so a later stylesheet still overrides them, and the variables sit on `:root`, so the body, previews and the search dialog cloned onto `<body>` follow too. Each preset tints the neutrals with its hue and sets `--primary`, `--accent` / `--accent-foreground` (the active sidebar item) and `--ring`; text pairs are at least 4.5:1 in light and dark.
 
 ---
 
 ## CLI
 
-- `shelldocs init [path] [--attach] [--dir] [--yes] [--theme]` — create mode runs `dotnet new blazor` (default `docs/<CwdName>.Docs`), adds the packages at the CLI's own version, writes starter content and patches `Program.cs` / `App.razor`. Attach mode augments an existing project and writes `SHELLDOCS_SETUP.md` instead of editing code. Both are idempotent.
+- `shelldocs init [path] [--attach] [--dir] [--yes] [--theme graphite|harbor|…]` — create mode runs `dotnet new blazor` (default `docs/<CwdName>.Docs`), adds the packages at the CLI's own version, writes starter content and patches `Program.cs` / `App.razor`. Attach mode augments an existing project and writes `SHELLDOCS_SETUP.md` instead of editing code. Both are idempotent.
 - `shelldocs add <component|guide|page> <name> [--force]` — scaffolds a page into `content/docs/`.
 - `shelldocs dev [--port 5000]` — `dotnet watch run`, with `content/**/*.md` added to the watch set.
 - `shelldocs build [--output publish] [--base-href] [--spa-fallback] [--site-url]` — see below.
-- `shelldocs preview` — reserved, not implemented.
+- `shelldocs preview [--output publish] [--port 5050] [--base-href]` — serves an export with Kestrel as static hosts do: a file, else the folder's `index.html`, else `{path}.html`, else `404.html` with a 404. The base path defaults to the export's `<base href>`; responses are `no-cache` so a rebuild shows on reload.
 
 ### Static site generation
 

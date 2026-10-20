@@ -186,6 +186,29 @@ public class PreviewParsingTests
         Assert.Equal("3", slot.Parameters["Size"]);
         Assert.Equal("n", slot.Parameters["@bind-Size"]);
     }
+
+    [Fact]
+    public void ComponentAttributeValues_DecodeEntities()
+    {
+        var doc = Renderer().Render(
+            "<Button Title=\"Tom &amp; Jerry\" Text=\"Use &lt;Tabs&gt; &quot;here&quot; &#169; &#x2014;\" Code=\"`&amp;`\" Value=\"@(&quot;x&quot;)\" @onclick=\"a &amp;&amp; b\" />");
+        var p = Assert.IsType<ComponentSlot>(Assert.Single(doc.Slots)).Parameters;
+        Assert.Equal("Tom & Jerry", p["Title"]);
+        Assert.Equal("Use <Tabs> \"here\" © —", p["Text"]);
+        Assert.Equal("`&amp;`", p["Code"]);
+        Assert.Equal("@(&quot;x&quot;)", p["Value"]);
+        Assert.Equal("a &amp;&amp; b", p["@onclick"]);
+    }
+
+    [Fact]
+    public void PreviewComponentAttributeValues_DecodeEntities()
+    {
+        var doc = Renderer().Render("```razor:preview\n<Button Title=\"Tom &amp; Jerry\" />\n```");
+        var slot = Assert.IsType<PreviewSlot>(Assert.Single(doc.Slots));
+        Assert.Equal("Tom & Jerry", slot.Parameters["Title"]);
+        var node = Assert.IsType<PreviewComponentNode>(Assert.Single(slot.Nodes!, n => n is PreviewComponentNode));
+        Assert.Equal("Tom & Jerry", node.Parameters["Title"]);
+    }
 }
 
 public class SlotRendererCoercionTests
