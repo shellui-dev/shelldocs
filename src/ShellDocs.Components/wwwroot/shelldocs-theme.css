@@ -1,8 +1,11 @@
 /* Base resets, .shelldocs-prose typography and code-block chrome.
    Every colour and spacing comes from ShellDocs.Tokens (tokens.css). */
 
-/* Base */
-*, *::before, *::after { box-sizing: border-box; border-color: var(--border); }
+/* Base. In a cascade layer, so Tailwind utilities in previews and home pages
+   (border-destructive, …) win; unlayered rules beat every layer. */
+@layer base {
+    *, *::before, *::after { box-sizing: border-box; border-color: var(--border); }
+}
 html {
     background: var(--background);
     color: var(--foreground);
