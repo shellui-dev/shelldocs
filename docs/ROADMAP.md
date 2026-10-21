@@ -209,7 +209,7 @@ Ships to `ShellDocs.Components` + `ShellDocs.Templates` + `ShellDocs.CLI` + `She
 **Authoring fix (`ShellDocs.Markdown`)**
 - `SlotExtractor.ReplaceComponentTags` no longer `.Trim()`s the raw child content of inline component tags. The Trim was stripping the first line's indent and defeating `SlotRenderer.Dedent` — Markdig then interpreted the remaining 4-space-indented lines as an indented code block. Symptom was the same "literal `<pre>` around placeholder divs" bug that had already been fixed for `razor:preview` fences; the inline-tag code path was still hitting it.
 
-### ✅ Hardening releases (`0.1.3`–`0.1.18-alpha`) — shipped
+### ✅ Hardening releases (`0.1.3`–`0.1.19-alpha`) — shipped
 Driven by building the ShellUI docs on ShellDocs. Highlights (details in the CHANGELOG):
 
 - `feat/build-static-prerender` (0.1.5) — `shelldocs build` prerenders every URL into a static site.
@@ -225,6 +225,7 @@ Driven by building the ShellUI docs on ShellDocs. Highlights (details in the CHA
 - `fix/iframe-preview-navigation` (0.1.16) — an `<IframePreview>` reused for the next page after in-site navigation is unloaded and set up again.
 - `fix/docs-site-findings` (0.1.17) — llms.txt for AI agents (`EnableLlmsTxt`: `/llms.txt`, `/llms-full.txt`, per-page `.md`, agent instruction files, page actions menu, static export); HTML-only `razor:preview` fences render live, `404.html` shows the visitor's path, `LogoSvg` sizing, search on `HomeLayout`, spacing in the missing-tab note.
 - `fix/base-href-links`, `fix/nuget-readme-and-issues` (0.1.18) — `shelldocs preview` serves an export locally; Markdown READMEs per package for nuget.org; `--base-href` prefixes root-relative links in the export; folder sections use their `meta.json` `title`; entities in component attribute values are decoded; colour presets (`o.Theme`: Graphite, Harbor, Lagoon, Forest, Savanna, Ember, Jacaranda) in place of the never-built Fuma / Nextra; unused chrome state services removed; CONTRIBUTING.md.
+- `fix/toc-interactive` (0.1.19) — the table of contents keeps its highlight and stays on the page under `InteractiveServer` (links carry the page path, the scroll-spy re-attaches after interactive renders, same-page links scroll in place); base border colour in `@layer base`; `llms.txt` lists each group once; chat links use `SiteUrl`.
 - `fix/preview-fidelity`, `feat/generics-redirects-page-title` (0.1.10) — `not-prose` previews, Razor child content, stretch layout, generic components in markdown, redirects (middleware + static pages), `RenderPageTitle`, theme sync and a static-host `ThemeToggle`.
 
 ### `feat/animation-polish`
