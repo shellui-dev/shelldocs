@@ -1083,9 +1083,11 @@ window.shelldocsChrome = (function () {
         return root ? new URL(root.getAttribute('data-page-md'), document.baseURI).href : null;
     }
 
+    // With SiteUrl the prompt names the published page, also when an export is previewed locally.
     function fillPageActions(scope) {
         scope.querySelectorAll('[data-page-ai]').forEach(function (link) {
-            var url = pageMarkdownUrl(link);
+            var root = link.closest('[data-page-md]');
+            var url = (root && root.getAttribute('data-page-md-url')) || pageMarkdownUrl(link);
             if (url) link.href = link.getAttribute('data-page-ai') + encodeURIComponent('Read ' + url + ' and help me with it.');
         });
     }

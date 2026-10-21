@@ -8,7 +8,7 @@
    with the page's absolute .md URL ([data-page-ai]), so it works in static exports. *@
 @if (_markdownHref is not null)
 {
-    <div class="page-actions not-prose" data-open="false" data-page-md="@_markdownHref">
+    <div class="page-actions not-prose" data-open="false" data-page-md="@_markdownHref" data-page-md-url="@SiteMarkdownUrl">
         <button type="button" class="page-actions-trigger" aria-haspopup="menu" aria-expanded="false" aria-label="Page actions" title="Page actions">
             <Ellipsis />
         </button>
@@ -50,10 +50,13 @@
             : null;
     }
 
-    // Absolute with SiteUrl; otherwise shelldocs.js puts the visitor's origin in on click.
+    // The canonical .md URL with SiteUrl; null leaves the attribute out.
+    private string? SiteMarkdownUrl => string.IsNullOrWhiteSpace(Options.SiteUrl) ? null : Options.SiteUrl.TrimEnd('/') + "/" + _markdownHref;
+
+    // shelldocs.js fills in the visitor's origin when there is no SiteUrl.
     private string ChatHref(string chat)
     {
-        var url = string.IsNullOrWhiteSpace(Options.SiteUrl) ? "/" + _markdownHref : Options.SiteUrl.TrimEnd('/') + "/" + _markdownHref;
+        var url = SiteMarkdownUrl ?? "/" + _markdownHref;
         return chat + Uri.EscapeDataString($"Read {url} and help me with it.");
     }
 }

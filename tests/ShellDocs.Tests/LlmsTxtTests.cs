@@ -209,6 +209,29 @@ public class LlmsTxtTests : IDisposable
     }
 
     [Fact]
+    public void Index_GroupsByMetaTitle_OnceEach()
+    {
+        // Top-level pages on both sides of a folder; the folder titled by its meta.json.
+        var root = Path.Combine(_root, "grouped");
+        void Page(string rel, string title) => File.WriteAllText(Dir(Path.Combine(root, rel)), $"---\ntitle: {title}\n---\n# {title}\n");
+        string Dir(string path) { Directory.CreateDirectory(Path.GetDirectoryName(path)!); return path; }
+        File.WriteAllText(Dir(Path.Combine(root, "docs", "meta.json")), "{ \"pages\": [\"introduction\", \"cli\", \"theming\"] }");
+        File.WriteAllText(Dir(Path.Combine(root, "docs", "cli", "meta.json")), "{ \"title\": \"CLI\", \"pages\": [\"build\"] }");
+        Page("docs/introduction.md", "Introduction");
+        Page("docs/cli/build.md", "shelldocs build");
+        Page("docs/theming.md", "Theming");
+
+        var files = new ComponentRenderHarness(o => { o.ContentRoot = root; o.SiteName = "ShellDocs"; o.EnableLlmsTxt(); })
+            .Services.GetRequiredService<LlmsTxtFiles>();
+        var index = files.Get("/llms.txt", "https://shelldocs.shellui.dev")!.Body;
+
+        var headings = Regex.Matches(index, "^## (.+)$", RegexOptions.Multiline).Select(m => m.Groups[1].Value).ToList();
+        Assert.Equal(["Pages", "CLI"], headings);
+        Assert.Contains("## Pages\n\n- [Introduction](https://shelldocs.shellui.dev/docs/introduction.md)\n- [Theming](https://shelldocs.shellui.dev/docs/theming.md)\n", index);
+        Assert.Contains("## CLI\n\n- [shelldocs build](https://shelldocs.shellui.dev/docs/cli/build.md)\n", index);
+    }
+
+    [Fact]
     public void FullText_AndPages_AreMarkdown()
     {
         var files = Harness().Services.GetRequiredService<LlmsTxtFiles>();
@@ -319,6 +342,13 @@ public class LlmsTxtTests : IDisposable
         Assert.Contains("data-page-ai=\"https://chatgpt.com/?q=\"", html);
         Assert.Contains("href=\"https://claude.ai/new?q=Read%20%2Fdocs%2Fintroduction.md%20and%20help%20me%20with%20it.\"", html);
         Assert.DoesNotContain("blazor:on", html);
+        Assert.DoesNotContain("data-page-md-url", html);
+
+        // With SiteUrl the prompt names the published page, so a local preview of an export doesn't change it.
+        var site = await new ComponentRenderHarness(o => { o.ContentRoot = Path.Combine(_root, "content"); o.SiteUrl = "https://shellui.dev/"; o.EnableLlmsTxt(); },
+            "http://localhost/docs/introduction").RenderAsync<DocsPageActions>();
+        Assert.Contains("data-page-md-url=\"https://shellui.dev/docs/introduction.md\"", site);
+        Assert.Contains("q=Read%20https%3A%2F%2Fshellui.dev%2Fdocs%2Fintroduction.md%20and%20help%20me%20with%20it.", site);
 
         Assert.Contains("data-page-md", await Harness().RenderAsync<MarkdownContent>(new() { ["Markdown"] = "# Hi" }));
         Assert.DoesNotContain("page-actions", await Harness(enabled: false).RenderAsync<DocsPageActions>());
