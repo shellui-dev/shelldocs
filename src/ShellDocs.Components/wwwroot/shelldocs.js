@@ -600,6 +600,15 @@ window.shelldocsToc = {
                 }
             }
             if (!pick) pick = ids[0];
+            /* At the bottom of the page the last short sections can't scroll up into
+               the band, so the last heading on screen wins. */
+            var doc = document.documentElement;
+            if (window.innerHeight + (window.pageYOffset || 0) >= doc.scrollHeight - 2) {
+                for (var j = ids.length - 1; j >= 0; j--) {
+                    var last = document.getElementById(ids[j]);
+                    if (last && last.getBoundingClientRect().top < window.innerHeight) { pick = ids[j]; break; }
+                }
+            }
             if (pick === currentActive) return;
 
             if (currentActive) {
@@ -632,11 +641,23 @@ window.shelldocsToc = {
             if (el) observer.observe(el);
         });
 
+        // Reaching the bottom moves no heading across the band, so scroll checks too.
+        var queued = false;
+        function onScroll() {
+            if (queued) return;
+            queued = true;
+            requestAnimationFrame(function () { queued = false; update(); });
+        }
+        window.addEventListener('scroll', onScroll, { passive: true });
+
         // Initial position — no scroll event yet, so we compute manually.
         setTimeout(update, 0);
 
         return {
-            dispose: function () { observer.disconnect(); }
+            dispose: function () {
+                observer.disconnect();
+                window.removeEventListener('scroll', onScroll);
+            }
         };
     },
 
@@ -645,7 +666,8 @@ window.shelldocsToc = {
         if (!el) return;
         el.scrollIntoView({ behavior: 'smooth', block: 'start' });
         if (window.history && window.history.replaceState) {
-            window.history.replaceState(null, '', '#' + id);
+            // The full path: a bare #id resolves against <base href>.
+            window.history.replaceState(null, '', location.pathname + location.search + '#' + id);
         }
     }
 };
@@ -899,10 +921,27 @@ window.shelldocsChrome = (function () {
         });
     }
 
+    /* An interactive render replaces the prerendered TOC and headings (or changes
+       data-toc-ids on navigation) without an enhancedload, which would leave the
+       scroll-spy watching detached elements. */
+    var tocQueued = false;
+    function queueToc() {
+        if (tocQueued) return;
+        tocQueued = true;
+        setTimeout(function () { tocQueued = false; initToc(); }, 50);
+    }
+
+    function touchesToc(node) {
+        if (node.nodeType !== 1) return false;
+        if (node.matches('[data-toc-list], h2[id], h3[id]')) return true;
+        return !!node.querySelector('[data-toc-list], h2[id], h3[id]');
+    }
+
     function watchForReplacedFrames() {
         if (!window.MutationObserver) return;
         new MutationObserver(function (records) {
             for (var r = 0; r < records.length; r++) {
+                if (records[r].type === 'attributes') { queueToc(); continue; }
                 var added = records[r].addedNodes;
                 for (var n = 0; n < added.length; n++) {
                     if (added[n].nodeType !== 1) continue;
@@ -911,10 +950,31 @@ window.shelldocsChrome = (function () {
                     window.shelldocsIframes.init(added[n]);
                     restoreMobileNav(added[n]);
                     restoreCollapse(added[n]);
+                    if (touchesToc(added[n])) queueToc();
                 }
             }
-        }).observe(document.documentElement, { childList: true, subtree: true });
+        }).observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-toc-ids'] });
     }
+
+    /* In-page links (the TOC, [x](#id) in content): a bare #id resolves against
+       <base href>, so Blazor's router or the browser would go to the home page.
+       Same-page links scroll here and keep the path, before Blazor sees the click. */
+    window.addEventListener('click', function (e) {
+        if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        var link = e.target.closest && e.target.closest('a[href]');
+        if (!link || (link.target && link.target !== '_self') || link.hasAttribute('download')) return;
+        var raw = link.getAttribute('href');
+        var url = new URL(link.href, document.baseURI);
+        // Static hosts serve /docs/x/ for docs/x, so a trailing slash doesn't make it another page.
+        var samePage = raw.charAt(0) === '#' || (url.origin === location.origin && url.search === location.search
+            && url.pathname.replace(/\/$/, '') === location.pathname.replace(/\/$/, ''));
+        if (!samePage || !url.hash) return;
+        var id = decodeURIComponent(url.hash.slice(1));
+        if (!id || !document.getElementById(id)) return;
+        e.preventDefault();
+        e.stopPropagation();
+        window.shelldocsToc.scrollTo(id);
+    }, true);
 
     /* Mobile nav: hamburgers toggle [data-mobile-open] on the page shell. CSS slides
        in the docs sidebar or shows the home menu; the backdrop, Escape, picking a
