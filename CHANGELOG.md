@@ -4,6 +4,10 @@ All notable changes to ShellDocs land here. Format follows [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [0.1.19-alpha] — 2026-10-21
+
+The table of contents works on interactive sites again, plus fixes for border utilities, `llms.txt` groups and the page menu's chat links.
+
 ### Fixed
 
 - **The table of contents on interactive sites.** With `<Routes @rendermode="InteractiveServer" />`, the "On this page" highlight stopped moving once the circuit started, and clicking an entry went to the home page. The scroll-spy now re-attaches when Blazor replaces the list or the headings (or changes `data-toc-ids` on navigation), TOC links carry the page's path (`docs/setup#install`; a bare `#install` resolves against `<base href>`), and same-page links, including `[x](#id)` in content, scroll in place and keep the path in the address bar. Sites that added their own `toc.js` workaround can drop it.
