@@ -1,9 +1,11 @@
 @inject DocsPageState PageState
+@inject NavigationManager Nav
 @implements IDisposable
 @using ShellDocs.Core
 
-@* shelldocs.js attaches the scroll-spy from [data-toc-list] / [data-toc-ids];
-   links are plain #anchors, so it works without a Blazor runtime. *@
+@* shelldocs.js attaches the scroll-spy from [data-toc-list] / [data-toc-ids] and
+   scrolls on click, so it works without a Blazor runtime. Links carry the page's
+   base-relative path: a bare #id resolves against <base href> to the home page. *@
 @if (_items.Count > 0)
 {
     <nav class="toc" aria-label="On this page">
@@ -16,7 +18,7 @@
             @foreach (var h in _items)
             {
                 <li class="toc-item" data-level="@h.Level">
-                    <a class="toc-link" href="#@h.Id" data-toc-id="@h.Id">@h.Text</a>
+                    <a class="toc-link" href="@($"{_page}#{h.Id}")" data-toc-id="@h.Id">@h.Text</a>
                 </li>
             }
         </ul>
@@ -28,6 +30,7 @@
 
     private List<Heading> _items = new();
     private string _idsAttr = "";
+    private string _page = "";
 
     protected override void OnInitialized() => PageState.OnChange += OnPageChanged;
 
@@ -40,6 +43,7 @@
         var source = Headings ?? PageState.Document?.Headings ?? Array.Empty<Heading>();
         _items = source.Where(h => h.Level == 2 || h.Level == 3).ToList();
         _idsAttr = string.Join(",", _items.Select(h => h.Id));
+        _page = DocsVersionResolver.PathOf(Nav).TrimStart('/');
     }
 
     public void Dispose() => PageState.OnChange -= OnPageChanged;

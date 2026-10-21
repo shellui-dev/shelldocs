@@ -4,6 +4,14 @@ All notable changes to ShellDocs land here. Format follows [Keep a Changelog](ht
 
 ## [Unreleased]
 
+### Fixed
+
+- **The table of contents on interactive sites.** With `<Routes @rendermode="InteractiveServer" />`, the "On this page" highlight stopped moving once the circuit started, and clicking an entry went to the home page. The scroll-spy now re-attaches when Blazor replaces the list or the headings (or changes `data-toc-ids` on navigation), TOC links carry the page's path (`docs/setup#install`; a bare `#install` resolves against `<base href>`), and same-page links, including `[x](#id)` in content, scroll in place and keep the path in the address bar. Sites that added their own `toc.js` workaround can drop it.
+- **The last short sections of a page never became active in the TOC.** At the bottom of the page the last heading on screen is highlighted.
+- **`border-*` utilities lost to the base border colour.** The `*, *::before, *::after` rule in `shelldocs-theme.css` was outside any cascade layer, so it beat Tailwind's `border-destructive` and friends in previews and home pages. It's in `@layer base` now.
+- **`llms.txt` listed a group twice** when top-level pages sat on both sides of a folder ("## Pages" before and after it). Each group now appears once, in first-seen order.
+- **The page menu's chat links used the visitor's origin instead of `SiteUrl`**, so a static export previewed on localhost asked about a localhost URL. With `SiteUrl` set they name the published page.
+
 ## [0.1.18-alpha] — 2026-10-19
 
 Colour presets, `shelldocs preview` for checking a static export locally, package pages on NuGet that render properly, plus fixes for sub-path links, folder titles and entities in component attributes.

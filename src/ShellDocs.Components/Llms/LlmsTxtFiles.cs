@@ -133,16 +133,26 @@ internal sealed class LlmsTxtFiles
         var install = InstallPattern();
         // Pages outside every version listed with the latest one: its groups carry its label.
         var mixed = pages.Any(p => _versions.FindContaining(p.Url) is null) && pages.Any(p => _versions.FindContaining(p.Url) is not null);
-        string? group = null;
+        // One heading per group, in first-seen order: top-level pages between folders stay together.
+        var groups = new List<(string Name, List<NavigationNode> Pages)>();
         foreach (var page in pages)
         {
             var g = Group(page, top);
             if (mixed && _versions.FindContaining(page.Url) is { } owner) g = g == "Pages" ? owner.Label : $"{owner.Label} / {g}";
-            if (g != group) { sb.Append($"\n## {g}\n\n"); group = g; }
-            sb.Append($"- [{page.Title}]({md.Url(page.Url)})");
-            if (OneLine(page.Description).TrimEnd('.') is { Length: > 0 } d) sb.Append(": ").Append(d).Append('.');
-            if (install is not null && InstallCommand(page, install) is { } cmd) sb.Append($" Install: `{cmd}`");
-            sb.Append('\n');
+            var existing = groups.FindIndex(x => x.Name == g);
+            if (existing < 0) groups.Add((g, [page]));
+            else groups[existing].Pages.Add(page);
+        }
+        foreach (var (name, groupPages) in groups)
+        {
+            sb.Append($"\n## {name}\n\n");
+            foreach (var page in groupPages)
+            {
+                sb.Append($"- [{page.Title}]({md.Url(page.Url)})");
+                if (OneLine(page.Description).TrimEnd('.') is { Length: > 0 } d) sb.Append(": ").Append(d).Append('.');
+                if (install is not null && InstallCommand(page, install) is { } cmd) sb.Append($" Install: `{cmd}`");
+                sb.Append('\n');
+            }
         }
         return sb.ToString();
     }
