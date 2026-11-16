@@ -231,6 +231,29 @@ public class InitCommandTests : IDisposable
     }
 
     [Fact]
+    public void PatchAppRazor_GivesHeadOutletTheRoutesRenderMode()
+    {
+        WriteFreshBlazorAppRazor();
+        _patchApp.Invoke(null, new object[] { _tempDir, new List<string>() });
+
+        var src = File.ReadAllText(Path.Combine(_tempDir, "Components", "App.razor"));
+        Assert.Contains("<Routes @rendermode=\"InteractiveServer\" />", src);
+        Assert.Contains("<HeadOutlet @rendermode=\"InteractiveServer\" />", src);
+    }
+
+    [Fact]
+    public void PatchAppRazor_LeavesHeadOutletAloneWhenRoutesUseAnotherMode()
+    {
+        WriteFreshBlazorAppRazor();
+        var path = Path.Combine(_tempDir, "Components", "App.razor");
+        File.WriteAllText(path, File.ReadAllText(path).Replace("<Routes />", "<Routes @rendermode=\"InteractiveAuto\" />"));
+        _patchApp.Invoke(null, new object[] { _tempDir, new List<string>() });
+
+        var src = File.ReadAllText(path);
+        Assert.Contains("<HeadOutlet />", src);
+    }
+
+    [Fact]
     public void PatchAppRazor_IsIdempotent()
     {
         WriteFreshBlazorAppRazor();

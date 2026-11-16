@@ -455,6 +455,12 @@ internal static class InitCommand
             src = Regex.Replace(src, @"<Routes\s*/>", "<Routes @rendermode=\"InteractiveServer\" />");
         }
 
+        // Without it, <PageTitle> stops reaching the tab once the circuit starts.
+        if (Regex.IsMatch(src, @"<Routes\s+@rendermode=""(?:RenderMode\.)?InteractiveServer"""))
+        {
+            src = Regex.Replace(src, @"<HeadOutlet\s*/>", "<HeadOutlet @rendermode=\"InteractiveServer\" />");
+        }
+
         // Bootstrap and the template's app.css fight the token system (e.g. pink inline <code>).
         src = Regex.Replace(src,
             @"\s*<link\s+rel=""stylesheet""\s+href=""@Assets\[""lib/bootstrap/dist/css/bootstrap\.min\.css""\]""\s*/>",
