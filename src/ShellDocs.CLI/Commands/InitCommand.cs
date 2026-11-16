@@ -401,6 +401,13 @@ internal static class InitCommand
         }
     }
 
+    private static readonly Regex AssetsPath = new(@"@Assets\[""(?<path>[^""]+)""\]", RegexOptions.Compiled);
+
+    // Each emits fingerprinted URLs too (import map, preload links, the modal's script).
+    private static readonly Regex UnstaticTags = new(
+        @"^[ \t]*<(?:ImportMap|ResourcePreloader|ReconnectModal)\s*/>[ \t]*\r?\n?",
+        RegexOptions.Compiled | RegexOptions.Multiline);
+
     internal static void PatchAppRazor(string projectRoot, List<string> changes)
     {
         var path = Path.Combine(projectRoot, "Components", "App.razor");
@@ -455,6 +462,11 @@ internal static class InitCommand
         src = Regex.Replace(src,
             @"\s*<link\s+rel=""stylesheet""\s+href=""@Assets\[""app\.css""\]""\s*/>",
             "");
+
+        // Fingerprinted URLs only resolve through MapStaticAssets on a running app, so a
+        // static export 404s them (the scoped-CSS bundle included). Plain paths work in both.
+        src = AssetsPath.Replace(src, "${path}");
+        src = UnstaticTags.Replace(src, "");
 
         if (src != original)
         {

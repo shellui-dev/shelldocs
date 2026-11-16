@@ -148,14 +148,18 @@ public class InitCommandTests : IDisposable
                 <meta charset="utf-8" />
                 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
                 <base href="/" />
+                <ResourcePreloader />
+                <link rel="stylesheet" href="@Assets["lib/bootstrap/dist/css/bootstrap.min.css"]" />
                 <link rel="stylesheet" href="@Assets["app.css"]" />
+                <link rel="stylesheet" href="@Assets["MySite.styles.css"]" />
                 <ImportMap />
                 <link rel="icon" type="image/png" href="favicon.png" />
                 <HeadOutlet />
             </head>
             <body>
                 <Routes />
-                <script src="_framework/blazor.web.js"></script>
+                <ReconnectModal />
+                <script src="@Assets["_framework/blazor.web.js"]"></script>
             </body>
             </html>
             """);
@@ -210,6 +214,23 @@ public class InitCommandTests : IDisposable
     }
 
     [Fact]
+    public void PatchAppRazor_UsesPathsThatWorkOnStaticHosts()
+    {
+        WriteFreshBlazorAppRazor();
+        _patchApp.Invoke(null, new object[] { _tempDir, new List<string>() });
+
+        var src = File.ReadAllText(Path.Combine(_tempDir, "Components", "App.razor"));
+        Assert.DoesNotContain("@Assets[", src);
+        Assert.Contains("<link rel=\"stylesheet\" href=\"MySite.styles.css\" />", src);
+        Assert.Contains("<script src=\"_framework/blazor.web.js\"></script>", src);
+        Assert.DoesNotContain("<ImportMap", src);
+        Assert.DoesNotContain("<ResourcePreloader", src);
+        Assert.DoesNotContain("<ReconnectModal", src);
+        Assert.DoesNotContain("bootstrap.min.css", src);
+        Assert.Contains("<link rel=\"icon\" type=\"image/png\" href=\"favicon.png\" />", src);
+    }
+
+    [Fact]
     public void PatchAppRazor_IsIdempotent()
     {
         WriteFreshBlazorAppRazor();
@@ -218,7 +239,7 @@ public class InitCommandTests : IDisposable
         var afterFirst = File.ReadAllText(Path.Combine(_tempDir, "Components", "App.razor"));
 
         var secondChanges = new List<string>();
-        _patchApp.Invoke(null, new object[] { _tempDir, changes });
+        _patchApp.Invoke(null, new object[] { _tempDir, secondChanges });
         var afterSecond = File.ReadAllText(Path.Combine(_tempDir, "Components", "App.razor"));
 
         Assert.Equal(afterFirst, afterSecond);
