@@ -7,7 +7,8 @@ namespace ShellDocs.CLI.Commands;
 
 internal static class BuildCommand
 {
-    public static int Run(string dir, string output, string? baseHref, bool spaFallback, string? siteUrl = null)
+    public static int Run(string dir, string output, string? baseHref, bool spaFallback, string? siteUrl = null,
+        IReadOnlyList<string>? extraUrls = null)
     {
         var root = Path.GetFullPath(dir);
         var csproj = FindCsproj(root);
@@ -62,6 +63,13 @@ internal static class BuildCommand
             return 1;
         }
         AnsiConsole.MarkupLine($"[dim]prerender:[/] discovered [cyan]{urls.Count}[/] URL(s) from content/");
+
+        var assembly = Path.Combine(publishStage, PrerenderRunner.InferAssemblyName(csproj) + ".dll");
+        var routes = File.Exists(assembly) ? RouteDiscovery.PrerenderableRoutes(RouteDiscovery.ReadRouteTemplates(assembly)) : [];
+        var added = AddNew(urls, routes);
+        if (added > 0) AnsiConsole.MarkupLine($"[dim]prerender:[/] added [cyan]{added}[/] @page route(s) from the app");
+        added = AddNew(urls, (extraUrls ?? []).Select(RouteDiscovery.NormalizeUrl));
+        if (added > 0) AnsiConsole.MarkupLine($"[dim]prerender:[/] added [cyan]{added}[/] URL(s) from --extra-url");
 
         if (Directory.Exists(outputAbs)) Directory.Delete(outputAbs, recursive: true);
         Directory.CreateDirectory(outputAbs);
@@ -133,6 +141,18 @@ internal static class BuildCommand
         }
         proc.WaitForExit();
         return proc.ExitCode;
+    }
+
+    internal static int AddNew(List<string> urls, IEnumerable<string> candidates)
+    {
+        var added = 0;
+        foreach (var url in candidates)
+        {
+            if (urls.Contains(url, StringComparer.OrdinalIgnoreCase)) continue;
+            urls.Add(url);
+            added++;
+        }
+        return added;
     }
 
     // Never overwrites — protects prerendered HTML sitting in the output tree.

@@ -134,9 +134,14 @@ internal class Program
         {
             Description = "Absolute site URL (e.g. \"https://shelldocs.dev\"). Enables sitemap.xml, robots.txt, and og: meta tags."
         };
+        var extraUrl = new Option<string[]>("--extra-url")
+        {
+            Description = "Also prerender this URL (repeatable), e.g. a page whose @page route takes parameters.",
+            AllowMultipleArgumentsPerToken = false
+        };
         var cmd = new Command("build", "Produce a static site ready for GH Pages / Cloudflare / S3.")
         {
-            dir, output, baseHref, spaFallback, siteUrl
+            dir, output, baseHref, spaFallback, siteUrl, extraUrl
         };
         cmd.SetAction(pr =>
             BuildCommand.Run(
@@ -144,7 +149,8 @@ internal class Program
                 pr.GetValue(output) ?? "publish",
                 pr.GetValue(baseHref),
                 pr.GetValue(spaFallback),
-                pr.GetValue(siteUrl)));
+                pr.GetValue(siteUrl),
+                pr.GetValue(extraUrl)));
         return cmd;
     }
 
