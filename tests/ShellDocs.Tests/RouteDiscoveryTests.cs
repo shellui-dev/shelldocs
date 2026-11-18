@@ -48,6 +48,21 @@ public class RouteDiscoveryTests
         Assert.Equal(new[] { "/", "/docs/introduction", "/icons" }, urls);
     }
 
+    [Theory]
+    [InlineData("site", "site", true)]
+    [InlineData("site/..", "site", true)]
+    [InlineData("site/publish", "site", false)]
+    [InlineData("site-out", "site", false)]
+    public void ContainsPath_FlagsTheProjectFolderAndItsParents(string output, string project, bool expected)
+    {
+        var root = Path.Combine(Path.GetTempPath(), "shelldocs-contains");
+        var contains = CliType("ShellDocs.CLI.Commands.BuildCommand").GetMethod("ContainsPath", BindingFlags.Static | BindingFlags.NonPublic)!;
+
+        var result = (bool)contains.Invoke(null, new object[] { Path.Combine(root, output), Path.Combine(root, project) })!;
+
+        Assert.Equal(expected, result);
+    }
+
     private static T Invoke<T>(string method, object arg) =>
         (T)Discovery.GetMethod(method, BindingFlags.Static | BindingFlags.NonPublic)!.Invoke(null, new[] { arg })!;
 

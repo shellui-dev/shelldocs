@@ -27,6 +27,11 @@ internal static class BuildCommand
         }
 
         var outputAbs = Path.GetFullPath(Path.Combine(root, output));
+        if (ContainsPath(outputAbs, root))
+        {
+            AnsiConsole.MarkupLine($"[red]error:[/] --output [yellow]{outputAbs}[/] is the project folder or one above it, and build empties it first");
+            return 1;
+        }
         var publishStage = Path.Combine(root, "obj", "shelldocs-publish");
         var normalizedSiteUrl = siteUrl?.TrimEnd('/');
 
@@ -36,6 +41,10 @@ internal static class BuildCommand
         if (spaFallback)                  AnsiConsole.MarkupLine("[dim]spa fallback:[/] [cyan]index.html → 404.html[/]");
         if (normalizedSiteUrl is not null) AnsiConsole.MarkupLine($"[dim]site url:[/] [cyan]{normalizedSiteUrl}[/]");
         AnsiConsole.WriteLine();
+
+        // Before publishing: the default output sits inside the project, so publish would
+        // pick up the last export (its *.razor.js copies fail the build with BLAZOR106).
+        if (Directory.Exists(outputAbs)) Directory.Delete(outputAbs, recursive: true);
 
         var publishExit = RunPublish(csproj, publishStage);
         if (publishExit != 0) return publishExit;
@@ -71,7 +80,6 @@ internal static class BuildCommand
         added = AddNew(urls, (extraUrls ?? []).Select(RouteDiscovery.NormalizeUrl));
         if (added > 0) AnsiConsole.MarkupLine($"[dim]prerender:[/] added [cyan]{added}[/] URL(s) from --extra-url");
 
-        if (Directory.Exists(outputAbs)) Directory.Delete(outputAbs, recursive: true);
         Directory.CreateDirectory(outputAbs);
 
         var result = PrerenderRunner.Run(publishStage, csproj, urls, outputAbs, siteUrl: normalizedSiteUrl, baseHref: baseHref);
@@ -141,6 +149,14 @@ internal static class BuildCommand
         }
         proc.WaitForExit();
         return proc.ExitCode;
+    }
+
+    // True when `path` is `dir` or a folder that contains it.
+    internal static bool ContainsPath(string path, string dir)
+    {
+        var p = Path.TrimEndingDirectorySeparator(Path.GetFullPath(path)) + Path.DirectorySeparatorChar;
+        var d = Path.TrimEndingDirectorySeparator(Path.GetFullPath(dir)) + Path.DirectorySeparatorChar;
+        return d.StartsWith(p, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
     }
 
     internal static int AddNew(List<string> urls, IEnumerable<string> candidates)
