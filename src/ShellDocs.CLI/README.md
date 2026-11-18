@@ -40,7 +40,7 @@ Already have a Blazor project? Run `shelldocs init --attach` inside it: it adds 
 | `shelldocs init` | Scaffolds a docs site, or adds ShellDocs to an existing Blazor project with `--attach` |
 | `shelldocs add` | Adds a page from a template (`component`, `guide`, …) |
 | `shelldocs dev` | Runs the site with hot reload |
-| `shelldocs build` | Prerenders every page to static HTML for GitHub Pages, Cloudflare Pages, Netlify or S3. `--base-href` for a sub-path, `--site-url` for sitemap, robots and `og:` meta |
+| `shelldocs build` | Prerenders every page to static HTML for GitHub Pages, Cloudflare Pages, Netlify or S3, including your own `@page` routes. `--base-href` for a sub-path, `--site-url` for sitemap, robots and `og:` meta, `--extra-url` for pages a route with parameters serves |
 | `shelldocs preview` | Serves the export on `http://localhost:5050` as a static host would, to check it before deploying |
 
 ## Links

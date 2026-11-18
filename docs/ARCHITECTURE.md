@@ -254,15 +254,15 @@ Colour presets (`ShellDocsOptions.Theme`: Harbor, Lagoon, Forest, Savanna, Ember
 - `shelldocs init [path] [--attach] [--dir] [--yes] [--theme graphite|harbor|…]` — create mode runs `dotnet new blazor` (default `docs/<CwdName>.Docs`), adds the packages at the CLI's own version, writes starter content and patches `Program.cs` / `App.razor`. Attach mode augments an existing project and writes `SHELLDOCS_SETUP.md` instead of editing code. Both are idempotent.
 - `shelldocs add <component|guide|page> <name> [--force]` — scaffolds a page into `content/docs/`.
 - `shelldocs dev [--port 5000]` — `dotnet watch run`, with `content/**/*.md` added to the watch set.
-- `shelldocs build [--output publish] [--base-href] [--spa-fallback] [--site-url]` — see below.
+- `shelldocs build [--output publish] [--base-href] [--spa-fallback] [--site-url] [--extra-url …]` — see below.
 - `shelldocs preview [--output publish] [--port 5050] [--base-href]` — serves an export with Kestrel as static hosts do: a file, else the folder's `index.html`, else `{path}.html`, else `404.html` with a 404. The base path defaults to the export's `<base href>`; responses are `no-cache` so a rebuild shows on reload.
 
 ### Static site generation
 
 `shelldocs build`:
 
-1. `dotnet publish -c Release` into `obj/shelldocs-publish`, then copies in any `content/` file publish left out (a csproj that copies `meta.json` but not `.md`).
-2. Builds the navigation graph and collects every URL (visible and hidden) plus `/`.
+1. Empties the output folder (refusing one that is the project folder or above it), so publish never picks up the last export. Then `dotnet publish -c Release` into `obj/shelldocs-publish`, and copies in any `content/` file publish left out (a csproj that copies `meta.json` but not `.md`).
+2. Builds the navigation graph and collects every URL (visible and hidden) plus `/`. Adds the app's own `@page` routes, read from the `[Route]` attributes in the published assembly's metadata: those without parameters, apart from the template's `/Error` and `/not-found`. Then adds each `--extra-url`, for pages a parameterised route serves.
 3. `PrerenderRunner` starts the published app on a free port, requests each URL and writes `<output>/<path>/index.html`. A URL that answers 404, or renders `<DocsNotFound>`, fails the build.
 4. Reads the app's redirect map and writes a redirect page for each source URL without a prerendered page (meta refresh plus `location.replace`, relative to `<base href>`).
 5. Requests `/docs/__shelldocs-not-found__` and, if it renders `<DocsNotFound>` with a 404, writes it as `404.html`. The probe's path is blanked and its line hidden; `shelldocs.js` fills in the visitor's path.
