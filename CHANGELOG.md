@@ -4,6 +4,14 @@ All notable changes to ShellDocs land here. Format follows [Keep a Changelog](ht
 
 ## [Unreleased]
 
+### Added
+
+- **`shelldocs build` prerenders your own `@page` routes.** It only prerendered `/` and the pages in `content/`, so a page such as `@page "/icons"` 404'd on static hosts. Routes without parameters are read from the published assembly; the template's `/Error` and `/not-found` pages are left out. `--extra-url /icons/alpha` (repeatable) adds pages a route with parameters serves. They also go into `sitemap.xml`.
+
+### Fixed
+
+- **`shelldocs build` failed the second time** on sites made by `init`, with BLAZOR106 for `publish/Components/Layout/ReconnectModal.razor.js`. The export folder sits inside the project and was emptied only after `dotnet publish`, which picked up the last export. It's emptied first now, and `build` refuses an `--output` that is the project folder or one above it.
+
 ## [0.1.19-alpha] — 2026-10-21
 
 The table of contents works on interactive sites again, plus fixes for border utilities, `llms.txt` groups and the page menu's chat links.

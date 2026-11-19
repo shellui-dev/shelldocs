@@ -301,7 +301,7 @@ internal static class PrerenderRunner
             """;
     }
 
-    private static string InferAssemblyName(string csproj)
+    internal static string InferAssemblyName(string csproj)
     {
         try
         {
