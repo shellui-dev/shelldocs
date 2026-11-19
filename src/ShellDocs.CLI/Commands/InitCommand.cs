@@ -401,6 +401,13 @@ internal static class InitCommand
         }
     }
 
+    private static readonly Regex AssetsPath = new(@"@Assets\[""(?<path>[^""]+)""\]", RegexOptions.Compiled);
+
+    // Each emits fingerprinted URLs too (import map, preload links, the modal's script).
+    private static readonly Regex UnstaticTags = new(
+        @"^[ \t]*<(?:ImportMap|ResourcePreloader|ReconnectModal)\s*/>[ \t]*\r?\n?",
+        RegexOptions.Compiled | RegexOptions.Multiline);
+
     internal static void PatchAppRazor(string projectRoot, List<string> changes)
     {
         var path = Path.Combine(projectRoot, "Components", "App.razor");
@@ -448,6 +455,12 @@ internal static class InitCommand
             src = Regex.Replace(src, @"<Routes\s*/>", "<Routes @rendermode=\"InteractiveServer\" />");
         }
 
+        // Without it, <PageTitle> stops reaching the tab once the circuit starts.
+        if (Regex.IsMatch(src, @"<Routes\s+@rendermode=""(?:RenderMode\.)?InteractiveServer"""))
+        {
+            src = Regex.Replace(src, @"<HeadOutlet\s*/>", "<HeadOutlet @rendermode=\"InteractiveServer\" />");
+        }
+
         // Bootstrap and the template's app.css fight the token system (e.g. pink inline <code>).
         src = Regex.Replace(src,
             @"\s*<link\s+rel=""stylesheet""\s+href=""@Assets\[""lib/bootstrap/dist/css/bootstrap\.min\.css""\]""\s*/>",
@@ -455,6 +468,11 @@ internal static class InitCommand
         src = Regex.Replace(src,
             @"\s*<link\s+rel=""stylesheet""\s+href=""@Assets\[""app\.css""\]""\s*/>",
             "");
+
+        // Fingerprinted URLs only resolve through MapStaticAssets on a running app, so a
+        // static export 404s them (the scoped-CSS bundle included). Plain paths work in both.
+        src = AssetsPath.Replace(src, "${path}");
+        src = UnstaticTags.Replace(src, "");
 
         if (src != original)
         {

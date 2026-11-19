@@ -4,6 +4,12 @@ All notable changes to ShellDocs land here. Format follows [Keep a Changelog](ht
 
 ## [Unreleased]
 
+### Fixed
+
+- **Sites made by `shelldocs init` lost their scoped CSS on static hosts.** The .NET 10 template's `@Assets["…"]` links, `<ImportMap />`, `<ResourcePreloader />` and `<ReconnectModal />` point at fingerprinted files that only a running app serves, so an export 404'd `{Project}.styles.css`, which carries ShellDocs.Components' scoped styles. `init` now writes plain paths and drops those tags. Existing sites make the same change in `Components/App.razor`.
+- **The browser tab kept the first page's title** on sites made by `init`. `<HeadOutlet />` had no render mode, so `<PageTitle>` stopped reaching the browser once the circuit started; `init` now writes `<HeadOutlet @rendermode="InteractiveServer" />`.
+- **A focus ring around the page's `<h1>` on first load.** The template's `<FocusOnNavigate Selector="h1" />` focuses the heading from script, which browsers ring. `shelldocs-theme.css` turns the ring off for that case only (`h1[tabindex="-1"]:focus`); sites that added their own rule can drop it.
+
 ## [0.1.19-alpha] — 2026-10-21
 
 The table of contents works on interactive sites again, plus fixes for border utilities, `llms.txt` groups and the page menu's chat links.

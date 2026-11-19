@@ -12,6 +12,13 @@ public class ThemeCssTests
         Assert.Matches(@"@layer base \{\s*\*, \*::before, \*::after \{ box-sizing: border-box; border-color: var\(--border\); \}\s*\}", css);
     }
 
+    [Fact]
+    public void ScriptFocusedHeading_HasNoFocusRing()
+    {
+        var css = File.ReadAllText(Asset("shelldocs-theme.css"));
+        Assert.Matches(@"@layer base \{\s*h1\[tabindex=""-1""\]:focus \{ outline: none; \}\s*\}", css);
+    }
+
     private static string Asset(string name)
     {
         var testDir = Path.GetDirectoryName(typeof(ThemeCssTests).Assembly.Location)!;
