@@ -187,7 +187,7 @@ public static class NavigationGraphBuilder
         return new NavigationNode
         {
             Url = url,
-            Title = parsed.Frontmatter.GetValue<string>("title") ?? TitleFromSlug(slug),
+            Title = parsed.Frontmatter.GetValue<string>("title") ?? SlugTitle.FromSlug(slug),
             Description = parsed.Frontmatter.GetValue<string>("description"),
             Category = parsed.Frontmatter.GetValue<string>("category"),
             Order = parsed.Frontmatter.GetValue<int>("order"),
@@ -211,14 +211,11 @@ public static class NavigationGraphBuilder
     private static string SlugFrom(string mdPath)
         => System.IO.Path.GetFileNameWithoutExtension(mdPath);
 
-    private static string TitleFromSlug(string slug)
-        => string.Join(' ', slug.Split('-').Select(w => w.Length == 0 ? w : char.ToUpper(w[0]) + w[1..]));
-
     // The folder's own meta.json title, else one made from its name.
     private static string FolderTitle(string folderPath)
         => ReadMeta(folderPath)?.Title is { Length: > 0 } title
             ? title
-            : TitleFromSlug(System.IO.Path.GetFileName(folderPath));
+            : SlugTitle.FromSlug(System.IO.Path.GetFileName(folderPath));
 
     private static string EnsureLeadingSlash(string s) => s.StartsWith('/') ? s : "/" + s;
 

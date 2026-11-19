@@ -4,6 +4,10 @@ All notable changes to ShellDocs land here. Format follows [Keep a Changelog](ht
 
 ## [Unreleased]
 
+### Changed
+
+- **Titles made from file and folder names spell acronyms.** A page or folder without a `title` took it from its name with each word capitalised, so `cli/` read "Cli" and `api-reference.md` "Api Reference". Known words keep their spelling now: acronyms such as CLI, API, UI, FAQ, SDK, JSON and MAUI, and names such as GitHub, OAuth, NuGet and iOS (`SlugTitle.KnownWords`). `shelldocs add` uses the same words for the titles it writes. A `title` in `meta.json` or frontmatter still wins, so a site can spell any word its own way.
+
 ## [0.1.19-alpha] — 2026-10-21
 
 The table of contents works on interactive sites again, plus fixes for border utilities, `llms.txt` groups and the page menu's chat links.

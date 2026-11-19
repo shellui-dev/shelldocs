@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using ShellDocs.Core;
 using ShellDocs.Templates;
 using Spectre.Console;
 
@@ -85,13 +86,15 @@ internal static class AddCommand
         return char.IsUpper(trimmed[0]) ? trimmed : char.ToUpper(trimmed[0]) + trimmed[1..];
     }
 
-    /* "getting-started" → "Getting Started"; "MyGuide" → "My Guide" */
+    /* "getting-started" → "Getting Started"; "MyGuide" → "My Guide"; "cli-reference" → "CLI Reference" */
     private static string TitleCase(string raw)
     {
         var spaced = Regex.Replace(raw.Trim(), @"[-_]+", " ");
         spaced = Regex.Replace(spaced, @"(?<=[a-z0-9])(?=[A-Z])", " ");
         var parts = spaced.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        return string.Join(' ', parts.Select(p => char.ToUpper(p[0]) + p[1..].ToLowerInvariant()));
+        return string.Join(' ', parts.Select(p => SlugTitle.KnownWords.TryGetValue(p, out var known)
+            ? known
+            : char.ToUpper(p[0]) + p[1..].ToLowerInvariant()));
     }
 
     private static string PrettyPath(string abs)

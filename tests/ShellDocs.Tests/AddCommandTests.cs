@@ -65,8 +65,19 @@ public class AddCommandTests : IDisposable
         var expected = Path.Combine(_sandbox, "content", "docs", "faq.md");
         Assert.True(File.Exists(expected));
         var body = File.ReadAllText(expected);
-        Assert.Contains("title: Faq", body);
+        Assert.Contains("title: FAQ", body);
         Assert.DoesNotContain("razor:preview", body);
+    }
+
+    [Theory]
+    [InlineData("cli-reference", "cli-reference.md", "title: CLI Reference")]
+    [InlineData("OAuthSetup", "oauth-setup.md", "title: OAuth Setup")]
+    public void Add_Guide_SpellsKnownWordsInTheTitle(string name, string file, string title)
+    {
+        Assert.Equal(0, Add("guide", name));
+
+        var body = File.ReadAllText(Path.Combine(_sandbox, "content", "docs", "guides", file));
+        Assert.Contains(title, body);
     }
 
     [Fact]
